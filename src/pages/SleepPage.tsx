@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Moon, Sun, Clock, Sparkles } from 'lucide-react';
 import { dbHelpers } from '../lib/db';
 import { useAuth } from '../contexts/AuthContext';
@@ -67,8 +67,8 @@ export function SleepPage() {
     return (
         <div className="animate-fade-in">
             <div style={{ marginBottom: '30px' }}>
-                <h2 style={{ fontSize: '1.75rem', marginBottom: '8px' }}>Sueño</h2>
-                <p style={{ color: 'var(--color-text-light)', margin: 0 }}>Monitorea los descansos de tu bebé.</p>
+                <h2 style={{ fontSize: '1.75rem', marginBottom: '8px' }}>Sue├▒o</h2>
+                <p style={{ color: 'var(--color-text-light)', margin: 0 }}>Monitorea los descansos de tu beb├⌐.</p>
             </div>
 
             <div className="card" style={{
@@ -78,7 +78,7 @@ export function SleepPage() {
                 transition: 'all var(--transition-normal)'
             }}>
                 <h3 style={{ marginBottom: '25px', fontSize: '1.25rem', fontWeight: 700 }}>
-                    {isSleeping ? 'Shhh... Está durmiendo' : '¡Bebé despierto!'}
+                    {isSleeping ? 'Shhh... Est├í durmiendo' : '┬íBeb├⌐ despierto!'}
                 </h3>
 
                 <div className="flex-center" style={{ margin: '30px 0', position: 'relative', display: 'flex', justifyContent: 'center' }}>
@@ -147,7 +147,7 @@ export function SleepPage() {
                         {loading ? '...' : (
                             <>
                                 <Sparkles size={20} />
-                                <span>{isSleeping ? '¡Se ha despertado!' : '¡A dormir!'}</span>
+                                <span>{isSleeping ? '┬íSe ha despertado!' : '┬íA dormir!'}</span>
                             </>
                         )}
                     </button>
@@ -155,7 +155,7 @@ export function SleepPage() {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                <h3 style={{ fontSize: '1.2rem' }}>Últimos descansos</h3>
+                <h3 style={{ fontSize: '1.2rem' }}>├Ültimos descansos</h3>
                 <span style={{ fontSize: '0.85rem', color: 'var(--color-text-light)' }}>{history.length} registros</span>
             </div>
 
@@ -163,7 +163,7 @@ export function SleepPage() {
                 {history.length === 0 ? (
                     <div className="card" style={{ textAlign: 'center', padding: '40px 20px' }}>
                         <Clock size={32} color="var(--color-text-light)" style={{ marginBottom: '10px', opacity: 0.5 }} />
-                        <p style={{ color: 'var(--color-text-light)', margin: 0 }}>No hay registros de sueño aún.</p>
+                        <p style={{ color: 'var(--color-text-light)', margin: 0 }}>No hay registros de sue├▒o a├║n.</p>
                     </div>
                 ) : (
                     history.map((record, index) => (

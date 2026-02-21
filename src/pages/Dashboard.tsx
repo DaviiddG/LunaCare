@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Activity } from 'lucide-react';
 import { AiAdvisor } from '../components/AiAdvisor';
 import { dbHelpers } from '../lib/db';
@@ -36,7 +36,7 @@ export function Dashboard() {
     }, []);
 
     const feedingSummary = latestDiet
-        ? `${formatDistanceToNow(new Date(latestDiet.created_at), { addSuffix: true, locale: es })} (${latestDiet.type === 'breast' ? 'Pecho' : latestDiet.type === 'formula' ? 'Fórmula' : 'Sólidos'}${latestDiet.amount ? ` ${latestDiet.amount}ml` : ''})`
+        ? `${formatDistanceToNow(new Date(latestDiet.created_at), { addSuffix: true, locale: es })} (${latestDiet.type === 'breast' ? 'Pecho' : latestDiet.type === 'formula' ? 'F├│rmula' : 'S├│lidos'}${latestDiet.amount ? ` ${latestDiet.amount}ml` : ''})`
         : 'Sin registros';
 
     const diaperSummary = latestDiaper
@@ -60,26 +60,26 @@ export function Dashboard() {
                     justifyContent: 'center',
                     fontSize: '1.5rem'
                 }}>
-                    👶
+                    ≡ƒæ╢
                 </div>
                 <div>
-                    <h2 style={{ margin: 0 }}>¡Hola, Mamá!</h2>
+                    <h2 style={{ margin: 0 }}>┬íHola, Mam├í!</h2>
                     <p style={{ margin: 0, color: 'var(--color-text-light)' }}>Resumen de hoy</p>
                 </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
                 <div className="card" style={{ padding: '15px' }}>
-                    <div style={{ color: 'var(--color-primary-dark)', marginBottom: '5px' }}>Última Comida</div>
+                    <div style={{ color: 'var(--color-primary-dark)', marginBottom: '5px' }}>├Ültima Comida</div>
                     <div style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>
                         {latestDiet ? formatDistanceToNow(new Date(latestDiet.created_at), { locale: es }) : '-'}
                     </div>
                     <div style={{ fontSize: '0.9rem', color: 'var(--color-text-light)' }}>
-                        {latestDiet ? `${latestDiet.type === 'breast' ? 'Pecho' : latestDiet.type === 'formula' ? 'Fórmula' : 'Sólidos'}${latestDiet.amount ? ` ${latestDiet.amount}ml` : ''}` : 'No hay datos'}
+                        {latestDiet ? `${latestDiet.type === 'breast' ? 'Pecho' : latestDiet.type === 'formula' ? 'F├│rmula' : 'S├│lidos'}${latestDiet.amount ? ` ${latestDiet.amount}ml` : ''}` : 'No hay datos'}
                     </div>
                 </div>
                 <div className="card" style={{ padding: '15px' }}>
-                    <div style={{ color: 'var(--color-success)', marginBottom: '5px' }}>Último Pañal</div>
+                    <div style={{ color: 'var(--color-success)', marginBottom: '5px' }}>├Ültimo Pa├▒al</div>
                     <div style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>
                         {latestDiaper ? formatDistanceToNow(new Date(latestDiaper.created_at), { locale: es }) : '-'}
                     </div>
@@ -88,7 +88,7 @@ export function Dashboard() {
                     </div>
                 </div>
                 <div className="card" style={{ padding: '15px', gridColumn: 'span 2' }}>
-                    <div style={{ color: 'var(--color-secondary-dark)', marginBottom: '5px' }}>Último Sueño (Registrado)</div>
+                    <div style={{ color: 'var(--color-secondary-dark)', marginBottom: '5px' }}>├Ültimo Sue├▒o (Registrado)</div>
                     <div style={{ fontWeight: 'bold', fontSize: '1.5rem' }}>{totalSleep}</div>
                 </div>
             </div>

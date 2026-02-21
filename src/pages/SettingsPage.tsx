@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { User, Baby, Ruler, Weight, Calendar, Save, LogOut } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { dbHelpers } from '../lib/db';
@@ -60,7 +60,7 @@ export function SettingsPage() {
         if (error) {
             setMessage({ type: 'error', text: 'Error al ahorrar: ' + error.message });
         } else {
-            setMessage({ type: 'success', text: '¡Perfil actualizado con éxito! ✨' });
+            setMessage({ type: 'success', text: '┬íPerfil actualizado con ├⌐xito! Γ£¿' });
         }
         setIsSaving(false);
     };
@@ -70,14 +70,14 @@ export function SettingsPage() {
         navigate('/login');
     };
 
-    if (isLoading) return <div className="flex-center" style={{ minHeight: '60vh' }}>Cargando datos mágicos... ✨</div>;
+    if (isLoading) return <div className="flex-center" style={{ minHeight: '60vh' }}>Cargando datos m├ígicos... Γ£¿</div>;
 
     return (
         <div className="animate-fade-in" style={{ paddingBottom: '40px' }}>
             <div style={{ marginBottom: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                    <h2 style={{ fontSize: '1.75rem', marginBottom: '8px' }}>Perfil del Bebé</h2>
-                    <p style={{ color: 'var(--color-text-light)', margin: 0 }}>Completa la información para que Luna te ayude mejor.</p>
+                    <h2 style={{ fontSize: '1.75rem', marginBottom: '8px' }}>Perfil del Beb├⌐</h2>
+                    <p style={{ color: 'var(--color-text-light)', margin: 0 }}>Completa la informaci├│n para que Luna te ayude mejor.</p>
                 </div>
             </div>
 
@@ -103,7 +103,7 @@ export function SettingsPage() {
                     </div>
 
                     <div style={{ flex: 1 }}>
-                        <label style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', display: 'block' }}>Nombre del Bebé</label>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', display: 'block' }}>Nombre del Beb├⌐</label>
                         <input
                             type="text"
                             value={babyData.name}
@@ -135,7 +135,7 @@ export function SettingsPage() {
                         />
                     </div>
                     <div className="auth-input-group">
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><User size={14} /> Género</label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><User size={14} /> G├⌐nero</label>
                         <select
                             className="auth-input"
                             style={{ paddingLeft: '15px' }}
@@ -143,8 +143,8 @@ export function SettingsPage() {
                             onChange={e => setBabyData({ ...babyData, gender: e.target.value })}
                         >
                             <option value="">Seleccionar...</option>
-                            <option value="niño">Niño</option>
-                            <option value="niña">Niña</option>
+                            <option value="ni├▒o">Ni├▒o</option>
+                            <option value="ni├▒a">Ni├▒a</option>
                         </select>
                     </div>
                 </div>
@@ -212,7 +212,7 @@ export function SettingsPage() {
                     }}
                 >
                     <LogOut size={20} />
-                    Cerrar Sesión Segura
+                    Cerrar Sesi├│n Segura
                 </button>
             </div>
         </div>

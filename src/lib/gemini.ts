@@ -9,71 +9,61 @@ if (!apiKey) {
 
 const genAI = new GoogleGenerativeAI(apiKey);
 
-export async function getBabyCareAdvice(context: string): Promise<string> {
-    if (!apiKey) {
-        return "Falta configurar la clave de API de Gemini (VITE_GEMINI_API_KEY).";
-    }
-
-    try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-        const prompt = `Eres Luna, una asistente inteligente, dulce y servicial para una aplicación de cuidado de bebés llamada LunaCare. 
-        Tu objetivo es dar consejos cortos, útiles y reconfortantes a las mamás basados en la actividad reciente del bebé. 
-        Contexto del bebé hoy: ${context}
-        Escribe un consejo de máximo 2 oraciones, usa un tono cariñoso y empoderador. No uses lenguaje técnico aburrido.`;
-
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        return response.text();
-    } catch (error) {
-        console.error("Error generating AI advice:", error);
-        return "No pude conectar con el consejero IA en este momento. Intenta más tarde.";
-    }
+export interface LunaContext {
+    recentFeeds: any[];
+    recentSleeps: any[];
+    recentCries: any[];
 }
 
 export async function chatWithLuna(
     query: string,
-    context: string,
+    context: LunaContext,
     history: { role: string, content: string }[] = [],
-    babyProfile?: { name: string, birth_date?: string, weight?: number, height?: number }
+    babyProfile?: { name: string, birth_date?: string, weight_kg?: number, feeding_type?: string }
 ): Promise<string> {
     if (!apiKey) {
         return "Lo siento, necesito mi clave de acceso para hablar contigo. Configura VITE_GEMINI_API_KEY.";
     }
 
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
         const historyText = history.length > 0
-            ? `\nHistorial de nuestra conversación anterior:\n${history.map(h => `${h.role === 'user' ? 'Mamá' : 'Luna'}: ${h.content}`).join('\n')}`
+            ? `\nHistorial Reciente:\n${history.map(h => `${h.role === 'user' ? 'Mamá' : 'Luna'}: ${h.content}`).join('\n')}`
             : '';
 
         const babyInfo = babyProfile
-            ? `\nInformación del bebé (${babyProfile.name}): ${babyProfile.birth_date ? `Nacido el ${babyProfile.birth_date}, ` : ''}${babyProfile.weight ? `pesa ${babyProfile.weight}kg, ` : ''}${babyProfile.height ? `mide ${babyProfile.height}cm.` : ''}`
+            ? `\nPerfil del bebé (${babyProfile.name}): ${babyProfile.birth_date ? `Nacido el ${babyProfile.birth_date}, ` : ''}${babyProfile.weight_kg ? `pesa ${babyProfile.weight_kg}kg, ` : ''}${babyProfile.feeding_type ? `toma ${babyProfile.feeding_type}.` : ''}`
             : '';
 
-        const prompt = `Eres Luna, una asistente inteligente, dulce, empática y muy servicial para LunaCare.
-        Tu personalidad es como la de una hada madrina moderna o una amiga experta en bebés.
-        
+        const contextInfo = `
+Registro Reciente:
+- Últimas Comidas: ${context.recentFeeds.length > 0 ? context.recentFeeds.map(f => `${f.food_type} (${new Date(f.created_at).toLocaleTimeString()})`).join(', ') : 'Ninguna registrada pronto.'}
+- Últimos Sueños: ${context.recentSleeps.length > 0 ? context.recentSleeps.map(s => `(${new Date(s.created_at).toLocaleTimeString()})`).join(', ') : 'Ninguno registrado pronto.'}
+- Episodios de Llanto: ${context.recentCries.length > 0 ? context.recentCries.map(c => `(${new Date(c.created_at).toLocaleTimeString()})`).join(', ') : 'Ninguno registrado pronto.'}
+        `;
+
+        const prompt = `Eres Luna, una asistente inteligente, empática y experta para la aplicación LunaCare.
+Tu objetivo AHORA MISMO es calmar a una madre primeriza, interpretar posibles razones por las que su bebé llora y ofrecer soluciones claras y reconfortantes.
+Tu personalidad: Mamá experta, calmada, no alarmista, muy empática ("yo sé lo que se siente"). Nunca juzgas.
         ${babyInfo}
-        
-        Contexto actual de la app (registros de hoy): ${context}
+        ${contextInfo}
         ${historyText}
         
-        Instrucciones:
-        1. Responde de forma natural y conversacional. El usuario está hablando contigo, así que sé breve pero cálida.
-        2. Si te preguntan algo sobre los datos (ej: "¿cuándo comió?"), consulta el contexto de hoy.
-        3. Si te preguntan algo que mencionaron antes, consulta el historial.
-        4. Mantén las respuestas breves y reconfortantes (máximo 2-3 oraciones).
-        5. Usa emojis ocasionalmente para ser más amigable.
+INSTRUCCIONES CRÍTICAS:
+1. SI El BEBÉ LLORA: Usa el "Registro Reciente" para adivinar por qué. ¿Comió hace más de 3 hrs? Hambre. ¿Lleva despierto mucho tiempo? Sueño.
+2. VALIDA LAS EMOCIONES: Siempre empieza validando ("Es normal sentirse abrumada, respira", "No estás haciendo nada mal").
+3. SÉ BREVE: Las respuestas deben ser cortas (máximo 3 párrafos cortos). La mamá puede estar con un bebé llorando en brazos.
+4. Usa emojis suavemente para transmitir calma (✨, 🌙, 🤍).
 
-        Mensaje de la mamá: "${query}"`;
+Mensaje de la mamá: "${query}"`;
 
         const result = await model.generateContent(prompt);
         const response = await result.response;
         return response.text();
     } catch (error) {
         console.error("Error in Luna chat:", error);
-        return "Lo siento, mi conexión mágica ha fallado un momento. ✨ ¿Podrías intentar decírmelo de nuevo?";
+        return "Lo siento mamá, mi conexión está un poco inestable. ¡Respira profundo, lo estás haciendo excelente! Intenta escribirme en un momento. ✨";
     }
 }
 

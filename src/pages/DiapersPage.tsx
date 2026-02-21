@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Droplets, Trash2, Clock, Sparkles } from 'lucide-react';
 import { dbHelpers } from '../lib/db';
 import { useAuth } from '../contexts/AuthContext';
@@ -42,7 +42,7 @@ export function DiapersPage() {
     return (
         <div className="animate-fade-in">
             <div style={{ marginBottom: '30px' }}>
-                <h2 style={{ fontSize: '1.75rem', marginBottom: '8px' }}>Pañales</h2>
+                <h2 style={{ fontSize: '1.75rem', marginBottom: '8px' }}>Pa├▒ales</h2>
                 <p style={{ color: 'var(--color-text-light)', margin: 0 }}>Lleva el control de los cambios diarios.</p>
             </div>
 
@@ -141,7 +141,7 @@ export function DiapersPage() {
                 {history.length === 0 ? (
                     <div className="card" style={{ textAlign: 'center', padding: '40px 20px' }}>
                         <Clock size={32} color="var(--color-text-light)" style={{ marginBottom: '10px', opacity: 0.5 }} />
-                        <p style={{ color: 'var(--color-text-light)', margin: 0 }}>Aún no hay registros de pañales.</p>
+                        <p style={{ color: 'var(--color-text-light)', margin: 0 }}>A├║n no hay registros de pa├▒ales.</p>
                     </div>
                 ) : (
                     history.map((record, index) => (
@@ -165,10 +165,10 @@ export function DiapersPage() {
                             </div>
                             <div style={{ flex: 1 }}>
                                 <div style={{ fontWeight: 700, fontSize: '1rem' }}>
-                                    Pañal {record.status === 'wet' ? 'Mojado' : 'Sucio'}
+                                    Pa├▒al {record.status === 'wet' ? 'Mojado' : 'Sucio'}
                                 </div>
                                 <div style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', marginTop: '2px' }}>
-                                    {format(new Date(record.created_at), 'HH:mm')} • {formatDistanceToNow(new Date(record.created_at), { addSuffix: true, locale: es })}
+                                    {format(new Date(record.created_at), 'HH:mm')} ΓÇó {formatDistanceToNow(new Date(record.created_at), { addSuffix: true, locale: es })}
                                 </div>
                                 {record.observations && (
                                     <div style={{ fontSize: '0.85rem', marginTop: '5px', fontStyle: 'italic', color: 'var(--color-text)' }}>

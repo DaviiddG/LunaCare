@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { Home, Baby, Moon, Droplet, Sun, LogOut, Settings } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -68,7 +68,7 @@ export function AppLayout() {
                             justifyContent: 'center',
                             boxShadow: 'var(--shadow-sm)'
                         }}
-                        title="Cerrar sesión"
+                        title="Cerrar sesi├│n"
                     >
                         <LogOut size={20} />
                     </button>
@@ -104,7 +104,7 @@ export function AppLayout() {
                     className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
                 >
                     <Baby size={24} />
-                    <span>Pañales</span>
+                    <span>Pa├▒ales</span>
                 </NavLink>
 
                 <NavLink
@@ -112,7 +112,7 @@ export function AppLayout() {
                     className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
                 >
                     <Moon size={24} />
-                    <span>Sueño</span>
+                    <span>Sue├▒o</span>
                 </NavLink>
 
                 <NavLink

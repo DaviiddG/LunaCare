@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Droplet, Milk, Utensils, Clock, Sparkles } from 'lucide-react';
 import { dbHelpers } from '../lib/db';
 import { useAuth } from '../contexts/AuthContext';
@@ -45,8 +45,8 @@ export function DietPage() {
     return (
         <div className="animate-fade-in">
             <div style={{ marginBottom: '30px' }}>
-                <h2 style={{ fontSize: '1.75rem', marginBottom: '8px' }}>Alimentación</h2>
-                <p style={{ color: 'var(--color-text-light)', margin: 0 }}>Registra qué y cuánto ha comido el bebé hoy.</p>
+                <h2 style={{ fontSize: '1.75rem', marginBottom: '8px' }}>Alimentaci├│n</h2>
+                <p style={{ color: 'var(--color-text-light)', margin: 0 }}>Registra qu├⌐ y cu├ínto ha comido el beb├⌐ hoy.</p>
             </div>
 
             <div className="card" style={{ marginBottom: '30px', borderTop: '4px solid var(--color-primary)' }}>
@@ -83,7 +83,7 @@ export function DietPage() {
                         }}
                     >
                         <Milk size={28} color={type === 'formula' ? 'white' : 'var(--color-secondary-dark)'} />
-                        <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>Fórmula</span>
+                        <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>F├│rmula</span>
                     </button>
                     <button
                         className={`button-secondary flex-center ${type === 'solids' ? 'active' : ''}`}
@@ -99,7 +99,7 @@ export function DietPage() {
                         }}
                     >
                         <Utensils size={28} color={type === 'solids' ? 'white' : 'var(--color-success)'} />
-                        <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>Sólidos</span>
+                        <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>S├│lidos</span>
                     </button>
                 </div>
 
@@ -135,7 +135,7 @@ export function DietPage() {
                         <textarea
                             value={observations}
                             onChange={(e) => setObservations(e.target.value)}
-                            placeholder="¿Alguna reacción o nota especial?"
+                            placeholder="┬┐Alguna reacci├│n o nota especial?"
                             style={{
                                 width: '100%',
                                 padding: '14px 16px',
@@ -175,7 +175,7 @@ export function DietPage() {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                <h3 style={{ fontSize: '1.2rem' }}>Historial del día</h3>
+                <h3 style={{ fontSize: '1.2rem' }}>Historial del d├¡a</h3>
                 <span style={{ fontSize: '0.85rem', color: 'var(--color-text-light)' }}>{history.length} tomas</span>
             </div>
 
@@ -183,7 +183,7 @@ export function DietPage() {
                 {history.length === 0 ? (
                     <div className="card" style={{ textAlign: 'center', padding: '40px 20px' }}>
                         <Clock size={32} color="var(--color-text-light)" style={{ marginBottom: '10px', opacity: 0.5 }} />
-                        <p style={{ color: 'var(--color-text-light)', margin: 0 }}>Aún no has registrado nada hoy.</p>
+                        <p style={{ color: 'var(--color-text-light)', margin: 0 }}>A├║n no has registrado nada hoy.</p>
                     </div>
                 ) : (
                     history.map((record, index) => (
@@ -209,11 +209,11 @@ export function DietPage() {
                             </div>
                             <div style={{ flex: 1 }}>
                                 <div style={{ fontWeight: 700, fontSize: '1rem' }}>
-                                    {record.type === 'breast' ? 'Pecho' : record.type === 'formula' ? 'Fórmula' : 'Sólidos'}
+                                    {record.type === 'breast' ? 'Pecho' : record.type === 'formula' ? 'F├│rmula' : 'S├│lidos'}
                                     {record.amount > 0 && <span style={{ fontWeight: 500, color: 'var(--color-text-light)', marginLeft: '8px' }}>{record.amount}{record.type === 'solids' ? 'gr' : 'ml'}</span>}
                                 </div>
                                 <div style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', marginTop: '2px' }}>
-                                    {format(new Date(record.created_at), 'HH:mm')} • {formatDistanceToNow(new Date(record.created_at), { addSuffix: true, locale: es })}
+                                    {format(new Date(record.created_at), 'HH:mm')} ΓÇó {formatDistanceToNow(new Date(record.created_at), { addSuffix: true, locale: es })}
                                 </div>
                                 {record.observations && (
                                     <div style={{ fontSize: '0.85rem', marginTop: '5px', fontStyle: 'italic', color: 'var(--color-text)' }}>
