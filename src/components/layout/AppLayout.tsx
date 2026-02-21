@@ -2,7 +2,6 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { Home, Baby, Moon, Droplet, Sun, LogOut, Settings } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { LunaAssistant } from '../LunaAssistant';
 
 export function AppLayout() {
     const navigate = useNavigate();
@@ -79,8 +78,6 @@ export function AppLayout() {
             <main className="main-content">
                 <Outlet />
             </main>
-
-            <LunaAssistant />
 
             <nav className="bottom-nav">
                 <NavLink

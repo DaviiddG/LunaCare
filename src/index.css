@@ -278,6 +278,83 @@ button {
   display: none;
 }
 
+/* Sleep Ring Pulse Animation */
+.sleep-ring {
+  animation: sleepRingPulse 2.5s ease-out infinite;
+}
+
+.sleep-ring.ring-2 {
+  animation-delay: 0.5s;
+}
+
+@keyframes sleepRingPulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0.6;
+  }
+
+  100% {
+    transform: translate(-50%, -50%) scale(1.4);
+    opacity: 0;
+  }
+}
+
+/* Sun spin */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Modal slide up */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.42s cubic-bezier(0.34, 1.2, 0.64, 1) both;
+}
+
+/* Pulse ring for loading state */
+.pulse-ring {
+  animation: pulseRing 1.5s ease-in-out infinite;
+}
+
+@keyframes pulseRing {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(232, 134, 159, 0.5);
+  }
+
+  50% {
+    box-shadow: 0 0 0 16px rgba(232, 134, 159, 0);
+  }
+}
+
+/* Sleep toggle hover */
+.sleep-toggle-btn:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.02);
+  filter: brightness(1.08);
+}
+
+.sleep-toggle-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+
 .typing-indicator {
   display: flex;
   align-items: center;
@@ -319,30 +396,31 @@ button {
   }
 }
 
-/* Bottom Navigation - Modern Floating Style */
+/* Bottom Navigation - Premium Interactive Style */
 .bottom-nav {
   position: absolute;
-  bottom: 25px;
-  left: 20px;
-  right: 20px;
-  height: 70px;
-  background-color: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  bottom: 20px;
+  left: 16px;
+  right: 16px;
+  height: 72px;
+  background-color: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   display: flex;
   justify-content: space-around;
   align-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
   z-index: 100;
-  border-radius: 25px;
-  padding: 0 10px;
-  transition: transform 0.3s ease;
+  border-radius: 28px;
+  padding: 0 8px;
+  transition: box-shadow 0.3s ease;
 }
 
 [data-theme='dark'] .bottom-nav {
-  background-color: rgba(26, 26, 26, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background-color: rgba(22, 22, 28, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .nav-item {
@@ -352,41 +430,56 @@ button {
   align-items: center;
   justify-content: center;
   color: var(--color-text-light);
-  width: 55px;
-  height: 55px;
-  border-radius: 18px;
-  gap: 2px;
-  font-size: 0.65rem;
+  width: 58px;
+  height: 58px;
+  border-radius: 20px;
+  gap: 3px;
+  font-size: 0.64rem;
   font-weight: 600;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.nav-item:not(.active):hover {
+  color: var(--color-primary);
+  background-color: rgba(232, 134, 159, 0.08);
+  transform: translateY(-3px) scale(1.05);
+}
+
+.nav-item:not(.active):hover svg {
+  transform: scale(1.15);
+  filter: drop-shadow(0 0 6px rgba(232, 134, 159, 0.5));
 }
 
 .nav-item.active {
   color: var(--color-primary-dark);
   background-color: var(--color-primary-light);
-  transform: translateY(-5px);
+  transform: translateY(-6px) scale(1.08);
+  box-shadow: 0 6px 20px rgba(232, 134, 159, 0.3);
 }
 
 .nav-item svg {
-  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.3s ease;
 }
 
 .nav-item.active svg {
-  transform: scale(1.1);
+  transform: scale(1.15);
+  filter: drop-shadow(0 2px 6px rgba(232, 134, 159, 0.4));
 }
 
 .nav-item::after {
   content: '';
   position: absolute;
-  bottom: 8px;
-  width: 4px;
-  height: 4px;
-  background-color: var(--color-primary-dark);
+  bottom: 6px;
+  width: 5px;
+  height: 5px;
+  background: var(--color-primary-dark);
   border-radius: 50%;
   opacity: 0;
   transform: scale(0);
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .nav-item.active::after {
