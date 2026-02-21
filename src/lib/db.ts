@@ -1,36 +1,52 @@
-// Mock Supabase service for UI development before actual DB connection
-// import { supabase } from './supabase'; // Muted until actual usage
-
-// Helper to simulate network delay
-const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+import { supabase } from './supabase';
 
 export const dbHelpers = {
     // Diets
-    async insertDiet(data: any) {
-        await delay(500);
-        console.log('Mock insert diet:', data);
-        return { data, error: null };
+    async insertDiet(data: { type: string; amount: number; observations: string; user_id: string }) {
+        const { data: result, error } = await supabase
+            .from('diets')
+            .insert([data])
+            .select();
+        return { data: result, error };
     },
     async getDiets() {
-        await delay(500);
-        return { data: [{ type: 'formula', amount: 150, created_at: new Date().toISOString() }], error: null };
+        const { data, error } = await supabase
+            .from('diets')
+            .select('*')
+            .order('created_at', { ascending: false });
+        return { data, error };
     },
 
     // Diapers
-    async insertDiaper(data: any) {
-        await delay(500);
-        console.log('Mock insert diaper:', data);
-        return { data, error: null };
+    async insertDiaper(data: { status: string; observations: string; user_id: string }) {
+        const { data: result, error } = await supabase
+            .from('diapers')
+            .insert([data])
+            .select();
+        return { data: result, error };
     },
     async getDiapers() {
-        await delay(500);
-        return { data: [{ status: 'wet', created_at: new Date().toISOString() }], error: null };
+        const { data, error } = await supabase
+            .from('diapers')
+            .select('*')
+            .order('created_at', { ascending: false });
+        return { data, error };
     },
 
     // Sleep
-    async insertSleepLog(data: any) {
-        await delay(500);
-        console.log('Mock insert sleep log:', data);
-        return { data, error: null };
+    async insertSleepLog(data: { start_time: string; end_time: string; duration: string; user_id: string }) {
+        const { data: result, error } = await supabase
+            .from('sleep_logs')
+            .insert([data])
+            .select();
+        return { data: result, error };
+    },
+    async getSleepLogs() {
+        const { data, error } = await supabase
+            .from('sleep_logs')
+            .select('*')
+            .order('created_at', { ascending: false });
+        return { data, error };
     }
 };
+

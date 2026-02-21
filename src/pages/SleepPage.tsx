@@ -1,8 +1,72 @@
+import { useState, useEffect } from 'react';
 import { Moon, Sun } from 'lucide-react';
-import { useState } from 'react';
+import { dbHelpers } from '../lib/db';
+import { useAuth } from '../contexts/AuthContext';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 export function SleepPage() {
+    const { user } = useAuth();
     const [isSleeping, setIsSleeping] = useState(false);
+    const [startTime, setStartTime] = useState<Date | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [history, setHistory] = useState<any[]>([]);
+
+    useEffect(() => {
+        fetchHistory();
+        // Cargar estado si estaba durmiendo (esto se podría persistir en localstorage o DB)
+        const savedStart = localStorage.getItem('sleep_start');
+        if (savedStart) {
+            setStartTime(new Date(savedStart));
+            setIsSleeping(true);
+        }
+    }, []);
+
+    const fetchHistory = async () => {
+        const { data } = await dbHelpers.getSleepLogs();
+        if (data) setHistory(data);
+    };
+
+    const handleToggleSleep = async () => {
+        if (!user) return;
+
+        if (!isSleeping) {
+            // Empezar a dormir
+            const now = new Date();
+            setStartTime(now);
+            setIsSleeping(true);
+            localStorage.setItem('sleep_start', now.toISOString());
+        } else {
+            // Despertar
+            setLoading(true);
+            const endTime = new Date();
+            const start = startTime || new Date();
+
+            // Calcular duración legible
+            const diffMs = endTime.getTime() - start.getTime();
+            const diffMins = Math.round(diffMs / 60000);
+            const hours = Math.floor(diffMins / 60);
+            const mins = diffMins % 60;
+            const durationStr = `${hours}h ${mins}m`;
+
+            const { error } = await dbHelpers.insertSleepLog({
+                start_time: start.toISOString(),
+                end_time: endTime.toISOString(),
+                duration: durationStr,
+                user_id: user.id
+            });
+
+            if (!error) {
+                setIsSleeping(false);
+                setStartTime(null);
+                localStorage.removeItem('sleep_start');
+                fetchHistory();
+            } else {
+                alert('Error al guardar: ' + error.message);
+            }
+            setLoading(false);
+        }
+    };
 
     return (
         <div className="animate-fade-in">
@@ -12,6 +76,12 @@ export function SleepPage() {
                 <h3 style={{ marginBottom: '15px', color: 'var(--color-secondary-dark)' }}>
                     {isSleeping ? 'El bebé está durmiendo' : 'El bebé está despierto'}
                 </h3>
+
+                {isSleeping && startTime && (
+                    <p style={{ color: 'var(--color-text-light)', marginBottom: '10px' }}>
+                        Durmiendo desde: {format(startTime, 'p', { locale: es })}
+                    </p>
+                )}
 
                 <div style={{ margin: '20px 0' }}>
                     {isSleeping ? (
@@ -32,35 +102,41 @@ export function SleepPage() {
                         padding: '16px 32px',
                         backgroundColor: isSleeping ? 'var(--color-warning)' : 'var(--color-secondary-dark)'
                     }}
-                    onClick={() => setIsSleeping(!isSleeping)}
+                    onClick={handleToggleSleep}
+                    disabled={loading}
                 >
-                    {isSleeping ? 'Despertar al bebé' : 'Empezar a dormir'}
+                    {loading ? 'Procesando...' : (isSleeping ? 'Despertar al bebé' : 'Empezar a dormir')}
                 </button>
             </div>
 
             <h3 style={{ marginBottom: '15px' }}>Registros Recientes</h3>
             <div className="card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #eee', paddingBottom: '10px', marginBottom: '10px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <Moon size={20} color="var(--color-secondary-dark)" />
-                        <span>Siesta</span>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontWeight: 'bold' }}>1h 30m</div>
-                        <div style={{ color: 'var(--color-text-light)', fontSize: '0.8rem' }}>10:00 - 11:30 AM</div>
-                    </div>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <Moon size={20} color="var(--color-secondary-dark)" />
-                        <span>Sueño Nocturno</span>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontWeight: 'bold' }}>8h 15m</div>
-                        <div style={{ color: 'var(--color-text-light)', fontSize: '0.8rem' }}>21:00 - 05:15 AM</div>
-                    </div>
-                </div>
+                {history.length === 0 ? (
+                    <p style={{ color: 'var(--color-text-light)', textAlign: 'center' }}>No hay registros aún.</p>
+                ) : (
+                    history.map((item, index) => (
+                        <div key={item.id} style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            borderBottom: index !== history.length - 1 ? '1px solid #eee' : 'none',
+                            paddingBottom: '10px',
+                            marginBottom: '10px'
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <Moon size={20} color="var(--color-secondary-dark)" />
+                                <span>Sueño</span>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                                <div style={{ fontWeight: 'bold' }}>{item.duration}</div>
+                                <div style={{ color: 'var(--color-text-light)', fontSize: '0.8rem' }}>
+                                    {format(new Date(item.start_time), 'HH:mm')} - {format(new Date(item.end_time), 'HH:mm')}
+                                </div>
+                            </div>
+                        </div>
+                    ))
+                )}
             </div>
         </div>
     );
 }
+
