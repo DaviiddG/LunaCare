@@ -30,23 +30,40 @@ export async function getBabyCareAdvice(context: string): Promise<string> {
     }
 }
 
-export async function chatWithLuna(query: string, context: string): Promise<string> {
+export async function chatWithLuna(
+    query: string,
+    context: string,
+    history: { role: string, content: string }[] = [],
+    babyProfile?: { name: string, birth_date?: string, weight?: number, height?: number }
+): Promise<string> {
     if (!apiKey) {
         return "Lo siento, necesito mi clave de acceso para hablar contigo. Configura VITE_GEMINI_API_KEY.";
     }
 
     try {
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+        const historyText = history.length > 0
+            ? `\nHistorial de nuestra conversación anterior:\n${history.map(h => `${h.role === 'user' ? 'Mamá' : 'Luna'}: ${h.content}`).join('\n')}`
+            : '';
+
+        const babyInfo = babyProfile
+            ? `\nInformación del bebé (${babyProfile.name}): ${babyProfile.birth_date ? `Nacido el ${babyProfile.birth_date}, ` : ''}${babyProfile.weight ? `pesa ${babyProfile.weight}kg, ` : ''}${babyProfile.height ? `mide ${babyProfile.height}cm.` : ''}`
+            : '';
+
         const prompt = `Eres Luna, una asistente inteligente, dulce, empática y muy servicial para LunaCare.
         Tu personalidad es como la de una hada madrina moderna o una amiga experta en bebés.
         
+        ${babyInfo}
+        
         Contexto actual de la app (registros de hoy): ${context}
+        ${historyText}
         
         Instrucciones:
-        1. Responde de forma natural y conversacional. El usuario está hablando contigo por voz, así que sé breve.
-        2. Si te preguntan algo sobre los datos (ej: "¿cuándo comió?"), consulta el contexto proporcionado.
-        3. Si no sabes algo, responde con dulzura pero honestidad.
-        4. Mantén las respuestas muy breves y reconfortantes (máximo 2 oraciones).
+        1. Responde de forma natural y conversacional. El usuario está hablando contigo, así que sé breve pero cálida.
+        2. Si te preguntan algo sobre los datos (ej: "¿cuándo comió?"), consulta el contexto de hoy.
+        3. Si te preguntan algo que mencionaron antes, consulta el historial.
+        4. Mantén las respuestas breves y reconfortantes (máximo 2-3 oraciones).
         5. Usa emojis ocasionalmente para ser más amigable.
 
         Mensaje de la mamá: "${query}"`;
@@ -56,6 +73,7 @@ export async function chatWithLuna(query: string, context: string): Promise<stri
         return response.text();
     } catch (error) {
         console.error("Error in Luna chat:", error);
-        return "Perdona, me he distraído un momento. ¿Podrías repetirme eso?";
+        return "Lo siento, mi conexión mágica ha fallado un momento. ✨ ¿Podrías intentar decírmelo de nuevo?";
     }
 }
+

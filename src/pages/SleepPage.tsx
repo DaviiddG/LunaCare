@@ -81,21 +81,34 @@ export function SleepPage() {
                     {isSleeping ? 'Shhh... Está durmiendo' : '¡Bebé despierto!'}
                 </h3>
 
-                <div className="animate-pulse flex-center" style={{ margin: '30px 0', position: 'relative', display: 'flex', justifyContent: 'center' }}>
-                    <div className="flex-center" style={{
-                        width: '120px',
-                        height: '120px',
+                <div className="flex-center" style={{ margin: '30px 0', position: 'relative', display: 'flex', justifyContent: 'center' }}>
+                    <div className="animate-pulse" style={{
+                        width: '140px',
+                        height: '140px',
                         borderRadius: '50%',
-                        backgroundColor: isSleeping ? 'var(--color-secondary)' : 'var(--color-warning)',
+                        backgroundColor: isSleeping ? 'rgba(173, 216, 230, 0.1)' : 'rgba(251, 196, 171, 0.1)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        boxShadow: `0 0 30px ${isSleeping ? 'rgba(135,206,235,0.4)' : 'rgba(251,196,171,0.4)'}`,
+                        position: 'relative',
                         transition: 'all 0.5s ease'
                     }}>
-                        {isSleeping ? <Moon size={60} color="white" /> : <Sun size={60} color="white" />}
+                        <div style={{
+                            width: '100px',
+                            height: '100px',
+                            borderRadius: '50%',
+                            backgroundColor: isSleeping ? 'var(--color-secondary-dark)' : 'var(--color-warning)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: `0 0 40px ${isSleeping ? 'rgba(135,206,235,0.6)' : 'rgba(251,196,171,0.6)'}`,
+                            zIndex: 2
+                        }}>
+                            {isSleeping ? <Moon size={50} color="white" /> : <Sun size={50} color="white" />}
+                        </div>
                     </div>
                 </div>
+
 
                 {isSleeping && startTime && (
                     <div style={{

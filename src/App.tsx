@@ -5,6 +5,7 @@ import { Dashboard } from './pages/Dashboard';
 import { DietPage } from './pages/DietPage';
 import { DiapersPage } from './pages/DiapersPage';
 import { SleepPage } from './pages/SleepPage';
+import { SettingsPage } from './pages/SettingsPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { AuthProvider } from './contexts/AuthContext';
@@ -30,6 +31,7 @@ const router = createBrowserRouter([
           { path: 'diet', element: <DietPage /> },
           { path: 'diapers', element: <DiapersPage /> },
           { path: 'sleep', element: <SleepPage /> },
+          { path: 'settings', element: <SettingsPage /> },
         ],
       }
     ],

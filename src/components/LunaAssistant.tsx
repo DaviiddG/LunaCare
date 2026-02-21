@@ -26,12 +26,14 @@ export function LunaAssistant() {
     const [isOpen, setIsOpen] = useState(false);
     const [isListening, setIsListening] = useState(false);
     const [isMuted, setIsMuted] = useState(false);
-    const [transcript, setTranscript] = useState('');
     const [response, setResponse] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const recognitionRef = useRef<SpeechRecognition | null>(null);
     const [appContext, setAppContext] = useState('');
     const [textQuery, setTextQuery] = useState('');
+    const [chatHistory, setChatHistory] = useState<{ role: 'user' | 'luna', content: string }[]>([]);
+    const [babyProfile, setBabyProfile] = useState<any>(null);
+    const chatEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         // Initialize Speech Recognition
@@ -44,9 +46,9 @@ export function LunaAssistant() {
 
                 recognitionRef.current.onresult = (event: any) => {
                     const currentTranscript = event.results[0][0].transcript;
-                    setTranscript(currentTranscript);
                     handleLunaQuery(currentTranscript);
                 };
+
 
                 recognitionRef.current.onerror = (event: any) => {
                     console.error('Speech recognition error', event.error);
@@ -59,9 +61,33 @@ export function LunaAssistant() {
             }
         }
 
-        // Fetch initial context
-        fetchAppContext();
+        // Fetch initial data
+        fetchInitialData();
     }, []);
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [chatHistory, response, isLoading]);
+
+    const scrollToBottom = () => {
+        chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    const fetchInitialData = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) return;
+
+        // Fetch profile and history in parallel
+        const [profile, history] = await Promise.all([
+            supabase.from('baby_profiles').select('*').eq('user_id', session.user.id).single(),
+            supabase.from('chat_history').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false }).limit(10)
+        ]);
+
+        if (profile.data) setBabyProfile(profile.data);
+        if (history.data) setChatHistory(history.data.reverse());
+
+        await fetchAppContext();
+    };
 
     const fetchAppContext = async () => {
         const { data: { session } } = await supabase.auth.getSession();
@@ -85,24 +111,54 @@ export function LunaAssistant() {
     };
 
     const handleLunaQuery = async (query: string) => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) return;
+
         setIsLoading(true);
-        // Refresh context before each query to ensure real-time accuracy
+        setTranscript(''); // Clear transcript to show in history instead
+
+        // Add user query to local history immediately
+        const userMsg = { role: 'user' as const, content: query };
+        setChatHistory(prev => [...prev, userMsg]);
+
+        // Save user message to Supabase
+        await supabase.from('chat_history').insert([{
+            user_id: session.user.id,
+            role: 'user',
+            content: query
+        }]);
+
+        // Refresh context
         await fetchAppContext();
-        const result = await chatWithLuna(query, appContext);
-        setResponse(result);
+
+        // Get AI response
+        const aiResult = await chatWithLuna(query, appContext, chatHistory, babyProfile);
+
+        const lunaMsg = { role: 'luna' as const, content: aiResult };
+        setChatHistory(prev => [...prev, lunaMsg]);
+        setResponse(aiResult);
+
+        // Save Luna response to Supabase
+        await supabase.from('chat_history').insert([{
+            user_id: session.user.id,
+            role: 'luna',
+            content: aiResult
+        }]);
+
         setIsLoading(false);
         if (!isMuted) {
-            speak(result);
+            speak(aiResult);
         }
     };
+
 
     const handleTextSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!textQuery.trim()) return;
-        setTranscript(textQuery);
         handleLunaQuery(textQuery);
         setTextQuery('');
     };
+
 
     const speak = (text: string) => {
         if (!window.speechSynthesis) return;
@@ -213,24 +269,40 @@ export function LunaAssistant() {
             </div>
 
             <div style={{ padding: '20px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                {transcript && (
-                    <div style={{ alignSelf: 'flex-end', background: 'var(--color-primary-light)', color: 'var(--color-primary-dark)', padding: '10px 15px', borderRadius: '18px 18px 0 18px', fontSize: '0.9rem', maxWidth: '85%', fontWeight: 600 }}>
-                        {transcript}
+                {chatHistory.length === 0 && !response && (
+                    <div style={{ color: 'var(--color-text-light)', textAlign: 'center', fontSize: '0.85rem', marginTop: '20px' }}>
+                        ¡Empieza a hablar con Luna! ✨
                     </div>
                 )}
 
-                {response && (
-                    <div style={{ alignSelf: 'flex-start', background: 'var(--color-surface-variant)', color: 'var(--color-text)', padding: '12px 16px', borderRadius: '0 18px 18px 18px', fontSize: '0.95rem', lineHeight: 1.5, border: '1px solid var(--color-border)', maxWidth: '90%' }}>
-                        {response}
+                {chatHistory.map((msg, idx) => (
+                    <div
+                        key={idx}
+                        style={{
+                            alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                            background: msg.role === 'user' ? 'var(--color-primary-light)' : 'var(--color-surface-variant)',
+                            color: msg.role === 'user' ? 'var(--color-primary-dark)' : 'var(--color-text)',
+                            padding: '10px 15px',
+                            borderRadius: msg.role === 'user' ? '18px 18px 0 18px' : '0 18px 18px 18px',
+                            fontSize: '0.9rem',
+                            maxWidth: '85%',
+                            fontWeight: msg.role === 'user' ? 600 : 400,
+                            border: msg.role === 'luna' ? '1px solid var(--color-border)' : 'none',
+                            lineHeight: 1.4
+                        }}
+                    >
+                        {msg.content}
                     </div>
-                )}
+                ))}
 
                 {isLoading && (
                     <div style={{ fontStyle: 'italic', color: 'var(--color-text-light)', fontSize: '0.8rem' }}>
                         Luna está pensando... ✨
                     </div>
                 )}
+                <div ref={chatEndRef} />
             </div>
+
 
             <form onSubmit={handleTextSubmit} style={{ padding: '15px', borderTop: '1px solid var(--color-border)', display: 'flex', gap: '8px', alignItems: 'center', background: 'var(--color-surface)' }}>
                 <input

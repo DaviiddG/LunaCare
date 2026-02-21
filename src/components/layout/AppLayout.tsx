@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { Home, Baby, Moon, Droplet, Sun, LogOut } from 'lucide-react';
+import { Home, Baby, Moon, Droplet, Sun, LogOut, Settings } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { LunaAssistant } from '../LunaAssistant';
 
@@ -113,6 +113,14 @@ export function AppLayout() {
                 >
                     <Moon size={24} />
                     <span>Sueño</span>
+                </NavLink>
+
+                <NavLink
+                    to="/settings"
+                    className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+                >
+                    <Settings size={24} />
+                    <span>Ajustes</span>
                 </NavLink>
             </nav>
         </div>
