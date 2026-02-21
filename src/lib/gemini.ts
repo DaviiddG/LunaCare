@@ -18,10 +18,10 @@ export async function getBabyCareAdvice(context: string): Promise<string> {
 
     try {
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-        const prompt = `Eres una pediatra experta y consejera amigable para madres primerizas. 
-    A continuación te doy un resumen reciente del día de mi bebé. 
-    Dame un consejo o comentario cálido y útil de máximo 2 oraciones.
-    Resumen del día: ${context}`;
+        const prompt = `Eres Luna, una asistente inteligente, dulce y servicial para una aplicación de cuidado de bebés llamada LunaCare. 
+        Tu objetivo es dar consejos cortos, útiles y reconfortantes a las mamás basados en la actividad reciente del bebé. 
+        Contexto del bebé hoy: ${context}
+        Escribe un consejo de máximo 2 oraciones, usa un tono cariñoso y empoderador. No uses lenguaje técnico aburrido.`;
 
         const result = await model.generateContent(prompt);
         const response = await result.response;
