@@ -31,6 +31,7 @@ export function LunaAssistant() {
     const [isLoading, setIsLoading] = useState(false);
     const recognitionRef = useRef<SpeechRecognition | null>(null);
     const [appContext, setAppContext] = useState('');
+    const [textQuery, setTextQuery] = useState('');
 
     useEffect(() => {
         // Initialize Speech Recognition
@@ -95,6 +96,13 @@ export function LunaAssistant() {
         }
     };
 
+    const handleTextSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!textQuery.trim()) return;
+        setTranscript(textQuery);
+        handleLunaQuery(textQuery);
+        setTextQuery('');
+    };
 
     const speak = (text: string) => {
         if (!window.speechSynthesis) return;
@@ -171,7 +179,7 @@ export function LunaAssistant() {
                 bottom: '90px',
                 right: '25px',
                 width: '320px',
-                maxHeight: '400px',
+                maxHeight: '440px',
                 background: 'var(--color-surface)',
                 borderRadius: '24px',
                 boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
@@ -183,7 +191,7 @@ export function LunaAssistant() {
             }}
         >
             <div style={{
-                padding: '20px',
+                padding: '15px 20px',
                 background: 'linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-secondary-dark) 100%)',
                 color: 'white',
                 display: 'flex',
@@ -206,13 +214,13 @@ export function LunaAssistant() {
 
             <div style={{ padding: '20px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '15px' }}>
                 {transcript && (
-                    <div style={{ alignSelf: 'flex-end', background: 'var(--color-primary-light)', color: 'var(--color-primary-dark)', padding: '10px 15px', borderRadius: '18px 18px 0 18px', fontSize: '0.9rem', maxWidth: '85%' }}>
+                    <div style={{ alignSelf: 'flex-end', background: 'var(--color-primary-light)', color: 'var(--color-primary-dark)', padding: '10px 15px', borderRadius: '18px 18px 0 18px', fontSize: '0.9rem', maxWidth: '85%', fontWeight: 600 }}>
                         {transcript}
                     </div>
                 )}
 
                 {response && (
-                    <div style={{ alignSelf: 'flex-start', background: 'var(--color-surface-variant)', padding: '12px 16px', borderRadius: '0 18px 18px 18px', fontSize: '0.95rem', lineHeight: 1.5, border: '1px solid var(--color-border)', maxWidth: '90%' }}>
+                    <div style={{ alignSelf: 'flex-start', background: 'var(--color-surface-variant)', color: 'var(--color-text)', padding: '12px 16px', borderRadius: '0 18px 18px 18px', fontSize: '0.95rem', lineHeight: 1.5, border: '1px solid var(--color-border)', maxWidth: '90%' }}>
                         {response}
                     </div>
                 )}
@@ -224,32 +232,61 @@ export function LunaAssistant() {
                 )}
             </div>
 
-            <div style={{ padding: '20px', borderTop: '1px solid var(--color-border)', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '20px' }}>
-                <button
-                    onClick={toggleListening}
+            <form onSubmit={handleTextSubmit} style={{ padding: '15px', borderTop: '1px solid var(--color-border)', display: 'flex', gap: '8px', alignItems: 'center', background: 'var(--color-surface)' }}>
+                <input
+                    type="text"
+                    value={textQuery}
+                    onChange={(e) => setTextQuery(e.target.value)}
+                    placeholder="Escribe a Luna..."
+                    className="luna-chat-input"
                     style={{
-                        width: '60px',
-                        height: '60px',
-                        borderRadius: '30px',
-                        background: isListening ? '#EF4444' : 'var(--color-primary)',
-                        border: 'none',
+                        flex: 1,
+                        background: 'var(--color-bg)',
+                        border: '1.5px solid var(--color-border)',
+                        borderRadius: '12px',
+                        padding: '10px 15px',
+                        color: 'var(--color-text)',
+                        fontSize: '0.9rem',
+                        outline: 'none'
+                    }}
+                />
+                <button
+                    type="submit"
+                    disabled={!textQuery.trim() || isLoading}
+                    style={{
+                        background: 'var(--color-primary)',
                         color: 'white',
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '10px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        boxShadow: 'var(--shadow-md)',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease'
+                        opacity: (!textQuery.trim() || isLoading) ? 0.5 : 1,
+                        cursor: (!textQuery.trim() || isLoading) ? 'not-allowed' : 'pointer'
                     }}
                 >
-                    {isListening ? <MicOff size={28} /> : <Mic size={28} />}
+                    <Sparkles size={18} />
                 </button>
-                {isListening && (
-                    <div className="audio-visualizer-mini">
-                        <span></span><span></span><span></span>
-                    </div>
-                )}
-            </div>
+                <button
+                    type="button"
+                    onClick={toggleListening}
+                    style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '10px',
+                        background: isListening ? '#EF4444' : 'var(--color-bg)',
+                        border: '1.5px solid var(--color-border)',
+                        color: isListening ? 'white' : 'var(--color-text)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer'
+                    }}
+                >
+                    {isListening ? <MicOff size={18} /> : <Mic size={18} />}
+                </button>
+            </form>
         </div>
     );
 }

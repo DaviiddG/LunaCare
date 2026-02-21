@@ -16,6 +16,8 @@
   --color-text: #4A4A4A;
   --color-text-light: #8E8E8E;
   --color-border: rgba(0, 0, 0, 0.05);
+  --color-primary-light: #FFE4E8;
+  --color-surface-variant: #F0F4F8;
 
   /* Status colors */
   --color-success: #b5e48c;
@@ -46,6 +48,8 @@
   --color-text: #F5F5F5;
   --color-text-light: #909090;
   --color-border: rgba(255, 255, 255, 0.08);
+  --color-primary-light: #3D2B2E;
+  --color-surface-variant: #2A2A2A;
   --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.6);
   --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.7);
   --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.8);
@@ -385,4 +389,10 @@ button {
   100% {
     height: 20px;
   }
+}
+
+.luna-chat-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background: var(--color-surface);
 }
