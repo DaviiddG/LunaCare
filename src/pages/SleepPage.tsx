@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Moon, Sun, Clock, Sparkles, LogZilla as Sleep } from 'lucide-react';
+import { Moon, Sun, Clock, Sparkles } from 'lucide-react';
 import { dbHelpers } from '../lib/db';
 import { useAuth } from '../contexts/AuthContext';
 import { format, formatDistanceToNow } from 'date-fns';

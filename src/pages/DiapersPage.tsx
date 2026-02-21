@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Baby, Droplets, Trash2, Clock, Sparkles } from 'lucide-react';
+import { Droplets, Trash2, Clock, Sparkles } from 'lucide-react';
 import { dbHelpers } from '../lib/db';
 import { useAuth } from '../contexts/AuthContext';
 import { formatDistanceToNow, format } from 'date-fns';
