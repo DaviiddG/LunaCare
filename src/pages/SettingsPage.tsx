@@ -28,7 +28,7 @@ export function SettingsPage() {
 
     const fetchProfile = async () => {
         setIsLoading(true);
-        const { data, error } = await dbHelpers.getBabyProfile(user!.id);
+        const { data } = await dbHelpers.getBabyProfile(user!.id);
         if (data) {
             setBabyData({
                 name: data.name || '',
