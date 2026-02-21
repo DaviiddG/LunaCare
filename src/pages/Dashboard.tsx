@@ -1,7 +1,52 @@
+import { useEffect, useState } from 'react';
 import { Activity } from 'lucide-react';
 import { AiAdvisor } from '../components/AiAdvisor';
+import { dbHelpers } from '../lib/db';
+import { formatDistanceToNow } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 export function Dashboard() {
+    const [latestDiet, setLatestDiet] = useState<any>(null);
+    const [latestDiaper, setLatestDiaper] = useState<any>(null);
+    const [totalSleep, setTotalSleep] = useState('0h 0m');
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            setIsLoading(true);
+
+            // Fetch records
+            const { data: diets } = await dbHelpers.getDiets();
+            const { data: diapers } = await dbHelpers.getDiapers();
+            const { data: sleep } = await dbHelpers.getSleepLogs();
+
+            if (diets && diets.length > 0) setLatestDiet(diets[0]);
+            if (diapers && diapers.length > 0) setLatestDiaper(diapers[0]);
+
+            // Summary sleep today (very simple naive calculation for demo)
+            if (sleep && sleep.length > 0) {
+                // For a real app we'd filter for "today", but let's just show the last duration recorded
+                setTotalSleep(sleep[0].duration || '0h 0m');
+            }
+
+            setIsLoading(false);
+        };
+
+        fetchDashboardData();
+    }, []);
+
+    const feedingSummary = latestDiet
+        ? `${formatDistanceToNow(new Date(latestDiet.created_at), { addSuffix: true, locale: es })} (${latestDiet.type === 'breast' ? 'Pecho' : latestDiet.type === 'formula' ? 'Fórmula' : 'Sólidos'}${latestDiet.amount ? ` ${latestDiet.amount}ml` : ''})`
+        : 'Sin registros';
+
+    const diaperSummary = latestDiaper
+        ? `${formatDistanceToNow(new Date(latestDiaper.created_at), { addSuffix: true, locale: es })} (${latestDiaper.status === 'wet' ? 'Mojado' : 'Sucio'})`
+        : 'Sin registros';
+
+    if (isLoading) {
+        return <div style={{ padding: '20px', textAlign: 'center' }}>Cargando resumen...</div>;
+    }
+
     return (
         <div className="animate-fade-in">
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
@@ -26,35 +71,45 @@ export function Dashboard() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
                 <div className="card" style={{ padding: '15px' }}>
                     <div style={{ color: 'var(--color-primary-dark)', marginBottom: '5px' }}>Última Comida</div>
-                    <div style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>Hace 2h</div>
-                    <div style={{ fontSize: '0.9rem', color: 'var(--color-text-light)' }}>Fórmula 150ml</div>
+                    <div style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>
+                        {latestDiet ? formatDistanceToNow(new Date(latestDiet.created_at), { locale: es }) : '-'}
+                    </div>
+                    <div style={{ fontSize: '0.9rem', color: 'var(--color-text-light)' }}>
+                        {latestDiet ? `${latestDiet.type === 'breast' ? 'Pecho' : latestDiet.type === 'formula' ? 'Fórmula' : 'Sólidos'}${latestDiet.amount ? ` ${latestDiet.amount}ml` : ''}` : 'No hay datos'}
+                    </div>
                 </div>
                 <div className="card" style={{ padding: '15px' }}>
                     <div style={{ color: 'var(--color-success)', marginBottom: '5px' }}>Último Pañal</div>
-                    <div style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>Hace 1h</div>
-                    <div style={{ fontSize: '0.9rem', color: 'var(--color-text-light)' }}>Limpio</div>
+                    <div style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>
+                        {latestDiaper ? formatDistanceToNow(new Date(latestDiaper.created_at), { locale: es }) : '-'}
+                    </div>
+                    <div style={{ fontSize: '0.9rem', color: 'var(--color-text-light)' }}>
+                        {latestDiaper ? (latestDiaper.status === 'wet' ? 'Mojado' : 'Sucio') : 'No hay datos'}
+                    </div>
                 </div>
                 <div className="card" style={{ padding: '15px', gridColumn: 'span 2' }}>
-                    <div style={{ color: 'var(--color-secondary-dark)', marginBottom: '5px' }}>Tiempo de Sueño (Hoy)</div>
-                    <div style={{ fontWeight: 'bold', fontSize: '1.5rem' }}>4h 30m</div>
+                    <div style={{ color: 'var(--color-secondary-dark)', marginBottom: '5px' }}>Último Sueño (Registrado)</div>
+                    <div style={{ fontWeight: 'bold', fontSize: '1.5rem' }}>{totalSleep}</div>
                 </div>
             </div>
 
-            <h3 style={{ marginBottom: '15px' }}>Notificaciones</h3>
+            <h3 style={{ marginBottom: '15px' }}>Recordatorio</h3>
             <div className="card">
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
                     <Activity color="var(--color-warning)" style={{ marginTop: '2px' }} />
                     <div>
-                        <div style={{ fontWeight: 'bold' }}>Hora de comer próxima</div>
-                        <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--color-text-light)' }}>Basado en la última toma, el bebé podría tener hambre pronto.</p>
+                        <div style={{ fontWeight: 'bold' }}>Mantente atenta</div>
+                        <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--color-text-light)' }}>
+                            Recuerda registrar cada actividad para obtener mejores consejos de la IA.
+                        </p>
                     </div>
                 </div>
             </div>
 
             <AiAdvisor
-                lastFeeding="Hace 2h (Fórmula 150ml)"
-                lastDiaper="Hace 1h (Limpio)"
-                sleepTime="4h 30m"
+                lastFeeding={feedingSummary}
+                lastDiaper={diaperSummary}
+                sleepTime={totalSleep}
             />
         </div>
     );

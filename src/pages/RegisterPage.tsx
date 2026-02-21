@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, User, Baby } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 export function RegisterPage() {
     const navigate = useNavigate();
@@ -8,15 +9,32 @@ export function RegisterPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
-        // Mock register delay
-        setTimeout(() => {
+        setError(null);
+
+        const { error: authError } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    full_name: name,
+                }
+            }
+        });
+
+        if (authError) {
+            setError(authError.message);
             setIsLoading(false);
-            navigate('/');
-        }, 1000);
+        } else {
+            // Regístro exitoso
+            setIsLoading(false);
+            alert('¡Registro exitoso! Por favor revisa tu correo para confirmar (si está activado) o inicia sesión.');
+            navigate('/login');
+        }
     };
 
     return (
@@ -41,6 +59,19 @@ export function RegisterPage() {
             </div>
 
             <div className="card animate-fade-in" style={{ animationDelay: '0.1s' }}>
+                {error && (
+                    <div style={{
+                        backgroundColor: '#fee2e2',
+                        color: '#b91c1c',
+                        padding: '10px',
+                        borderRadius: 'var(--radius-sm)',
+                        marginBottom: '15px',
+                        fontSize: '0.9rem'
+                    }}>
+                        {error}
+                    </div>
+                )}
+
                 <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                     <div>
                         <label style={{ display: 'block', marginBottom: '5px', fontWeight: 500 }}>Tu Nombre (Mamá)</label>

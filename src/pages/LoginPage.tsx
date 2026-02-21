@@ -1,21 +1,31 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, Baby } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 export function LoginPage() {
     const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
-        // Mock login delay
-        setTimeout(() => {
+        setError(null);
+
+        const { error: authError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
+
+        if (authError) {
+            setError(authError.message);
             setIsLoading(false);
+        } else {
             navigate('/');
-        }, 1000);
+        }
     };
 
     return (
@@ -42,6 +52,19 @@ export function LoginPage() {
 
             <div className="card animate-fade-in" style={{ animationDelay: '0.1s' }}>
                 <h2 style={{ marginBottom: '20px', textAlign: 'center' }}>Iniciar Sesión</h2>
+
+                {error && (
+                    <div style={{
+                        backgroundColor: '#fee2e2',
+                        color: '#b91c1c',
+                        padding: '10px',
+                        borderRadius: 'var(--radius-sm)',
+                        marginBottom: '15px',
+                        fontSize: '0.9rem'
+                    }}>
+                        {error}
+                    </div>
+                )}
 
                 <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                     <div>
