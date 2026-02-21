@@ -54,7 +54,7 @@ export function DietPage() {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '25px' }}>
                     <button
-                        className={`button-secondary ${type === 'breast' ? 'active' : ''} `}
+                        className={`button-secondary flex-center ${type === 'breast' ? 'active' : ''}`}
                         onClick={() => setType('breast')}
                         style={{
                             display: 'flex',
@@ -62,6 +62,7 @@ export function DietPage() {
                             padding: '15px 10px',
                             minHeight: '100px',
                             justifyContent: 'center',
+                            alignItems: 'center',
                             gap: '10px'
                         }}
                     >
@@ -69,7 +70,7 @@ export function DietPage() {
                         <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>Pecho</span>
                     </button>
                     <button
-                        className={`button-secondary ${type === 'formula' ? 'active' : ''} `}
+                        className={`button-secondary flex-center ${type === 'formula' ? 'active' : ''}`}
                         onClick={() => setType('formula')}
                         style={{
                             display: 'flex',
@@ -77,6 +78,7 @@ export function DietPage() {
                             padding: '15px 10px',
                             minHeight: '100px',
                             justifyContent: 'center',
+                            alignItems: 'center',
                             gap: '10px'
                         }}
                     >
@@ -84,7 +86,7 @@ export function DietPage() {
                         <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>Fórmula</span>
                     </button>
                     <button
-                        className={`button-secondary ${type === 'solids' ? 'active' : ''} `}
+                        className={`button-secondary flex-center ${type === 'solids' ? 'active' : ''}`}
                         onClick={() => setType('solids')}
                         style={{
                             display: 'flex',
@@ -92,6 +94,7 @@ export function DietPage() {
                             padding: '15px 10px',
                             minHeight: '100px',
                             justifyContent: 'center',
+                            alignItems: 'center',
                             gap: '10px'
                         }}
                     >

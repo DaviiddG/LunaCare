@@ -81,8 +81,8 @@ export function SleepPage() {
                     {isSleeping ? 'Shhh... Está durmiendo' : '¡Bebé despierto!'}
                 </h3>
 
-                <div className="animate-pulse" style={{ margin: '30px 0', position: 'relative', display: 'inline-block' }}>
-                    <div style={{
+                <div className="animate-pulse flex-center" style={{ margin: '30px 0', position: 'relative', display: 'flex', justifyContent: 'center' }}>
+                    <div className="flex-center" style={{
                         width: '120px',
                         height: '120px',
                         borderRadius: '50%',

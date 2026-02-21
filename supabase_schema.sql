@@ -29,7 +29,7 @@ CREATE TABLE sleep_logs (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Habilitar RLS (Row Level Security) para mayor seguridad
+-- Enable RLS
 ALTER TABLE diets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE diapers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sleep_logs ENABLE ROW LEVEL SECURITY;

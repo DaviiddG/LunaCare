@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Outlet, NavLink } from 'react-router-dom';
-import { Home, Baby, Moon, Droplet, Sun } from 'lucide-react';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Home, Baby, Moon, Droplet, Sun, LogOut } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 
 export function AppLayout() {
+    const navigate = useNavigate();
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
 
     useEffect(() => {
@@ -12,6 +14,11 @@ export function AppLayout() {
 
     const toggleTheme = () => {
         setTheme(prev => prev === 'light' ? 'dark' : 'light');
+    };
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        navigate('/login');
     };
 
     return (
@@ -31,22 +38,42 @@ export function AppLayout() {
                         LunaCare
                     </h1>
                 </div>
-                <button
-                    onClick={toggleTheme}
-                    style={{
-                        padding: '8px',
-                        borderRadius: '50%',
-                        background: 'var(--color-bg)',
-                        color: 'var(--color-text)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                    }}
-                    title="Cambiar tema"
-                >
-                    {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-                </button>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <button
+                        onClick={toggleTheme}
+                        style={{
+                            padding: '10px',
+                            borderRadius: '12px',
+                            background: 'var(--color-bg)',
+                            color: 'var(--color-text)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: 'var(--shadow-sm)'
+                        }}
+                        title="Cambiar tema"
+                    >
+                        {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+                    </button>
+                    <button
+                        onClick={handleLogout}
+                        style={{
+                            padding: '10px',
+                            borderRadius: '12px',
+                            background: 'var(--color-bg)',
+                            color: 'var(--color-text)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: 'var(--shadow-sm)'
+                        }}
+                        title="Cerrar sesión"
+                    >
+                        <LogOut size={20} />
+                    </button>
+                </div>
             </header>
+
 
             <main className="main-content">
                 <Outlet />

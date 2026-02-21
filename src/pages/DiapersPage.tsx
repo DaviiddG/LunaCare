@@ -51,7 +51,7 @@ export function DiapersPage() {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '25px' }}>
                     <button
-                        className={`button-secondary ${status === 'wet' ? 'active' : ''}`}
+                        className={`button-secondary flex-center ${status === 'wet' ? 'active' : ''}`}
                         onClick={() => setStatus('wet')}
                         style={{
                             display: 'flex',
@@ -59,6 +59,7 @@ export function DiapersPage() {
                             padding: '20px 10px',
                             minHeight: '110px',
                             justifyContent: 'center',
+                            alignItems: 'center',
                             gap: '12px',
                             background: status === 'wet' ? 'var(--color-secondary)' : 'var(--color-surface)'
                         }}
@@ -67,7 +68,7 @@ export function DiapersPage() {
                         <span style={{ fontSize: '1rem', fontWeight: 600 }}>Mojado</span>
                     </button>
                     <button
-                        className={`button-secondary ${status === 'dirty' ? 'active' : ''}`}
+                        className={`button-secondary flex-center ${status === 'dirty' ? 'active' : ''}`}
                         onClick={() => setStatus('dirty')}
                         style={{
                             display: 'flex',
@@ -75,6 +76,7 @@ export function DiapersPage() {
                             padding: '20px 10px',
                             minHeight: '110px',
                             justifyContent: 'center',
+                            alignItems: 'center',
                             gap: '12px',
                             background: status === 'dirty' ? '#dca060' : 'var(--color-surface)'
                         }}

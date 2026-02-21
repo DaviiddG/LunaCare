@@ -39,15 +39,25 @@
 }
 
 [data-theme='dark'] {
-  --color-bg: #121212;
-  --color-surface: #1E1E1E;
-  --color-text: #E0E0E0;
-  --color-text-light: #A0A0A0;
-  --color-border: rgba(255, 255, 255, 0.1);
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6);
+  --color-bg: #0D0D0D;
+  /* Cinematic deep black */
+  --color-surface: #1A1A1A;
+  /* Elegant dark surface */
+  --color-text: #F5F5F5;
+  --color-text-light: #909090;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.6);
+  --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.7);
+  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.8);
 }
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
 
 
 * {
