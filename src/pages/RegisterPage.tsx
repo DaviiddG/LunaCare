@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, User, Baby } from 'lucide-react';
+import { Mail, Lock, User } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export function RegisterPage() {
@@ -30,109 +30,84 @@ export function RegisterPage() {
             setError(authError.message);
             setIsLoading(false);
         } else {
-            // Regístro exitoso
             setIsLoading(false);
-            alert('¡Registro exitoso! Por favor revisa tu correo para confirmar (si está activado) o inicia sesión.');
+            alert('¡Registro exitoso! Por favor revisa tu correo para confirmar o inicia sesión.');
             navigate('/login');
         }
     };
 
     return (
-        <div className="app-container" style={{ justifyContent: 'center', padding: '20px' }}>
-            <div className="animate-fade-in" style={{ textAlign: 'center', marginBottom: '20px' }}>
-                <div style={{
-                    width: '60px',
-                    height: '60px',
-                    borderRadius: '30px',
-                    backgroundColor: 'var(--color-secondary-dark)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    margin: '0 auto 15px auto',
-                    boxShadow: 'var(--shadow-sm)'
-                }}>
-                    <Baby size={30} color="white" />
-                </div>
-                <h1 style={{ color: 'var(--color-primary-dark)', fontSize: '1.5rem' }}>
-                    Crea tu cuenta
-                </h1>
-            </div>
+        <div className="auth-page">
+            <div className="auth-overlay"></div>
 
-            <div className="card animate-fade-in" style={{ animationDelay: '0.1s' }}>
+            <div className="glass-card animate-fade-in" style={{ padding: '30px 25px' }}>
+                <div style={{ textAlign: 'center', marginBottom: '25px' }}>
+                    <img src="/logo.png" alt="LunaCare Logo" style={{ width: '50px', height: '50px', marginBottom: '12px', borderRadius: '12px', boxShadow: 'var(--shadow-sm)' }} />
+                    <h1 style={{ color: 'var(--color-primary-dark)', fontSize: '1.8rem', margin: '0 0 5px 0', letterSpacing: '-0.5px' }}>
+                        Bienvenida
+                    </h1>
+                    <p style={{ color: 'var(--color-text-light)', fontSize: '0.9rem' }}>
+                        Crea tu cuenta para cuidar a tu bebé
+                    </p>
+                </div>
+
                 {error && (
-                    <div style={{
-                        backgroundColor: '#fee2e2',
+                    <div className="animate-fade-in" style={{
+                        backgroundColor: 'rgba(254, 226, 226, 0.9)',
                         color: '#b91c1c',
-                        padding: '10px',
-                        borderRadius: 'var(--radius-sm)',
+                        padding: '12px',
+                        borderRadius: '12px',
                         marginBottom: '15px',
-                        fontSize: '0.9rem'
+                        fontSize: '0.85rem',
+                        textAlign: 'center'
                     }}>
                         {error}
                     </div>
                 )}
 
-                <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                    <div>
-                        <label style={{ display: 'block', marginBottom: '5px', fontWeight: 500 }}>Tu Nombre (Mamá)</label>
+                <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div className="auth-input-group">
+                        <label>Tu Nombre</label>
                         <div style={{ position: 'relative' }}>
-                            <User size={20} color="var(--color-text-light)" style={{ position: 'absolute', left: '12px', top: '12px' }} />
+                            <User size={18} color="var(--color-primary-dark)" style={{ position: 'absolute', left: '14px', top: '15px', opacity: 0.7 }} />
                             <input
                                 type="text"
+                                className="auth-input"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 placeholder="Ej. María"
                                 required
-                                style={{
-                                    width: '100%',
-                                    padding: '12px 12px 12px 40px',
-                                    borderRadius: 'var(--radius-sm)',
-                                    border: '1px solid #ccc',
-                                    fontFamily: 'inherit'
-                                }}
                             />
                         </div>
                     </div>
 
-                    <div>
-                        <label style={{ display: 'block', marginBottom: '5px', fontWeight: 500 }}>Correo Electrónico</label>
+                    <div className="auth-input-group">
+                        <label>Correo Electrónico</label>
                         <div style={{ position: 'relative' }}>
-                            <Mail size={20} color="var(--color-text-light)" style={{ position: 'absolute', left: '12px', top: '12px' }} />
+                            <Mail size={18} color="var(--color-primary-dark)" style={{ position: 'absolute', left: '14px', top: '15px', opacity: 0.7 }} />
                             <input
                                 type="email"
+                                className="auth-input"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 placeholder="tu@correo.com"
                                 required
-                                style={{
-                                    width: '100%',
-                                    padding: '12px 12px 12px 40px',
-                                    borderRadius: 'var(--radius-sm)',
-                                    border: '1px solid #ccc',
-                                    fontFamily: 'inherit'
-                                }}
                             />
                         </div>
                     </div>
 
-                    <div>
-                        <label style={{ display: 'block', marginBottom: '5px', fontWeight: 500 }}>Contraseña</label>
+                    <div className="auth-input-group" style={{ marginBottom: '25px' }}>
+                        <label>Contraseña</label>
                         <div style={{ position: 'relative' }}>
-                            <Lock size={20} color="var(--color-text-light)" style={{ position: 'absolute', left: '12px', top: '12px' }} />
+                            <Lock size={18} color="var(--color-primary-dark)" style={{ position: 'absolute', left: '14px', top: '15px', opacity: 0.7 }} />
                             <input
                                 type="password"
+                                className="auth-input"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                placeholder="••••••••"
+                                placeholder="Mínimo 6 caracteres"
                                 required
                                 minLength={6}
-                                style={{
-                                    width: '100%',
-                                    padding: '12px 12px 12px 40px',
-                                    borderRadius: 'var(--radius-sm)',
-                                    border: '1px solid #ccc',
-                                    fontFamily: 'inherit'
-                                }}
                             />
                         </div>
                     </div>
@@ -140,16 +115,18 @@ export function RegisterPage() {
                     <button
                         type="submit"
                         className="button-primary"
-                        style={{ marginTop: '10px' }}
+                        style={{ padding: '15px', fontSize: '1rem' }}
                         disabled={isLoading}
                     >
-                        {isLoading ? 'Registrando...' : 'Registrarse'}
+                        {isLoading ? 'Registrando...' : 'Empezar ahora'}
                     </button>
                 </form>
 
                 <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.9rem' }}>
-                    <span style={{ color: 'var(--color-text-light)' }}>¿Ya tienes cuenta? </span>
-                    <Link to="/login" style={{ fontWeight: 600 }}>Inicia sesión</Link>
+                    <span style={{ color: 'var(--color-text-light)' }}>¿Ya eres parte de LunaCare? </span>
+                    <Link to="/login" style={{ fontWeight: 700, color: 'var(--color-secondary-dark)' }}>
+                        Inicia sesión
+                    </Link>
                 </div>
             </div>
         </div>
