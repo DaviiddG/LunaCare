@@ -115,7 +115,7 @@ export function LunaAssistant() {
         if (!session?.user) return;
 
         setIsLoading(true);
-        setTranscript(''); // Clear transcript to show in history instead
+
 
         // Add user query to local history immediately
         const userMsg = { role: 'user' as const, content: query };
@@ -179,7 +179,8 @@ export function LunaAssistant() {
         if (isListening) {
             recognitionRef.current?.stop();
         } else {
-            setTranscript('');
+
+
             setResponse('');
             window.speechSynthesis.cancel();
             try {
