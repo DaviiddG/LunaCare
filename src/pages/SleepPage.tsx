@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Moon, Sun } from 'lucide-react';
+import { Moon, Sun, Clock, Sparkles, LogZilla as Sleep } from 'lucide-react';
 import { dbHelpers } from '../lib/db';
 import { useAuth } from '../contexts/AuthContext';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export function SleepPage() {
@@ -14,7 +14,6 @@ export function SleepPage() {
 
     useEffect(() => {
         fetchHistory();
-        // Cargar estado si estaba durmiendo (esto se podría persistir en localstorage o DB)
         const savedStart = localStorage.getItem('sleep_start');
         if (savedStart) {
             setStartTime(new Date(savedStart));
@@ -31,18 +30,15 @@ export function SleepPage() {
         if (!user) return;
 
         if (!isSleeping) {
-            // Empezar a dormir
             const now = new Date();
             setStartTime(now);
             setIsSleeping(true);
             localStorage.setItem('sleep_start', now.toISOString());
         } else {
-            // Despertar
             setLoading(true);
             const endTime = new Date();
             const start = startTime || new Date();
 
-            // Calcular duración legible
             const diffMs = endTime.getTime() - start.getTime();
             const diffMins = Math.round(diffMs / 60000);
             const hours = Math.floor(diffMins / 60);
@@ -70,66 +66,123 @@ export function SleepPage() {
 
     return (
         <div className="animate-fade-in">
-            <h2 style={{ marginBottom: '20px' }}>Registro de Sueño</h2>
-
-            <div className="card" style={{ marginBottom: '20px', textAlign: 'center' }}>
-                <h3 style={{ marginBottom: '15px', color: 'var(--color-secondary-dark)' }}>
-                    {isSleeping ? 'El bebé está durmiendo' : 'El bebé está despierto'}
-                </h3>
-
-                {isSleeping && startTime && (
-                    <p style={{ color: 'var(--color-text-light)', marginBottom: '10px' }}>
-                        Durmiendo desde: {format(startTime, 'p', { locale: es })}
-                    </p>
-                )}
-
-                <div style={{ margin: '20px 0' }}>
-                    {isSleeping ? (
-                        <div className="animate-fade-in" style={{ display: 'inline-block', padding: '20px', borderRadius: '50%', backgroundColor: 'var(--color-secondary)' }}>
-                            <Moon size={64} color="white" />
-                        </div>
-                    ) : (
-                        <div className="animate-fade-in" style={{ display: 'inline-block', padding: '20px', borderRadius: '50%', backgroundColor: 'var(--color-warning)' }}>
-                            <Sun size={64} color="white" />
-                        </div>
-                    )}
-                </div>
-
-                <button
-                    className="button-primary"
-                    style={{
-                        fontSize: '1.2rem',
-                        padding: '16px 32px',
-                        backgroundColor: isSleeping ? 'var(--color-warning)' : 'var(--color-secondary-dark)'
-                    }}
-                    onClick={handleToggleSleep}
-                    disabled={loading}
-                >
-                    {loading ? 'Procesando...' : (isSleeping ? 'Despertar al bebé' : 'Empezar a dormir')}
-                </button>
+            <div style={{ marginBottom: '30px' }}>
+                <h2 style={{ fontSize: '1.75rem', marginBottom: '8px' }}>Sueño</h2>
+                <p style={{ color: 'var(--color-text-light)', margin: 0 }}>Monitorea los descansos de tu bebé.</p>
             </div>
 
-            <h3 style={{ marginBottom: '15px' }}>Registros Recientes</h3>
-            <div className="card">
-                {history.length === 0 ? (
-                    <p style={{ color: 'var(--color-text-light)', textAlign: 'center' }}>No hay registros aún.</p>
-                ) : (
-                    history.map((item, index) => (
-                        <div key={item.id} style={{
+            <div className="card" style={{
+                marginBottom: '30px',
+                textAlign: 'center',
+                borderTop: `4px solid ${isSleeping ? 'var(--color-secondary-dark)' : 'var(--color-warning)'}`,
+                transition: 'all var(--transition-normal)'
+            }}>
+                <h3 style={{ marginBottom: '25px', fontSize: '1.25rem', fontWeight: 700 }}>
+                    {isSleeping ? 'Shhh... Está durmiendo' : '¡Bebé despierto!'}
+                </h3>
+
+                <div className="animate-pulse" style={{ margin: '30px 0', position: 'relative', display: 'inline-block' }}>
+                    <div style={{
+                        width: '120px',
+                        height: '120px',
+                        borderRadius: '50%',
+                        backgroundColor: isSleeping ? 'var(--color-secondary)' : 'var(--color-warning)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: `0 0 30px ${isSleeping ? 'rgba(135,206,235,0.4)' : 'rgba(251,196,171,0.4)'}`,
+                        transition: 'all 0.5s ease'
+                    }}>
+                        {isSleeping ? <Moon size={60} color="white" /> : <Sun size={60} color="white" />}
+                    </div>
+                </div>
+
+                {isSleeping && startTime && (
+                    <div style={{
+                        background: 'var(--color-bg)',
+                        padding: '10px 20px',
+                        borderRadius: 'var(--radius-full)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        marginBottom: '20px'
+                    }}>
+                        <Clock size={16} color="var(--color-secondary-dark)" />
+                        <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                            Desde las {format(startTime, 'HH:mm')}
+                        </span>
+                    </div>
+                )}
+
+                <div style={{ padding: '0 20px' }}>
+                    <button
+                        className="button-primary"
+                        style={{
+                            width: '100%',
+                            fontSize: '1.1rem',
+                            padding: '18px',
+                            backgroundColor: isSleeping ? 'var(--color-warning)' : 'var(--color-secondary-dark)',
                             display: 'flex',
-                            justifyContent: 'space-between',
-                            borderBottom: index !== history.length - 1 ? '1px solid #eee' : 'none',
-                            paddingBottom: '10px',
-                            marginBottom: '10px'
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '12px',
+                            boxShadow: 'var(--shadow-md)'
+                        }}
+                        onClick={handleToggleSleep}
+                        disabled={loading}
+                    >
+                        {loading ? '...' : (
+                            <>
+                                <Sparkles size={20} />
+                                <span>{isSleeping ? '¡Se ha despertado!' : '¡A dormir!'}</span>
+                            </>
+                        )}
+                    </button>
+                </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                <h3 style={{ fontSize: '1.2rem' }}>Últimos descansos</h3>
+                <span style={{ fontSize: '0.85rem', color: 'var(--color-text-light)' }}>{history.length} registros</span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {history.length === 0 ? (
+                    <div className="card" style={{ textAlign: 'center', padding: '40px 20px' }}>
+                        <Clock size={32} color="var(--color-text-light)" style={{ marginBottom: '10px', opacity: 0.5 }} />
+                        <p style={{ color: 'var(--color-text-light)', margin: 0 }}>No hay registros de sueño aún.</p>
+                    </div>
+                ) : (
+                    history.map((record, index) => (
+                        <div key={record.id} className="card animate-fade-in" style={{
+                            padding: '15px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '15px',
+                            animationDelay: `${index * 0.1}s`
                         }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <Moon size={20} color="var(--color-secondary-dark)" />
-                                <span>Sueño</span>
+                            <div style={{
+                                width: '45px',
+                                height: '45px',
+                                borderRadius: '12px',
+                                background: 'var(--color-secondary-dark)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}>
+                                <Moon size={20} color="white" />
                             </div>
-                            <div style={{ textAlign: 'right' }}>
-                                <div style={{ fontWeight: 'bold' }}>{item.duration}</div>
-                                <div style={{ color: 'var(--color-text-light)', fontSize: '0.8rem' }}>
-                                    {format(new Date(item.start_time), 'HH:mm')} - {format(new Date(item.end_time), 'HH:mm')}
+                            <div style={{ flex: 1 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <div style={{ fontWeight: 700, fontSize: '1rem' }}>
+                                        Descanso de {record.duration}
+                                    </div>
+                                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-light)' }}>
+                                        {formatDistanceToNow(new Date(record.created_at), { addSuffix: true, locale: es })}
+                                    </div>
+                                </div>
+                                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-light)', marginTop: '4px' }}>
+                                    {format(new Date(record.start_time), 'HH:mm')} - {format(new Date(record.end_time), 'HH:mm')}
                                 </div>
                             </div>
                         </div>
@@ -139,4 +192,5 @@ export function SleepPage() {
         </div>
     );
 }
+
 
