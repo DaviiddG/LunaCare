@@ -14,7 +14,7 @@ interface Message {
 
 export function LunaChatModal() {
     const { user } = useAuth();
-    const { selectedBaby } = useBabies();
+    const { selectedBaby, babies } = useBabies();
 
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<Message[]>([]);
@@ -44,24 +44,40 @@ export function LunaChatModal() {
     };
 
     const buildBabyContext = async () => {
-        if (!user || !selectedBaby) return "";
+        if (!user || !babies || babies.length === 0) return "";
         try {
-            // Fetch today's records for context
-            await Promise.all([
-                dbHelpers.getDiets(selectedBaby.id),
-                dbHelpers.getDiapers(selectedBaby.id),
-                dbHelpers.getSleepLogs(selectedBaby.id)
-            ]);
+            let contextText = "==== INFORMACIÓN DE LOS BEBÉS DEL USUARIO ====\n";
+            contextText += "Si te piden registrar algo sin especificar nombre, PREGUNTA A CUÁL BEBÉ SE REFIEREN basándote en esta lista:\n\n";
 
-            // Filter for the selected baby (currently diets/diapers/sleep might not have baby_id yet, but assuming they are general for now, or we just format what we have)
-            // Wait, we haven't added baby_id to diets, diapers, sleep_logs yet.
-            // For now, we will just say:
-            const contextText = `
-Bebé actual: ${selectedBaby.name}, Género: ${selectedBaby.gender}, Nacimiento: ${selectedBaby.birth_date}.
-            `;
+            for (const b of babies) {
+                // Fetch recent logs to provide better context per baby
+                const [dietRes, diaperRes, sleepRes] = await Promise.all([
+                    dbHelpers.getDiets(b.id).then(res => res.data?.slice(0, 1) || []),
+                    dbHelpers.getDiapers(b.id).then(res => res.data?.slice(0, 1) || []),
+                    dbHelpers.getSleepLogs(b.id).then(res => res.data?.slice(0, 1) || [])
+                ]);
+
+                contextText += `- BEBÉ: ${b.name} (ID: ${b.id})\n`;
+                contextText += `  Género: ${b.gender || 'No especificado'}, Nacimiento: ${b.birth_date || 'No especificada'}\n`;
+
+                if (dietRes.length > 0) {
+                    contextText += `  Última comida: ${dietRes[0].amount}${dietRes[0].type === 'pecho' ? 'min' : 'ml'} de ${dietRes[0].type}\n`;
+                }
+                if (diaperRes.length > 0) {
+                    contextText += `  Último pañal: ${diaperRes[0].status}\n`;
+                }
+                if (sleepRes.length > 0) {
+                    contextText += `  Último sueño: ${sleepRes[0].duration}\n`;
+                }
+                contextText += "\n";
+            }
+
+            contextText += `==== BEBÉ ACTUALMENTE SELECCIONADO EN LA INTERFAZ: ${selectedBaby?.name} ====\n`;
+            contextText += `NOTA: Si el usuario dice "él", "ella", o no especifica, PUEDES asumir que es ${selectedBaby?.name} (ID: ${selectedBaby?.id}), pero si es una acción destructiva o de registro y tienes dudas, pregunta.\n`;
+
             return contextText;
         } catch (error) {
-            return `Bebé actual: ${selectedBaby?.name}`;
+            return `Usuario tiene ${babies.length} bebés registrados.`;
         }
     };
 
@@ -110,34 +126,37 @@ Bebé actual: ${selectedBaby.name}, Género: ${selectedBaby.gender}, Nacimiento:
                 let actionText = "He registrado la acción solicitada.";
 
                 try {
+                    const targetBabyId = call.babyId || selectedBaby.id;
+                    const targetBaby = babies.find(b => b.id === targetBabyId) || selectedBaby;
+
                     if (action.name === 'logBabyDiet') {
                         await dbHelpers.insertDiet({
                             user_id: user.id,
-                            baby_id: selectedBaby.id,
+                            baby_id: targetBabyId,
                             type: call.type,
                             amount: call.amount,
                             observations: call.observations || "Registrado por Luna"
                         });
-                        actionText = `🍼 Listo, he anotado la toma de ${call.type} (${call.amount}${call.type === 'pecho' ? ' min' : ' ml'}).`;
+                        actionText = `🍼 Listo, he anotado la toma de ${call.type} (${call.amount}${call.type === 'pecho' ? ' min' : ' ml'}) para ${targetBaby.name}.`;
                     } else if (action.name === 'logBabyDiaper') {
                         await dbHelpers.insertDiaper({
                             user_id: user.id,
-                            baby_id: selectedBaby.id,
+                            baby_id: targetBabyId,
                             status: call.status,
                             observations: call.observations || "Registrado por Luna"
                         });
-                        actionText = `✨ Listo, he anotado el cambio de pañal (${call.status}).`;
+                        actionText = `✨ Listo, he anotado el cambio de pañal (${call.status}) de ${targetBaby.name}.`;
                     } else if (action.name === 'logBabySleep') {
                         const end = new Date();
                         const start = new Date(end.getTime() - ((call.durationMinutes || 0) * 60 * 1000));
                         await dbHelpers.insertSleepLog({
                             user_id: user.id,
-                            baby_id: selectedBaby.id,
+                            baby_id: targetBabyId,
                             start_time: start.toISOString(),
                             end_time: end.toISOString(),
                             duration: `${call.durationMinutes} minutos`
                         });
-                        actionText = `😴 Listo, he anotado que durmió por ${call.durationMinutes} minutos.`;
+                        actionText = `😴 Listo, he anotado que ${targetBaby.name} durmió por ${call.durationMinutes} minutos.`;
                     }
                 } catch (dbErr) {
                     console.error("DB Error processing action:", dbErr);

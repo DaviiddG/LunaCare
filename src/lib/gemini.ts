@@ -11,41 +11,44 @@ const genAI = new GoogleGenerativeAI(apiKey || "");
 
 const logBabyDietDeclaration: FunctionDeclaration = {
     name: "logBabyDiet",
-    description: "Registra una toma de alimento para el bebé. Ejecuta esto ÚNICAMENTE cuando el usuario confirme o solicite explícitamente haber alimentado al bebé.",
+    description: "Registra una toma de alimento para un bebé específico. Ejecuta esto ÚNICAMENTE cuando se solicite o confirme explícitamente haber alimentado a un bebé del hogar.",
     parameters: {
         type: SchemaType.OBJECT,
         properties: {
+            babyId: { type: SchemaType.STRING, description: "El ID del bebé al que se le aplicará el registro. Búscalo en el contexto." },
             type: { type: SchemaType.STRING, description: "Tipo de alimentación: 'pecho', 'formula', 'mixta' u 'otros'" },
             amount: { type: SchemaType.NUMBER, description: "Cantidad en mililitros (ml) si es fórmula o biberón, o minutos si es pecho." },
             observations: { type: SchemaType.STRING, description: "Observaciones adicionales si las hay (vacío si no hay)." },
         },
-        required: ["type", "amount"],
+        required: ["babyId", "type", "amount"],
     },
 };
 
 const logBabyDiaperDeclaration: FunctionDeclaration = {
     name: "logBabyDiaper",
-    description: "Registra un cambio de pañal para el bebé. Úsalo cuando el usuario te indique que acaba de cambiarle el pañal.",
+    description: "Registra un cambio de pañal para un bebé. Úsalo cuando el usuario te indique que acaba de cambiar un pañal.",
     parameters: {
         type: SchemaType.OBJECT,
         properties: {
+            babyId: { type: SchemaType.STRING, description: "El ID del bebé al que se le aplicará el registro. Búscalo en el contexto." },
             status: { type: SchemaType.STRING, description: "Estado del pañal: 'mojado', 'sucio', 'ambos' o 'seco'" },
             observations: { type: SchemaType.STRING, description: "Observaciones adicionales (vacío si no hay)." },
         },
-        required: ["status"],
+        required: ["babyId", "status"],
     },
 };
 
 const logBabySleepDeclaration: FunctionDeclaration = {
     name: "logBabySleep",
-    description: "Registra que el bebé ha dormido. Úsalo cuando te digan el tiempo que durmió.",
+    description: "Registra que un bebé ha dormido. Úsalo cuando te digan el nombre del bebé y el tiempo que durmió.",
     parameters: {
         type: SchemaType.OBJECT,
         properties: {
+            babyId: { type: SchemaType.STRING, description: "El ID del bebé al que se le aplicará el registro. Búscalo en el contexto." },
             durationMinutes: { type: SchemaType.NUMBER, description: "Duración en minutos totales de cuánto durmió." },
             observations: { type: SchemaType.STRING, description: "Observaciones sobre cómo durmió (vacío si no hay)." },
         },
-        required: ["durationMinutes"],
+        required: ["babyId", "durationMinutes"],
     },
 };
 
@@ -56,9 +59,9 @@ const model = genAI.getGenerativeModel({
 Tu objetivo es ayudar, tranquilizar y aconsejar a los padres y madres.
 Reglas:
 1. Sé cálida, empática y conversacional, como una amiga pediatra respondiendo en WhatsApp. Usa emojis sutilmente.
-2. Basarás tus respuestas SÓLO en el contexto reciente del bebé que se te entregue (comidas, sueño, pañales).
-3. Si el usuario te PIDE registrar algo (ej. "Luis tomó 10 minutos de pecho" o "Cambié un pañal sucio"), SIEMPRE llama a la función correspondiente y diles con cariño que lo has registrado por ellos.
-4. Siempre enfatiza que tus consejos no reemplazan a un profesional médico.`,
+2. Basarás tus respuestas en la información de TODOS los bebés (hijos) del padre actual que se te proporcionará en el contexto. El usuario puede tener uno o varios gemelos/hijos de distintas edades.
+3. CRÍTICO: Si el usuario te PIde registrar algo (ej. "durmió 1 hora" o "cambié un pañal") pero NO MENCIONA a cuál de sus bebés se refiere, y en su contexto hay MÁS DE UN BEBÉ, **DEBES preguntarle amablemente a cuál bebé se refiere** antes de usar las funciones. Si solo tiene un bebé o menciona su nombre claramente ("Sof tomó 10 min"), obtén el "babyId" del contexto y llama a la función correspondiente.
+4. Siempre enfatiza que tus consejos no reemplazan a un médico.`,
     tools: [
         {
             functionDeclarations: [logBabyDietDeclaration, logBabyDiaperDeclaration, logBabySleepDeclaration],
