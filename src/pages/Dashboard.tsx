@@ -43,9 +43,20 @@ export function Dashboard() {
 
     const handleModalSave = async (profileData: any) => {
         if (!user) return;
-        await dbHelpers.upsertBabyProfile({ user_id: user.id, ...profileData });
-        setBabyName(profileData.name || '');
-        setShowModal(false);
+        const { error } = await dbHelpers.upsertBabyProfile({
+            user_id: user.id,
+            name: profileData.name,
+            birth_date: profileData.birth_date,
+            weight: profileData.weight || 0,
+            height: profileData.height || 0,
+            gender: profileData.gender || '',
+        });
+        if (!error) {
+            setBabyName(profileData.name || '');
+            setShowModal(false);
+        } else {
+            console.error('Error saving baby profile:', error);
+        }
     };
 
     if (isLoading) {

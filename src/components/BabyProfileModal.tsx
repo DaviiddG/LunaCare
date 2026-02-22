@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Baby, Calendar, Weight, Ruler, Milk } from 'lucide-react';
+import { Baby, Calendar, Weight, Ruler } from 'lucide-react';
 
 interface BabyProfileModalProps {
     onSave: (data: {
@@ -8,7 +8,6 @@ interface BabyProfileModalProps {
         weight: number | null;
         height: number | null;
         gender: string;
-        feeding_type: string;
     }) => Promise<void>;
 }
 
@@ -18,7 +17,6 @@ export function BabyProfileModal({ onSave }: BabyProfileModalProps) {
     const [weight, setWeight] = useState('');
     const [height, setHeight] = useState('');
     const [gender, setGender] = useState('');
-    const [feedingType, setFeedingType] = useState('breast');
     const [saving, setSaving] = useState(false);
 
     const handleSave = async () => {
@@ -30,7 +28,6 @@ export function BabyProfileModal({ onSave }: BabyProfileModalProps) {
             weight: weight ? parseFloat(weight) : null,
             height: height ? parseFloat(height) : null,
             gender,
-            feeding_type: feedingType,
         });
         setSaving(false);
     };
@@ -46,7 +43,7 @@ export function BabyProfileModal({ onSave }: BabyProfileModalProps) {
                 width: '100%', maxWidth: '480px',
                 background: 'var(--color-surface)',
                 borderRadius: '28px 28px 0 0',
-                padding: '32px 24px 40px',
+                padding: '32px 24px 44px',
                 boxShadow: '0 -20px 60px rgba(0,0,0,0.4)',
             }}>
                 {/* Handle bar */}
@@ -134,7 +131,7 @@ export function BabyProfileModal({ onSave }: BabyProfileModalProps) {
                     <div>
                         <label style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '8px', display: 'block', color: 'var(--color-text-light)' }}>Sexo</label>
                         <div style={{ display: 'flex', gap: '10px' }}>
-                            {[{ val: 'girl', emoji: '👧', label: 'Niña' }, { val: 'boy', emoji: '👦', label: 'Niño' }].map(opt => (
+                            {[{ val: 'niña', emoji: '👧', label: 'Niña' }, { val: 'niño', emoji: '👦', label: 'Niño' }].map(opt => (
                                 <button
                                     key={opt.val}
                                     onClick={() => setGender(opt.val)}
@@ -148,30 +145,6 @@ export function BabyProfileModal({ onSave }: BabyProfileModalProps) {
                                     }}
                                 >
                                     <span style={{ fontSize: '1.5rem' }}>{opt.emoji}</span>
-                                    {opt.label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Tipo alimentación */}
-                    <div>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 600, marginBottom: '8px', color: 'var(--color-text-light)' }}>
-                            <Milk size={14} /> Tipo de alimentación
-                        </label>
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                            {[{ val: 'breast', label: '🤱 Pecho' }, { val: 'formula', label: '🍼 Fórmula' }, { val: 'mixed', label: '✨ Mixta' }].map(opt => (
-                                <button
-                                    key={opt.val}
-                                    onClick={() => setFeedingType(opt.val)}
-                                    style={{
-                                        flex: 1, padding: '10px 14px', borderRadius: '12px',
-                                        border: `2px solid ${feedingType === opt.val ? 'var(--color-primary)' : 'var(--color-border)'}`,
-                                        background: feedingType === opt.val ? 'rgba(232,134,159,0.1)' : 'var(--color-bg)',
-                                        cursor: 'pointer', transition: 'all 0.2s', fontWeight: 600,
-                                        fontSize: '0.85rem', color: 'var(--color-text)', whiteSpace: 'nowrap'
-                                    }}
-                                >
                                     {opt.label}
                                 </button>
                             ))}

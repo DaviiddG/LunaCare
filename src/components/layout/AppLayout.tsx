@@ -21,6 +21,20 @@ export function AppLayout() {
         navigate('/login');
     };
 
+    const btnStyle = {
+        padding: '10px',
+        borderRadius: '12px',
+        background: 'var(--color-bg)',
+        color: 'var(--color-text)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        boxShadow: 'var(--shadow-sm)',
+        cursor: 'pointer',
+        border: 'none',
+        transition: 'transform 0.15s, box-shadow 0.15s',
+    };
+
     return (
         <div className="app-container">
             <header style={{
@@ -39,88 +53,43 @@ export function AppLayout() {
                     </h1>
                 </div>
                 <div style={{ display: 'flex', gap: '10px' }}>
-                    <button
-                        onClick={toggleTheme}
-                        style={{
-                            padding: '10px',
-                            borderRadius: '12px',
-                            background: 'var(--color-bg)',
-                            color: 'var(--color-text)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            boxShadow: 'var(--shadow-sm)'
-                        }}
-                        title="Cambiar tema"
-                    >
+                    <button onClick={toggleTheme} style={btnStyle} title="Cambiar tema">
                         {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
                     </button>
-                    <button
-                        onClick={handleLogout}
-                        style={{
-                            padding: '10px',
-                            borderRadius: '12px',
-                            background: 'var(--color-bg)',
-                            color: 'var(--color-text)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            boxShadow: 'var(--shadow-sm)'
-                        }}
-                        title="Cerrar sesi├│n"
-                    >
+                    <button onClick={() => navigate('/settings')} style={btnStyle} title="Perfil del bebé">
+                        <Settings size={20} />
+                    </button>
+                    <button onClick={handleLogout} style={{ ...btnStyle, color: '#EF4444' }} title="Cerrar sesión">
                         <LogOut size={20} />
                     </button>
                 </div>
             </header>
-
 
             <main className="main-content">
                 <Outlet />
             </main>
 
             <nav className="bottom-nav">
-                <NavLink
-                    to="/"
-                    className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-                >
+                <NavLink to="/" end className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
                     <Home size={24} />
                     <span>Inicio</span>
                 </NavLink>
 
-                <NavLink
-                    to="/diet"
-                    className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-                >
+                <NavLink to="/diet" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
                     <Droplet size={24} />
                     <span>Dieta</span>
                 </NavLink>
 
-                <NavLink
-                    to="/diapers"
-                    className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-                >
+                <NavLink to="/diapers" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
                     <Baby size={24} />
-                    <span>Pa├▒ales</span>
+                    <span>Pañales</span>
                 </NavLink>
 
-                <NavLink
-                    to="/sleep"
-                    className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-                >
+                <NavLink to="/sleep" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
                     <Moon size={24} />
-                    <span>Sue├▒o</span>
-                </NavLink>
-
-                <NavLink
-                    to="/settings"
-                    className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-                >
-                    <Settings size={24} />
-                    <span>Ajustes</span>
+                    <span>Sueño</span>
                 </NavLink>
             </nav>
         </div>
     );
 }
-
