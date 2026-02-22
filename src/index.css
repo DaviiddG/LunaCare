@@ -13,9 +13,9 @@
   --color-bg: #FFFDF9;
   /* Off-white warm background */
   --color-surface: #FFFFFF;
-  --color-text: #4A4A4A;
-  --color-text-light: #8E8E8E;
-  --color-border: rgba(0, 0, 0, 0.05);
+  --color-text: #1A1A1A;
+  --color-text-light: #525252;
+  --color-border: rgba(0, 0, 0, 0.1);
   --color-primary-light: #FFE4E8;
   --color-surface-variant: #F0F4F8;
 

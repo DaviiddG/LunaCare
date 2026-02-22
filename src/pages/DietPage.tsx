@@ -4,9 +4,12 @@ import { dbHelpers } from '../lib/db';
 import { useAuth } from '../contexts/AuthContext';
 import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useBabies } from '../hooks/useBabies';
+import { BabySelector } from '../components/BabySelector';
 
 export function DietPage() {
     const { user } = useAuth();
+    const { babies, selectedBaby, setSelectedBaby } = useBabies();
     const [type, setType] = useState('breast');
     const [amount, setAmount] = useState('');
     const [observations, setObservations] = useState('');
@@ -44,10 +47,16 @@ export function DietPage() {
 
     return (
         <div className="animate-fade-in">
-            <div style={{ marginBottom: '30px' }}>
+            <div style={{ marginBottom: '20px' }}>
                 <h2 style={{ fontSize: '1.75rem', marginBottom: '8px' }}>Alimentación</h2>
-                <p style={{ color: 'var(--color-text-light)', margin: 0 }}>Registra qué y cuánto ha comido el bebé hoy.</p>
+                <p style={{ color: 'var(--color-text-light)', margin: 0 }}>
+                    {selectedBaby && babies.length > 1
+                        ? `Registrando la toma de ${selectedBaby.name}`
+                        : 'Registra qué y cuánto ha comido el bebé hoy.'}
+                </p>
             </div>
+
+            <BabySelector babies={babies} selectedBaby={selectedBaby} onSelect={setSelectedBaby} />
 
             <div className="card" style={{ marginBottom: '30px', borderTop: '4px solid var(--color-primary)' }}>
                 <h3 style={{ marginBottom: '20px', fontSize: '1.1rem' }}>Siguiente toma</h3>

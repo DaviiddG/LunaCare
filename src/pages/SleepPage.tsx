@@ -4,6 +4,8 @@ import { dbHelpers } from '../lib/db';
 import { useAuth } from '../contexts/AuthContext';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useBabies } from '../hooks/useBabies';
+import { BabySelector } from '../components/BabySelector';
 
 function useTimer(startTime: Date | null) {
     const [elapsed, setElapsed] = useState('00:00:00');
@@ -32,6 +34,7 @@ function useTimer(startTime: Date | null) {
 
 export function SleepPage() {
     const { user } = useAuth();
+    const { babies, selectedBaby, setSelectedBaby } = useBabies();
     const [isSleeping, setIsSleeping] = useState(false);
     const [startTime, setStartTime] = useState<Date | null>(null);
     const [loading, setLoading] = useState(false);
@@ -90,12 +93,17 @@ export function SleepPage() {
 
     return (
         <div className="animate-fade-in">
-            <div style={{ marginBottom: '28px' }}>
+            <div style={{ marginBottom: '20px' }}>
                 <h2 style={{ fontSize: '1.75rem', marginBottom: '6px', fontWeight: 800 }}>Sueño</h2>
-                <p style={{ color: 'var(--color-text-light)', margin: 0, fontSize: '0.95rem' }}>Monitorea los descansos de tu bebé.</p>
+                <p style={{ color: 'var(--color-text-light)', margin: 0, fontSize: '0.95rem' }}>
+                    {selectedBaby && babies.length > 1
+                        ? `Monitoreando el descanso de ${selectedBaby.name}`
+                        : 'Monitorea los descansos de tu bebé.'}
+                </p>
             </div>
 
-            {/* Main sleep card */}
+            <BabySelector babies={babies} selectedBaby={selectedBaby} onSelect={setSelectedBaby} />
+
             <div className="card" style={{
                 marginBottom: '28px',
                 textAlign: 'center',

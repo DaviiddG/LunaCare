@@ -4,9 +4,12 @@ import { dbHelpers } from '../lib/db';
 import { useAuth } from '../contexts/AuthContext';
 import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useBabies } from '../hooks/useBabies';
+import { BabySelector } from '../components/BabySelector';
 
 export function DiapersPage() {
     const { user } = useAuth();
+    const { babies, selectedBaby, setSelectedBaby } = useBabies();
     const [status, setStatus] = useState('wet');
     const [observations, setObservations] = useState('');
     const [loading, setLoading] = useState(false);
@@ -41,10 +44,16 @@ export function DiapersPage() {
 
     return (
         <div className="animate-fade-in">
-            <div style={{ marginBottom: '30px' }}>
+            <div style={{ marginBottom: '20px' }}>
                 <h2 style={{ fontSize: '1.75rem', marginBottom: '8px' }}>Pañales</h2>
-                <p style={{ color: 'var(--color-text-light)', margin: 0 }}>Lleva el control de los cambios diarios.</p>
+                <p style={{ color: 'var(--color-text-light)', margin: 0 }}>
+                    {selectedBaby && babies.length > 1
+                        ? `Registrando el cambio de ${selectedBaby.name}`
+                        : 'Lleva el control de los cambios diarios.'}
+                </p>
             </div>
+
+            <BabySelector babies={babies} selectedBaby={selectedBaby} onSelect={setSelectedBaby} />
 
             <div className="card" style={{ marginBottom: '30px', borderTop: '4px solid var(--color-success)' }}>
                 <h3 style={{ marginBottom: '20px', fontSize: '1.1rem' }}>Nuevo cambio</h3>
