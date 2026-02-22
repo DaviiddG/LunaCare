@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 export function RegisterPage() {
     const navigate = useNavigate();
     const [name, setName] = useState('');
+    const [role, setRole] = useState<'madre' | 'padre' | ''>('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -13,6 +14,7 @@ export function RegisterPage() {
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!role) { setError('Por favor selecciona si eres mamá o papá.'); return; }
         setIsLoading(true);
         setError(null);
 
@@ -20,7 +22,7 @@ export function RegisterPage() {
             email,
             password,
             options: {
-                data: { full_name: name }
+                data: { full_name: name, role }
             }
         });
 
@@ -39,44 +41,66 @@ export function RegisterPage() {
             <div className="auth-overlay"></div>
 
             <div className="glass-card animate-fade-in">
-                <div style={{ textAlign: 'center', marginBottom: '35px' }}>
+                <div style={{ textAlign: 'center', marginBottom: '30px' }}>
                     <img src="/logo.png" alt="LunaCare Logo" style={{ width: '64px', height: '64px', marginBottom: '15px', borderRadius: '16px', boxShadow: 'var(--shadow-md)' }} />
                     <h1 style={{ color: 'var(--color-primary-dark)', fontSize: '2.2rem', margin: '0 0 8px 0', letterSpacing: '-0.5px' }}>
-                        Bienvenida
+                        ¡Bienvenida!
                     </h1>
-                    <p style={{ color: 'var(--color-text-light)', fontSize: '1rem', fontWeight: 400 }}>
-                        Crea tu cuenta de mamá ✨
+                    <p style={{ color: 'var(--color-text-light)', fontSize: '1rem' }}>
+                        Crea tu cuenta para empezar ✨
                     </p>
                 </div>
 
                 {error && (
                     <div className="animate-fade-in" style={{
-                        backgroundColor: 'rgba(254, 226, 226, 0.9)',
-                        color: '#b91c1c',
-                        padding: '14px',
-                        borderRadius: '12px',
-                        marginBottom: '20px',
-                        fontSize: '0.9rem',
-                        border: '1px solid rgba(185, 28, 28, 0.1)',
-                        textAlign: 'center'
+                        backgroundColor: 'rgba(254, 226, 226, 0.9)', color: '#b91c1c',
+                        padding: '14px', borderRadius: '12px', marginBottom: '20px',
+                        fontSize: '0.9rem', textAlign: 'center'
                     }}>
                         {error}
                     </div>
                 )}
 
                 <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column' }}>
+                    {/* Role selector */}
+                    <div style={{ marginBottom: '20px' }}>
+                        <label style={{ display: 'block', fontWeight: 600, fontSize: '0.9rem', marginBottom: '10px', color: 'var(--color-text-light)' }}>
+                            ¿Eres...?
+                        </label>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                            {[
+                                { val: 'madre' as const, emoji: '🤱', label: 'Soy Mamá' },
+                                { val: 'padre' as const, emoji: '👨‍🍼', label: 'Soy Papá' }
+                            ].map(opt => (
+                                <button
+                                    key={opt.val}
+                                    type="button"
+                                    onClick={() => setRole(opt.val)}
+                                    style={{
+                                        padding: '14px 10px',
+                                        borderRadius: '16px',
+                                        border: `2px solid ${role === opt.val ? 'var(--color-primary-dark)' : 'var(--color-border)'}`,
+                                        background: role === opt.val ? 'rgba(232,134,159,0.12)' : 'transparent',
+                                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
+                                        cursor: 'pointer', transition: 'all 0.2s',
+                                        fontWeight: 700, fontSize: '0.95rem',
+                                        color: role === opt.val ? 'var(--color-primary-dark)' : 'var(--color-text)'
+                                    }}
+                                >
+                                    <span style={{ fontSize: '1.8rem' }}>{opt.emoji}</span>
+                                    {opt.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
                     <div className="auth-input-group">
                         <label>Tu nombre</label>
                         <div style={{ position: 'relative' }}>
                             <User size={20} color="var(--color-primary-dark)" style={{ position: 'absolute', left: '14px', top: '15px', opacity: 0.7 }} />
-                            <input
-                                type="text"
-                                className="auth-input"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                placeholder="María"
-                                required
-                            />
+                            <input type="text" className="auth-input" value={name}
+                                onChange={e => setName(e.target.value)}
+                                placeholder={role === 'padre' ? 'Carlos' : 'María'} required />
                         </div>
                     </div>
 
@@ -84,46 +108,25 @@ export function RegisterPage() {
                         <label>Correo Electrónico</label>
                         <div style={{ position: 'relative' }}>
                             <Mail size={20} color="var(--color-primary-dark)" style={{ position: 'absolute', left: '14px', top: '15px', opacity: 0.7 }} />
-                            <input
-                                type="email"
-                                className="auth-input"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="hola@mama.com"
-                                required
-                            />
+                            <input type="email" className="auth-input" value={email}
+                                onChange={e => setEmail(e.target.value)}
+                                placeholder="hola@correo.com" required />
                         </div>
                     </div>
 
-                    <div className="auth-input-group" style={{ marginBottom: '30px' }}>
+                    <div className="auth-input-group" style={{ marginBottom: '28px' }}>
                         <label>Contraseña</label>
                         <div style={{ position: 'relative' }}>
                             <Lock size={20} color="var(--color-primary-dark)" style={{ position: 'absolute', left: '14px', top: '15px', opacity: 0.7 }} />
-                            <input
-                                type="password"
-                                className="auth-input"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="••••••••"
-                                required
-                                minLength={6}
-                            />
+                            <input type="password" className="auth-input" value={password}
+                                onChange={e => setPassword(e.target.value)}
+                                placeholder="••••••••" required minLength={6} />
                         </div>
                     </div>
 
-                    <button
-                        type="submit"
-                        className="button-primary"
-                        style={{
-                            padding: '16px',
-                            fontSize: '1.1rem',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '10px'
-                        }}
-                        disabled={isLoading}
-                    >
+                    <button type="submit" className="button-primary"
+                        style={{ padding: '16px', fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+                        disabled={isLoading}>
                         {isLoading ? 'Creando cuenta...' : 'Crear Cuenta ✨'}
                     </button>
                 </form>
