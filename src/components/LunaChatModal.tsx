@@ -235,121 +235,133 @@ Bebé actual: ${selectedBaby.name}, Género: ${selectedBaby.gender}, Nacimiento:
             {isOpen && (
                 <div style={{
                     position: 'fixed',
-                    top: 0, left: 0, right: 0, bottom: 0,
+                    bottom: '90px',
+                    right: '20px',
+                    width: '380px',
+                    maxWidth: 'calc(100vw - 40px)',
+                    height: '600px',
+                    maxHeight: 'calc(100vh - 120px)',
                     zIndex: 1000,
                     display: 'flex',
                     flexDirection: 'column',
-                    background: 'var(--video-overlay, rgba(0,0,0,0.6))',
-                    backdropFilter: 'blur(8px)',
-                    WebkitBackdropFilter: 'blur(8px)',
-                    animation: 'fadeIn 0.2s ease-out'
+                    background: 'var(--color-surface, #ffffff)',
+                    borderRadius: '24px',
+                    overflow: 'hidden',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.15), 0 0 0 1px var(--color-border)',
+                    animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
                 }}>
+                    <style>
+                        {`
+                          @keyframes slideUp {
+                            from { opacity: 0; transform: translateY(20px) scale(0.95); }
+                            to { opacity: 1; transform: translateY(0) scale(1); }
+                          }
+                          .chat-scroll::-webkit-scrollbar { width: 6px; }
+                          .chat-scroll::-webkit-scrollbar-track { background: transparent; }
+                          .chat-scroll::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 10px; }
+                        `}
+                    </style>
+                    {/* Header */}
                     <div style={{
-                        flex: 1,
-                        margin: '20px',
-                        marginTop: '40px',
-                        background: 'var(--card-glass, rgba(255,255,255,0.9))',
-                        borderRadius: '24px',
+                        padding: '16px 20px',
+                        borderBottom: '1px solid var(--color-border)',
                         display: 'flex',
-                        flexDirection: 'column',
-                        overflow: 'hidden',
-                        boxShadow: 'var(--shadow-lg)',
-                        border: '1px solid rgba(255,255,255,0.2)'
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))',
+                        color: 'white'
                     }}>
-                        {/* Header */}
-                        <div style={{
-                            padding: '16px 20px',
-                            borderBottom: '1px solid var(--color-border)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            background: 'rgba(255,255,255,0.05)'
-                        }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <div style={{
-                                    width: '40px', height: '40px', borderRadius: '20px',
-                                    background: 'var(--color-primary)', color: 'white',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                }}>
-                                    <Sparkles size={20} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{
+                                width: '36px', height: '36px', borderRadius: '18px',
+                                background: 'rgba(255,255,255,0.2)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                            }}>
+                                <Sparkles size={18} />
+                            </div>
+                            <div>
+                                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 600 }}>Luna</h3>
+                                <p style={{ margin: 0, fontSize: '0.8rem', opacity: 0.9 }}>
+                                    Asesora de {selectedBaby.name}
+                                </p>
+                            </div>
+                        </div>
+                        <button onClick={() => setIsOpen(false)} style={{
+                            background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', padding: '6px',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%',
+                            transition: 'background 0.2s'
+                        }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        >
+                            <X size={20} />
+                        </button>
+                    </div>
+
+                    {/* Messages Area */}
+                    <div className="chat-scroll" style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', background: 'var(--color-bg)' }}>
+                        {messages.length === 0 && (
+                            <div style={{ textAlign: 'center', color: 'var(--color-text-light)', marginTop: '20px', fontSize: '0.9rem' }}>
+                                <Sparkles size={32} style={{ opacity: 0.3, marginBottom: '8px' }} />
+                                <p style={{ margin: 0 }}>¡Hola! Soy Luna.<br />¿En qué te puedo ayudar hoy con {selectedBaby.name}?</p>
+                            </div>
+                        )}
+
+                        {messages.map((msg) => {
+                            const isUser = msg.role === 'user';
+                            return (
+                                <div key={msg.id} style={{ display: 'flex', justifyContent: isUser ? 'flex-end' : 'flex-start' }}>
+                                    <div style={{
+                                        maxWidth: '85%',
+                                        padding: '10px 14px',
+                                        borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                                        background: isUser ? 'var(--color-primary)' : 'var(--color-surface)',
+                                        color: isUser ? 'white' : 'var(--color-text)',
+                                        border: isUser ? 'none' : '1px solid var(--color-border)',
+                                        fontSize: '0.9rem',
+                                        lineHeight: 1.4,
+                                        boxShadow: isUser ? '0 2px 8px color-mix(in srgb, var(--color-primary) 30%, transparent)' : '0 2px 5px rgba(0,0,0,0.02)'
+                                    }}>
+                                        {msg.content}
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--color-text)' }}>Luna</h3>
-                                    <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-text-light)' }}>
-                                        Asistente de {selectedBaby.name}
-                                    </p>
+                            );
+                        })}
+
+                        {isLoading && (
+                            <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                                <div style={{
+                                    padding: '10px 14px', borderRadius: '16px 16px 16px 4px',
+                                    background: 'var(--color-surface)', color: 'var(--color-text)', border: '1px solid var(--color-border)'
+                                }}>
+                                    <Loader2 size={16} className="animate-spin" />
                                 </div>
                             </div>
-                            <button onClick={() => setIsOpen(false)} style={{
-                                background: 'transparent', border: 'none', color: 'var(--color-text-light)', cursor: 'pointer', padding: '8px'
-                            }}>
-                                <X size={24} />
-                            </button>
-                        </div>
+                        )}
+                        <div ref={messagesEndRef} />
+                    </div>
 
-                        {/* Messages Area */}
-                        <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                            {messages.length === 0 && (
-                                <div style={{ textAlign: 'center', color: 'var(--color-text-light)', marginTop: '40px' }}>
-                                    <Sparkles size={40} style={{ opacity: 0.3, marginBottom: '10px' }} />
-                                    <p>¡Hola! Soy Luna.<br />¿En qué te puedo ayudar hoy con {selectedBaby.name}?</p>
-                                </div>
-                            )}
-
-                            {messages.map((msg) => {
-                                const isUser = msg.role === 'user';
-                                return (
-                                    <div key={msg.id} style={{ display: 'flex', justifyContent: isUser ? 'flex-end' : 'flex-start' }}>
-                                        <div style={{
-                                            maxWidth: '80%',
-                                            padding: '12px 16px',
-                                            borderRadius: isUser ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
-                                            background: isUser ? 'var(--color-primary)' : 'var(--color-surface-variant)',
-                                            color: isUser ? 'white' : 'var(--color-text)',
-                                            fontSize: '0.95rem',
-                                            lineHeight: 1.4,
-                                            boxShadow: 'var(--shadow-sm)'
-                                        }}>
-                                            {msg.content}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-
-                            {isLoading && (
-                                <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                                    <div style={{
-                                        padding: '12px 16px', borderRadius: '20px 20px 20px 4px',
-                                        background: 'var(--color-surface-variant)', color: 'var(--color-text)'
-                                    }}>
-                                        <Loader2 size={18} className="animate-spin" />
-                                    </div>
-                                </div>
-                            )}
-                            <div ref={messagesEndRef} />
-                        </div>
-
-                        {/* Input Area */}
+                    {/* Input Area */}
+                    <div style={{ background: 'var(--color-surface)' }}>
                         <form onSubmit={handleSend} style={{
-                            padding: '16px',
+                            padding: '12px',
                             borderTop: '1px solid var(--color-border)',
                             display: 'flex',
-                            gap: '10px',
-                            background: 'rgba(255,255,255,0.02)'
+                            gap: '8px',
+                            background: 'var(--color-surface)'
                         }}>
                             <input
                                 type="text"
                                 value={input}
                                 onChange={e => setInput(e.target.value)}
-                                placeholder={`Pregúntale a Luna sobre ${selectedBaby.name}...`}
+                                placeholder={`Mensaje a Luna...`}
                                 style={{
                                     flex: 1,
-                                    padding: '12px 16px',
-                                    borderRadius: '24px',
+                                    padding: '10px 14px',
+                                    borderRadius: '20px',
                                     border: '1px solid var(--color-border)',
                                     background: 'var(--color-bg)',
                                     color: 'var(--color-text)',
-                                    fontSize: '0.95rem',
+                                    fontSize: '0.9rem',
                                     outline: 'none'
                                 }}
                             />
@@ -357,7 +369,7 @@ Bebé actual: ${selectedBaby.name}, Género: ${selectedBaby.gender}, Nacimiento:
                                 type="submit"
                                 disabled={!input.trim() || isLoading}
                                 style={{
-                                    width: '44px', height: '44px', borderRadius: '22px',
+                                    width: '40px', height: '40px', borderRadius: '20px', flexShrink: 0,
                                     background: input.trim() ? 'var(--color-primary)' : 'var(--color-surface-variant)',
                                     color: input.trim() ? 'white' : 'var(--color-text-light)',
                                     border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -365,7 +377,7 @@ Bebé actual: ${selectedBaby.name}, Género: ${selectedBaby.gender}, Nacimiento:
                                     transition: 'all 0.2s'
                                 }}
                             >
-                                <Send size={20} style={{ marginLeft: '2px' }} />
+                                <Send size={18} style={{ marginLeft: '2px' }} />
                             </button>
                         </form>
                     </div>

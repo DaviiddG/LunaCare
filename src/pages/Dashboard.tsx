@@ -194,7 +194,7 @@ Bebé: ${baby.name}
                             boxShadow: 'inset 0 -2px 5px rgba(0,0,0,0.1)'
                         }}>✨</div>
                         <div style={{ flex: 1 }}>
-                            <h4 style={{ margin: '0 0 6px 0', fontSize: '0.95rem', color: 'var(--color-primary-dark)' }}>El Ojo de Luna</h4>
+                            <h4 style={{ margin: '0 0 6px 0', fontSize: '0.95rem', color: 'var(--color-primary-dark)' }}>Luna dice...</h4>
                             {insightLoading ? (
                                 <div style={{ height: '20px', background: 'var(--color-surface-variant)', borderRadius: '10px', width: '80%', animation: 'pulse 1.5s infinite' }} />
                             ) : (
@@ -210,8 +210,9 @@ Bebé: ${baby.name}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '14px' }}>
                     {babies.map((baby, i) => {
                         const isHovered = hoveredBaby === baby.id;
-                        const babyColor = baby.gender === 'niño' ? '#3b82f6' : 'var(--color-primary-dark)';
-                        const babyGrad = baby.gender === 'niño'
+                        const isBoy = baby.gender?.toLowerCase() === 'niño';
+                        const babyColor = isBoy ? '#3b82f6' : 'var(--color-primary-dark)';
+                        const babyGrad = isBoy
                             ? 'linear-gradient(135deg, #93c5fd, #3b82f6)'
                             : 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))';
 
@@ -246,7 +247,7 @@ Bebé: ${baby.name}
                                         transition: 'transform 0.3s ease',
                                         transform: isHovered ? 'rotate(-10deg) scale(1.1)' : 'rotate(0deg) scale(1)',
                                     }}>
-                                        {baby.gender === 'niño' ? '👦' : '👧'}
+                                        {baby.gender?.toLowerCase() === 'niño' ? '👦' : '👧'}
                                     </div>
                                     <div style={{ flex: 1 }}>
                                         <div style={{ fontWeight: 800, fontSize: '1.15rem', color: 'var(--color-text)' }}>{baby.name}</div>
