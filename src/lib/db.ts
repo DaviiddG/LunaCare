@@ -81,5 +81,27 @@ export const dbHelpers = {
             .from('chat_history').select('*').eq('user_id', userId)
             .order('created_at', { ascending: false }).limit(limit);
         return { data: (data || []).reverse(), error };
+    },
+
+    // ==========================================
+    // AI CONVERSATIONS (Luna Assistant Fase 2)
+    // ==========================================
+    async getAiConversations(babyId: string, limit = 50) {
+        const { data, error } = await supabase
+            .from('ai_conversations')
+            .select('*')
+            .eq('baby_id', babyId)
+            .order('created_at', { ascending: false })
+            .limit(limit);
+        return { data: (data || []).reverse(), error };
+    },
+
+    async insertAiMessage(data: { user_id: string; baby_id: string; role: 'user' | 'assistant'; content: string }) {
+        const { data: result, error } = await supabase
+            .from('ai_conversations')
+            .insert([data])
+            .select()
+            .single();
+        return { data: result, error };
     }
 };
