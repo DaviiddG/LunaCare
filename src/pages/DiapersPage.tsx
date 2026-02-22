@@ -16,21 +16,25 @@ export function DiapersPage() {
     const [history, setHistory] = useState<any[]>([]);
 
     useEffect(() => {
-        fetchHistory();
-    }, []);
+        if (selectedBaby) {
+            fetchHistory();
+        }
+    }, [selectedBaby?.id]);
 
     const fetchHistory = async () => {
-        const { data } = await dbHelpers.getDiapers();
+        if (!selectedBaby) return;
+        const { data } = await dbHelpers.getDiapers(selectedBaby.id);
         if (data) setHistory(data);
     };
 
     const handleSave = async () => {
-        if (!user) return;
+        if (!user || !selectedBaby) return;
         setLoading(true);
         const { error } = await dbHelpers.insertDiaper({
             status,
             observations,
-            user_id: user.id
+            user_id: user.id,
+            baby_id: selectedBaby.id
         });
 
         if (!error) {

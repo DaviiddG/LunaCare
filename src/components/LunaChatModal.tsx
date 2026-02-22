@@ -48,9 +48,9 @@ export function LunaChatModal() {
         try {
             // Fetch today's records for context
             await Promise.all([
-                dbHelpers.getDiets(),
-                dbHelpers.getDiapers(),
-                dbHelpers.getSleepLogs()
+                dbHelpers.getDiets(selectedBaby.id),
+                dbHelpers.getDiapers(selectedBaby.id),
+                dbHelpers.getSleepLogs(selectedBaby.id)
             ]);
 
             // Filter for the selected baby (currently diets/diapers/sleep might not have baby_id yet, but assuming they are general for now, or we just format what we have)
@@ -103,9 +103,67 @@ Bebé actual: ${selectedBaby.name}, Género: ${selectedBaby.gender}, Nacimiento:
             const babyContext = await buildBabyContext();
 
             // 4. Send to Gemini
-            const { text, error } = await geminiHelpers.sendMessageWithContext(userText, chatHistory, babyContext);
+            const { text, action, error } = await geminiHelpers.sendMessageWithContext(userText, chatHistory, babyContext);
 
-            if (text && !error) {
+            if (action && !error) {
+                const call = action.args as any;
+                let actionText = "He registrado la acción solicitada.";
+
+                try {
+                    if (action.name === 'logBabyDiet') {
+                        await dbHelpers.insertDiet({
+                            user_id: user.id,
+                            baby_id: selectedBaby.id,
+                            type: call.type,
+                            amount: call.amount,
+                            observations: call.observations || "Registrado por Luna"
+                        });
+                        actionText = `🍼 Listo, he anotado la toma de ${call.type} (${call.amount}${call.type === 'pecho' ? ' min' : ' ml'}).`;
+                    } else if (action.name === 'logBabyDiaper') {
+                        await dbHelpers.insertDiaper({
+                            user_id: user.id,
+                            baby_id: selectedBaby.id,
+                            status: call.status,
+                            observations: call.observations || "Registrado por Luna"
+                        });
+                        actionText = `✨ Listo, he anotado el cambio de pañal (${call.status}).`;
+                    } else if (action.name === 'logBabySleep') {
+                        const end = new Date();
+                        const start = new Date(end.getTime() - ((call.durationMinutes || 0) * 60 * 1000));
+                        await dbHelpers.insertSleepLog({
+                            user_id: user.id,
+                            baby_id: selectedBaby.id,
+                            start_time: start.toISOString(),
+                            end_time: end.toISOString(),
+                            duration: `${call.durationMinutes} minutos`
+                        });
+                        actionText = `😴 Listo, he anotado que durmió por ${call.durationMinutes} minutos.`;
+                    }
+                } catch (dbErr) {
+                    console.error("DB Error processing action:", dbErr);
+                    actionText = "Lo siento, intenté registrarlo pero hubo un problema al guardarlo en tu historial.";
+                }
+
+                const finalText = text ? `${text}\n\n${actionText}` : actionText;
+
+                const { data: savedMsg } = await dbHelpers.insertAiMessage({
+                    user_id: user.id,
+                    baby_id: selectedBaby.id,
+                    role: 'assistant',
+                    content: finalText
+                });
+
+                if (savedMsg) {
+                    setMessages(prev => [...prev, savedMsg as Message]);
+                } else {
+                    setMessages(prev => [...prev, {
+                        id: Date.now().toString(),
+                        role: 'assistant',
+                        content: finalText,
+                        created_at: new Date().toISOString()
+                    }]);
+                }
+            } else if (text && !error) {
                 // 5. Save assistant message to DB
                 const { data: savedMsg } = await dbHelpers.insertAiMessage({
                     user_id: user.id,
@@ -130,7 +188,7 @@ Bebé actual: ${selectedBaby.name}, Género: ${selectedBaby.gender}, Nacimiento:
                 setMessages(prev => [...prev, {
                     id: Date.now().toString(),
                     role: 'assistant',
-                    content: "Lo siento, tuve un problema al procesar eso. ¿Puedes intentar de nuevo?",
+                    content: "Lo siento, tuve un problema al conectarme con mis servidores. ¿Puedes intentar de nuevo?",
                     created_at: new Date().toISOString()
                 }]);
             }

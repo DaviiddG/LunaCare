@@ -42,16 +42,19 @@ export function SleepPage() {
     const elapsed = useTimer(startTime);
 
     useEffect(() => {
-        fetchHistory();
+        if (selectedBaby) {
+            fetchHistory();
+        }
         const savedStart = localStorage.getItem('sleep_start');
         if (savedStart) {
             setStartTime(new Date(savedStart));
             setIsSleeping(true);
         }
-    }, []);
+    }, [selectedBaby?.id]);
 
     const fetchHistory = async () => {
-        const { data } = await dbHelpers.getSleepLogs();
+        if (!selectedBaby) return;
+        const { data } = await dbHelpers.getSleepLogs(selectedBaby.id);
         if (data) setHistory(data);
     };
 
@@ -78,7 +81,8 @@ export function SleepPage() {
                 start_time: start.toISOString(),
                 end_time: endTime.toISOString(),
                 duration: durationStr,
-                user_id: user.id
+                user_id: user.id,
+                baby_id: selectedBaby.id
             });
 
             if (!error) {

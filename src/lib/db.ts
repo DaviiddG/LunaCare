@@ -2,38 +2,38 @@
 
 export const dbHelpers = {
     // Diets
-    async insertDiet(data: { type: string; amount: number; observations: string; user_id: string }) {
+    async insertDiet(data: { type: string; amount: number; observations: string; user_id: string; baby_id: string }) {
         const { data: result, error } = await supabase
             .from('diets').insert([data]).select();
         return { data: result, error };
     },
-    async getDiets() {
+    async getDiets(babyId: string) {
         const { data, error } = await supabase
-            .from('diets').select('*').order('created_at', { ascending: false });
+            .from('diets').select('*').eq('baby_id', babyId).order('created_at', { ascending: false });
         return { data, error };
     },
 
     // Diapers
-    async insertDiaper(data: { status: string; observations: string; user_id: string }) {
+    async insertDiaper(data: { status: string; observations: string; user_id: string; baby_id: string }) {
         const { data: result, error } = await supabase
             .from('diapers').insert([data]).select();
         return { data: result, error };
     },
-    async getDiapers() {
+    async getDiapers(babyId: string) {
         const { data, error } = await supabase
-            .from('diapers').select('*').order('created_at', { ascending: false });
+            .from('diapers').select('*').eq('baby_id', babyId).order('created_at', { ascending: false });
         return { data, error };
     },
 
     // Sleep
-    async insertSleepLog(data: { start_time: string; end_time: string; duration: string; user_id: string }) {
+    async insertSleepLog(data: { start_time: string; end_time: string; duration: string; user_id: string; baby_id: string }) {
         const { data: result, error } = await supabase
             .from('sleep_logs').insert([data]).select();
         return { data: result, error };
     },
-    async getSleepLogs() {
+    async getSleepLogs(babyId: string) {
         const { data, error } = await supabase
-            .from('sleep_logs').select('*').order('created_at', { ascending: false });
+            .from('sleep_logs').select('*').eq('baby_id', babyId).order('created_at', { ascending: false });
         return { data, error };
     },
 

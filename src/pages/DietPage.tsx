@@ -17,22 +17,26 @@ export function DietPage() {
     const [history, setHistory] = useState<any[]>([]);
 
     useEffect(() => {
-        fetchHistory();
-    }, []);
+        if (selectedBaby) {
+            fetchHistory();
+        }
+    }, [selectedBaby?.id]);
 
     const fetchHistory = async () => {
-        const { data } = await dbHelpers.getDiets();
+        if (!selectedBaby) return;
+        const { data } = await dbHelpers.getDiets(selectedBaby.id);
         if (data) setHistory(data);
     };
 
     const handleSave = async () => {
-        if (!user) return;
+        if (!user || !selectedBaby) return;
         setLoading(true);
         const { error } = await dbHelpers.insertDiet({
             type,
             amount: Number(amount),
             observations,
-            user_id: user.id
+            user_id: user.id,
+            baby_id: selectedBaby.id
         });
 
         if (!error) {

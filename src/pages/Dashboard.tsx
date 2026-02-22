@@ -24,9 +24,9 @@ function timeAgo(dateStr: string) {
 export function Dashboard() {
     const { user } = useAuth();
     const [babies, setBabies] = useState<any[]>([]);
-    const [latestDiet, setLatestDiet] = useState<any>(null);
-    const [latestDiaper, setLatestDiaper] = useState<any>(null);
-    const [latestSleep, setLatestSleep] = useState<any>(null);
+    const [babyStats, setBabyStats] = useState<Record<string, any>>({});
+    const [insightLoading, setInsightLoading] = useState(false);
+    const [insightText, setInsightText] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [hoveredBaby, setHoveredBaby] = useState<string | null>(null);
@@ -54,18 +54,73 @@ export function Dashboard() {
 
     const fetchDashboardData = async () => {
         setIsLoading(true);
-        const [babyRes, dietRes, diaperRes, sleepRes] = await Promise.all([
-            dbHelpers.getAllBabyProfiles(user!.id),
-            dbHelpers.getDiets(),
-            dbHelpers.getDiapers(),
-            dbHelpers.getSleepLogs(),
-        ]);
-        if (babyRes.data) setBabies(babyRes.data);
-        if (!babyRes.data || babyRes.data.length === 0) setShowModal(true);
-        if (dietRes.data && dietRes.data.length > 0) setLatestDiet(dietRes.data[0]);
-        if (diaperRes.data && diaperRes.data.length > 0) setLatestDiaper(diaperRes.data[0]);
-        if (sleepRes.data && sleepRes.data.length > 0) setLatestSleep(sleepRes.data[0]);
+        const { data: babyProfiles } = await dbHelpers.getAllBabyProfiles(user!.id);
+
+        if (babyProfiles && babyProfiles.length > 0) {
+            setBabies(babyProfiles);
+            const stats: Record<string, any> = {};
+
+            for (const baby of babyProfiles) {
+                const [dietRes, diaperRes, sleepRes] = await Promise.all([
+                    dbHelpers.getDiets(baby.id),
+                    dbHelpers.getDiapers(baby.id),
+                    dbHelpers.getSleepLogs(baby.id),
+                ]);
+                stats[baby.id] = {
+                    latestDiet: dietRes.data?.[0] || null,
+                    latestDiaper: diaperRes.data?.[0] || null,
+                    latestSleep: sleepRes.data?.[0] || null,
+                };
+            }
+            setBabyStats(stats);
+            // Autogenerate an insight for the first baby
+            generateInsight(babyProfiles[0], stats[babyProfiles[0].id]);
+        } else {
+            setShowModal(true);
+        }
         setIsLoading(false);
+    };
+
+    const generateInsight = async (baby: any, stats: any) => {
+        const cacheKey = `luna_insight_${baby.id}`;
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+            try {
+                const parsed = JSON.parse(cached);
+                // Check if less than 4 hours old
+                if (Date.now() - parsed.timestamp < 4 * 60 * 60 * 1000) {
+                    setInsightText(parsed.text);
+                    return;
+                }
+            } catch (e) {
+                // Ignore parse errors
+            }
+        }
+
+        setInsightLoading(true);
+        try {
+            const { geminiHelpers } = await import('../lib/gemini');
+            const dataContext = `
+Bebé: ${baby.name}
+Última comida: ${stats.latestDiet ? timeAgo(stats.latestDiet.created_at) + " de " + stats.latestDiet.type : "ninguna"}
+Último pañal: ${stats.latestDiaper ? timeAgo(stats.latestDiaper.created_at) + " (" + stats.latestDiaper.status + ")" : "ninguno"}
+Último sueño: ${stats.latestSleep ? timeAgo(stats.latestSleep.created_at) + " duración: " + stats.latestSleep.duration : "ninguno"}
+            `.trim();
+            const prompt = `Basado en esta info actual del bebé, dale un solo consejo o recomendación súper proactiva (MÁXIMO 2 líneas cortas) a ${isMother ? 'su mamá' : isFather ? 'su papá' : 'sus padres'}. Ej: "Asegúrate de preparar el siguiente biberón porque hace 3 horas que comió".\n${dataContext}`;
+
+            const chatModel = [{ role: 'user' as 'user', parts: [{ text: prompt }] }];
+            const res = await geminiHelpers.sendMessageWithContext(prompt, chatModel, dataContext);
+            if (res.text) {
+                setInsightText(res.text);
+                localStorage.setItem(cacheKey, JSON.stringify({
+                    text: res.text,
+                    timestamp: Date.now()
+                }));
+            }
+        } catch (e) {
+            console.error("No se pudo generar insight", e);
+        }
+        setInsightLoading(false);
     };
 
     const handleModalSave = async (profileData: any) => {
@@ -119,6 +174,37 @@ export function Dashboard() {
                         </p>
                     </div>
                 </div>
+
+                {/* ── El Ojo de Luna (AI Insight) ── */}
+                {babies.length > 0 && (
+                    <div style={{
+                        background: 'linear-gradient(135deg, rgba(255,255,255,0.7), rgba(255,255,255,0.3))',
+                        backdropFilter: 'blur(10px)',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: '20px',
+                        padding: '16px',
+                        marginBottom: '24px',
+                        boxShadow: 'var(--shadow-sm)',
+                        display: 'flex', gap: '12px', alignItems: 'flex-start'
+                    }}>
+                        <div style={{
+                            width: '40px', height: '40px', borderRadius: '20px',
+                            background: 'var(--color-primary)', flexShrink: 0,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white',
+                            boxShadow: 'inset 0 -2px 5px rgba(0,0,0,0.1)'
+                        }}>✨</div>
+                        <div style={{ flex: 1 }}>
+                            <h4 style={{ margin: '0 0 6px 0', fontSize: '0.95rem', color: 'var(--color-primary-dark)' }}>El Ojo de Luna</h4>
+                            {insightLoading ? (
+                                <div style={{ height: '20px', background: 'var(--color-surface-variant)', borderRadius: '10px', width: '80%', animation: 'pulse 1.5s infinite' }} />
+                            ) : (
+                                <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--color-text)', lineHeight: 1.4 }}>
+                                    {insightText || "Todo se ve bien por ahora. ¡Disfruta el día con tu bebé!"}
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                )}
 
                 {/* ── Baby cards with stats ── */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '14px' }}>
@@ -179,10 +265,10 @@ export function Dashboard() {
                                         color="var(--color-primary-dark)"
                                         emoji={<Droplet size={13} />}
                                         label="Última Comida"
-                                        value={latestDiet ? timeAgo(latestDiet.created_at) : '—'}
-                                        sub={latestDiet
-                                            ? (latestDiet.type === 'breast' ? 'Pecho' : latestDiet.type === 'formula' ? 'Fórmula' : 'Sólidos') +
-                                            (latestDiet.amount ? ` · ${latestDiet.amount}ml` : '')
+                                        value={babyStats[baby.id]?.latestDiet ? timeAgo(babyStats[baby.id].latestDiet.created_at) : '—'}
+                                        sub={babyStats[baby.id]?.latestDiet
+                                            ? (babyStats[baby.id].latestDiet.type === 'breast' ? 'Pecho' : babyStats[baby.id].latestDiet.type === 'formula' ? 'Fórmula' : 'Sólidos') +
+                                            (babyStats[baby.id].latestDiet.amount ? ` · ${babyStats[baby.id].latestDiet.amount}ml` : '')
                                             : 'Sin registros'}
                                     />
                                     {/* Last diaper change */}
@@ -190,9 +276,9 @@ export function Dashboard() {
                                         color="var(--color-success)"
                                         emoji={<Baby size={13} />}
                                         label="Último Cambio de Pañal"
-                                        value={latestDiaper ? timeAgo(latestDiaper.created_at) : '—'}
-                                        sub={latestDiaper
-                                            ? (latestDiaper.status === 'wet' ? 'Mojado' : 'Sucio')
+                                        value={babyStats[baby.id]?.latestDiaper ? timeAgo(babyStats[baby.id].latestDiaper.created_at) : '—'}
+                                        sub={babyStats[baby.id]?.latestDiaper
+                                            ? (babyStats[baby.id].latestDiaper.status === 'wet' ? 'Mojado' : 'Sucio')
                                             : 'Sin registros'}
                                     />
                                 </div>
@@ -202,8 +288,8 @@ export function Dashboard() {
                                         color="var(--color-secondary-dark)"
                                         emoji={<Moon size={13} />}
                                         label="Último Sueño"
-                                        value={latestSleep ? latestSleep.duration : '—'}
-                                        sub={latestSleep ? timeAgo(latestSleep.created_at) : 'Sin registros'}
+                                        value={babyStats[baby.id]?.latestSleep ? babyStats[baby.id].latestSleep.duration : '—'}
+                                        sub={babyStats[baby.id]?.latestSleep ? timeAgo(babyStats[baby.id].latestSleep.created_at) : 'Sin registros'}
                                         wide
                                     />
                                 </div>
@@ -239,7 +325,7 @@ export function Dashboard() {
                     <PlusCircle size={22} />
                     {addBabyText}
                 </button>
-            </div>
+            </div >
         </>
     );
 }
