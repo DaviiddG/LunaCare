@@ -61,10 +61,24 @@ const logAddBabyDeclaration: FunctionDeclaration = {
             name: { type: SchemaType.STRING, description: "Nombre del nuevo bebé." },
             gender: { type: SchemaType.STRING, description: "Género del bebé: 'niño' o 'niña'" },
             birthDate: { type: SchemaType.STRING, description: "Fecha de nacimiento en formato YYYY-MM-DD. Si solo dice hoy, calcula la fecha actual." },
-            weight: { type: SchemaType.NUMBER, description: "Peso del bebé al nacer o peso actual en kg (ej: 3.5)." },
-            height: { type: SchemaType.NUMBER, description: "Altura del bebé en cm (ej: 50)." },
+            weight: { type: SchemaType.NUMBER, description: "Peso del bebé al nacer en kg (ej: 3.5). Requerido al agregar." },
+            height: { type: SchemaType.NUMBER, description: "Altura del bebé al nacer en cm (ej: 50). Requerido al agregar." },
         },
-        required: ["name"],
+        required: ["name", "weight", "height"],
+    },
+};
+
+const logUpdateBabyDeclaration: FunctionDeclaration = {
+    name: "logUpdateBaby",
+    description: "Actualiza el peso o la altura actual de un bebé existente. Úsalo cuando te informen cuánto pesa o mide AHORA un bebé específico.",
+    parameters: {
+        type: SchemaType.OBJECT,
+        properties: {
+            babyId: { type: SchemaType.STRING, description: "El ID del bebé que se va a actualizar. Búscalo en el contexto." },
+            weight: { type: SchemaType.NUMBER, description: "Nuevo peso del bebé en kg (ej: 4.2). Vacío si no informan peso." },
+            height: { type: SchemaType.NUMBER, description: "Nueva altura del bebé en cm (ej: 55). Vacío si no informan altura." },
+        },
+        required: ["babyId"],
     },
 };
 
@@ -90,14 +104,15 @@ Reglas:
 2. Basarás tus respuestas en la información de TODOS los bebés (hijos) del padre actual que se te proporcionará en el contexto. El usuario puede tener uno o varios gemelos/hijos de distintas edades.
 3. CRÍTICO: Si el usuario te PIde registrar algo (ej. "durmió 1 hora" o "cambié un pañal") pero NO MENCIONA a cuál de sus bebés se refiere, y en su contexto hay MÁS DE UN BEBÉ, **DEBES preguntarle amablemente a cuál bebé se refiere** antes de usar las funciones. Si solo tiene un bebé o menciona su nombre claramente ("Sof tomó 10 min"), obtén el "babyId" del contexto y llama a la función correspondiente.
 4. AGREGAR BEBÉS: Puedes ejecutar la acción para registrar un nuevo bebé si el usuario te lo pide proporcionando el nombre.
-5. ELIMINACIÓN DE BEBÉS (REGLA DE DOBLE CONFIRMACIÓN): Si el usuario solicita eliminar el perfil de un bebé, NUNCA ejecutes la función de inmediato. 
+6. ELIMINACIÓN DE BEBÉS (REGLA DE DOBLE CONFIRMACIÓN): Si el usuario solicita eliminar el perfil de un bebé, NUNCA ejecutes la función de inmediato. 
    - PRIMERO, respóndele preguntando: "¿Estás seguro de que deseas eliminar el perfil de [Nombre] y todos sus recuerdos y registros irrevocablemente?"
    - SEGUNDO, si el usuario dice "sí", TÚ DEBES preguntar de nuevo de forma muy seria: "¿Estás ABSOLUTAMENTE seguro? No podré recuperar los datos."
    - SÓLO CUANDO responda afirmativamente por segunda vez tras tu segunda advertencia explícita, podrás invocar la función "logDeleteBaby".
-6. Siempre enfatiza que tus consejos no reemplazan a un médico.`,
+7. ACTUALIZACIÓN DE MEDIDAS: Si dicen "Leo pesa ahora 4kg", usa logUpdateBaby. Si no sabes a cuál bebé se refieren, pregunta.
+8. Siempre enfatiza que tus consejos no reemplazan a un médico.`,
     tools: [
         {
-            functionDeclarations: [logBabyDietDeclaration, logBabyDiaperDeclaration, logBabySleepDeclaration, logAddBabyDeclaration, logDeleteBabyDeclaration],
+            functionDeclarations: [logBabyDietDeclaration, logBabyDiaperDeclaration, logBabySleepDeclaration, logAddBabyDeclaration, logDeleteBabyDeclaration, logUpdateBabyDeclaration],
         },
     ],
 });

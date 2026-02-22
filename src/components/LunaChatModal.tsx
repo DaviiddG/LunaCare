@@ -177,6 +177,22 @@ export function LunaChatModal() {
                         } else {
                             actionText = `No pude encontrar al bebé para borrar.`;
                         }
+                    } else if (action.name === 'logUpdateBaby') {
+                        const newWeight = call.weight !== undefined ? call.weight : targetBaby.weight;
+                        const newHeight = call.height !== undefined ? call.height : targetBaby.height;
+
+                        await dbHelpers.upsertBabyProfile({
+                            id: targetBabyId,
+                            user_id: user.id,
+                            name: targetBaby.name,
+                            gender: targetBaby.gender,
+                            birth_date: targetBaby.birth_date,
+                            weight: newWeight,
+                            height: newHeight
+                        });
+
+                        await fetchBabies();
+                        actionText = `📈 ¡Actualizado! He registrado las nuevas medidas para ${targetBaby.name}.`;
                     }
                 } catch (dbErr) {
                     console.error("DB Error processing action:", dbErr);
