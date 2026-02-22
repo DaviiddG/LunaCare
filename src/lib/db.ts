@@ -59,6 +59,14 @@ export const dbHelpers = {
             .order('created_at', { ascending: true });
         return { data, error };
     },
+    async deleteBabyProfile(babyId: string, userId: string) {
+        // Enforce user_id along with baby_id for security
+        const { data, error } = await supabase
+            .from('baby_profiles').delete()
+            .eq('id', babyId)
+            .eq('user_id', userId);
+        return { data, error };
+    },
     // Keep for backwards compat (used by SettingsPage editing first baby)
     async getBabyProfile(userId: string) {
         const { data, error } = await supabase

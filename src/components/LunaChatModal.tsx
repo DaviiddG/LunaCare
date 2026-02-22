@@ -14,7 +14,7 @@ interface Message {
 
 export function LunaChatModal() {
     const { user } = useAuth();
-    const { selectedBaby, babies } = useBabies();
+    const { selectedBaby, babies, fetchBabies } = useBabies();
 
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<Message[]>([]);
@@ -157,6 +157,26 @@ export function LunaChatModal() {
                             duration: `${call.durationMinutes} minutos`
                         });
                         actionText = `😴 Listo, he anotado que ${targetBaby.name} durmió por ${call.durationMinutes} minutos.`;
+                    } else if (action.name === 'logAddBaby') {
+                        await dbHelpers.upsertBabyProfile({
+                            user_id: user.id,
+                            name: call.name,
+                            gender: call.gender || null,
+                            birth_date: call.birthDate || new Date().toISOString().split('T')[0],
+                            weight: call.weight || 0,
+                            height: call.height || 0
+                        });
+                        await fetchBabies();
+                        actionText = `👶 ¡Listo! He agregado el perfil de ${call.name} a tu familia.`;
+                    } else if (action.name === 'logDeleteBaby') {
+                        if (targetBabyId) {
+                            await dbHelpers.deleteBabyProfile(targetBabyId, user.id);
+                            await fetchBabies();
+                            const deletedName = babies.find(b => b.id === targetBabyId)?.name || 'el bebé';
+                            actionText = `🗑️ He borrado de manera permanente el perfil y todos los historiales de ${deletedName}.`;
+                        } else {
+                            actionText = `No pude encontrar al bebé para borrar.`;
+                        }
                     }
                 } catch (dbErr) {
                     console.error("DB Error processing action:", dbErr);

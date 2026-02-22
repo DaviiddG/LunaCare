@@ -52,6 +52,34 @@ const logBabySleepDeclaration: FunctionDeclaration = {
     },
 };
 
+const logAddBabyDeclaration: FunctionDeclaration = {
+    name: "logAddBaby",
+    description: "Agrega un nuevo perfil de bebé para el usuario. Úsalo cuando el usuario te pida explícitamente agregar o registrar a un nuevo hijo.",
+    parameters: {
+        type: SchemaType.OBJECT,
+        properties: {
+            name: { type: SchemaType.STRING, description: "Nombre del nuevo bebé." },
+            gender: { type: SchemaType.STRING, description: "Género del bebé: 'niño' o 'niña'" },
+            birthDate: { type: SchemaType.STRING, description: "Fecha de nacimiento en formato YYYY-MM-DD. Si solo dice hoy, calcula la fecha actual." },
+            weight: { type: SchemaType.NUMBER, description: "Peso del bebé al nacer o peso actual en kg (ej: 3.5)." },
+            height: { type: SchemaType.NUMBER, description: "Altura del bebé en cm (ej: 50)." },
+        },
+        required: ["name"],
+    },
+};
+
+const logDeleteBabyDeclaration: FunctionDeclaration = {
+    name: "logDeleteBaby",
+    description: "Elimina el perfil de un bebé y TODOS sus historiales. Ejecuta esto ÚNICAMENTE si el usuario ya te confirmó DOS VECES que está absolutamente seguro de borrar a este bebé.",
+    parameters: {
+        type: SchemaType.OBJECT,
+        properties: {
+            babyId: { type: SchemaType.STRING, description: "El ID del bebé que se va a eliminar. Búscalo en el contexto." },
+        },
+        required: ["babyId"],
+    },
+};
+
 // Configuración general del modelo
 const model = genAI.getGenerativeModel({
     model: "gemini-2.5-flash",
@@ -61,10 +89,15 @@ Reglas:
 1. Sé cálida, empática y conversacional, como una amiga pediatra respondiendo en WhatsApp. Usa emojis sutilmente.
 2. Basarás tus respuestas en la información de TODOS los bebés (hijos) del padre actual que se te proporcionará en el contexto. El usuario puede tener uno o varios gemelos/hijos de distintas edades.
 3. CRÍTICO: Si el usuario te PIde registrar algo (ej. "durmió 1 hora" o "cambié un pañal") pero NO MENCIONA a cuál de sus bebés se refiere, y en su contexto hay MÁS DE UN BEBÉ, **DEBES preguntarle amablemente a cuál bebé se refiere** antes de usar las funciones. Si solo tiene un bebé o menciona su nombre claramente ("Sof tomó 10 min"), obtén el "babyId" del contexto y llama a la función correspondiente.
-4. Siempre enfatiza que tus consejos no reemplazan a un médico.`,
+4. AGREGAR BEBÉS: Puedes ejecutar la acción para registrar un nuevo bebé si el usuario te lo pide proporcionando el nombre.
+5. ELIMINACIÓN DE BEBÉS (REGLA DE DOBLE CONFIRMACIÓN): Si el usuario solicita eliminar el perfil de un bebé, NUNCA ejecutes la función de inmediato. 
+   - PRIMERO, respóndele preguntando: "¿Estás seguro de que deseas eliminar el perfil de [Nombre] y todos sus recuerdos y registros irrevocablemente?"
+   - SEGUNDO, si el usuario dice "sí", TÚ DEBES preguntar de nuevo de forma muy seria: "¿Estás ABSOLUTAMENTE seguro? No podré recuperar los datos."
+   - SÓLO CUANDO responda afirmativamente por segunda vez tras tu segunda advertencia explícita, podrás invocar la función "logDeleteBaby".
+6. Siempre enfatiza que tus consejos no reemplazan a un médico.`,
     tools: [
         {
-            functionDeclarations: [logBabyDietDeclaration, logBabyDiaperDeclaration, logBabySleepDeclaration],
+            functionDeclarations: [logBabyDietDeclaration, logBabyDiaperDeclaration, logBabySleepDeclaration, logAddBabyDeclaration, logDeleteBabyDeclaration],
         },
     ],
 });

@@ -21,5 +21,5 @@ export function useBabies() {
         setLoading(false);
     };
 
-    return { babies, selectedBaby, setSelectedBaby, loading };
+    return { babies, selectedBaby, setSelectedBaby, fetchBabies, loading };
 }
