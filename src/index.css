@@ -23,6 +23,12 @@
   --color-success: #b5e48c;
   --color-warning: #fbc4ab;
 
+  /* Video overlay - light mode: white wash so dark text is readable */
+  --video-overlay: rgba(255, 255, 255, 0.78);
+
+  /* Card glass opacity for light mode */
+  --card-glass: rgba(255, 255, 255, 0.88);
+
   /* Shadows */
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
   --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.06);
@@ -55,6 +61,12 @@
   --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.7);
   --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.8);
   --card-rgb: 20, 20, 20;
+
+  /* Video overlay - dark mode: dark wash for white text */
+  --video-overlay: rgba(0, 0, 0, 0.62);
+
+  /* Card glass opacity for dark mode */
+  --card-glass: rgba(20, 20, 20, 0.78);
 }
 
 /* ── Padre theme: cool blue ── */
@@ -184,13 +196,13 @@ button {
 
 /* Glassmorphism card effect */
 .card {
-  background: rgba(var(--card-rgb, 255, 255, 255), 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: var(--card-glass, rgba(255, 255, 255, 0.88));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border-radius: var(--radius-md);
   padding: 20px;
   box-shadow: var(--shadow-sm);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   transition: transform var(--transition-normal), box-shadow var(--transition-normal), background var(--transition-normal), border var(--transition-normal);
 }
 
