@@ -83,7 +83,8 @@ export function Dashboard() {
             setShowModal(false);
             fetchDashboardData();
         } else {
-            console.error('Error saving baby profile:', error);
+            // Re-throw so BabyProfileModal can show the error
+            throw new Error(error.message);
         }
     };
 

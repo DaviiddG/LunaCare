@@ -18,18 +18,25 @@ export function BabyProfileModal({ onSave }: BabyProfileModalProps) {
     const [height, setHeight] = useState('');
     const [gender, setGender] = useState('');
     const [saving, setSaving] = useState(false);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
     const handleSave = async () => {
         if (!name || !birthDate) return;
         setSaving(true);
-        await onSave({
-            name,
-            birth_date: birthDate,
-            weight: weight ? parseFloat(weight) : null,
-            height: height ? parseFloat(height) : null,
-            gender,
-        });
-        setSaving(false);
+        setErrorMsg(null);
+        try {
+            await onSave({
+                name,
+                birth_date: birthDate,
+                weight: weight ? parseFloat(weight) : null,
+                height: height ? parseFloat(height) : null,
+                gender,
+            });
+        } catch (err: any) {
+            setErrorMsg(err?.message || 'Error al guardar. Intenta de nuevo.');
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
@@ -150,6 +157,16 @@ export function BabyProfileModal({ onSave }: BabyProfileModalProps) {
                             ))}
                         </div>
                     </div>
+
+                    {errorMsg && (
+                        <div style={{
+                            background: 'rgba(254,226,226,0.9)', color: '#b91c1c',
+                            padding: '12px 16px', borderRadius: '12px',
+                            fontSize: '0.88rem', fontWeight: 600, textAlign: 'center'
+                        }}>
+                            ⚠️ {errorMsg}
+                        </div>
+                    )}
 
                     <button
                         className="button-primary"

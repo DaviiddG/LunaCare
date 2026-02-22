@@ -145,7 +145,8 @@ export function SettingsPage() {
                     {/* Baby card header — click to expand/collapse */}
                     <button type="button" onClick={() => toggleExpand(baby.id)} style={{
                         background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0 12px',
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%'
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%',
+                        color: 'var(--color-text)'
                     }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                             <div style={{
@@ -159,7 +160,7 @@ export function SettingsPage() {
                                 {baby.gender === 'niño' ? '👦' : '👧'}
                             </div>
                             <div style={{ textAlign: 'left' }}>
-                                <div style={{ fontWeight: 700, fontSize: '1rem' }}>{baby.name || 'Sin nombre'}</div>
+                                <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--color-text)' }}>{baby.name || 'Sin nombre'}</div>
                                 {baby.saved && <div style={{ fontSize: '0.75rem', color: '#4d7c0f' }}>¡Guardado! ✅</div>}
                             </div>
                         </div>
