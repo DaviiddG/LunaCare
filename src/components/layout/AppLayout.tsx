@@ -46,6 +46,33 @@ export function AppLayout() {
 
     return (
         <div className="app-container">
+            {/* ── Background Video ── */}
+            <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                style={{
+                    position: 'fixed',
+                    top: 0, left: 0,
+                    width: '100%', height: '100%',
+                    objectFit: 'cover',
+                    zIndex: -2,
+                    pointerEvents: 'none',
+                }}
+                src="/bg-video.mp4"
+            />
+            {/* Semi-transparent overlay so UI stays readable */}
+            <div style={{
+                position: 'fixed',
+                top: 0, left: 0,
+                width: '100%', height: '100%',
+                zIndex: -1,
+                background: 'var(--video-overlay, rgba(0,0,0,0.45))',
+                backdropFilter: 'blur(1px)',
+                pointerEvents: 'none',
+            }} />
+
             <header style={{
                 padding: '15px 20px',
                 display: 'flex',
