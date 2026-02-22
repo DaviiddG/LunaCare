@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect } from 'react';
 import { Baby, Ruler, Weight, Calendar, Save, User } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 import { dbHelpers } from '../lib/db';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -10,6 +11,8 @@ export function SettingsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+    const [role, setRole] = useState<string>((user?.user_metadata?.role as string) || '');
 
     const [babyData, setBabyData] = useState({
         name: '',
@@ -44,6 +47,11 @@ export function SettingsPage() {
 
         setIsSaving(true);
         setMessage(null);
+
+        // Save role to user metadata
+        if (role) {
+            await supabase.auth.updateUser({ data: { role } });
+        }
 
         const { error } = await dbHelpers.upsertBabyProfile({
             user_id: user.id,
@@ -93,6 +101,27 @@ export function SettingsPage() {
             )}
 
             <form onSubmit={handleSave} className="card" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {/* Role selector */}
+                <div style={{ paddingBottom: '16px', borderBottom: '1px solid var(--color-border)' }}>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', display: 'block', marginBottom: '10px' }}>Soy...</label>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        {[{ val: 'madre', emoji: '🤱', label: 'Mamá' }, { val: 'padre', emoji: '👨‍🍼', label: 'Papá' }].map(opt => (
+                            <button key={opt.val} type="button" onClick={() => setRole(opt.val)}
+                                style={{
+                                    flex: 1, padding: '10px', borderRadius: '14px',
+                                    border: `2px solid ${role === opt.val ? 'var(--color-primary-dark)' : 'var(--color-border)'}`,
+                                    background: role === opt.val ? 'rgba(232,134,159,0.1)' : 'transparent',
+                                    cursor: 'pointer', transition: 'all 0.2s',
+                                    fontWeight: 700, fontSize: '0.9rem',
+                                    color: role === opt.val ? 'var(--color-primary-dark)' : 'var(--color-text)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+                                }}>
+                                <span style={{ fontSize: '1.3rem' }}>{opt.emoji}</span>{opt.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
                 {/* Nombre del bebé */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '15px', paddingBottom: '15px', borderBottom: '1px solid var(--color-border)' }}>
                     <div style={{ width: '50px', height: '50px', borderRadius: '15px', background: 'var(--color-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-primary-dark)', flexShrink: 0 }}>

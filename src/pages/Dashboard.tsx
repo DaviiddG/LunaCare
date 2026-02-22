@@ -28,10 +28,21 @@ export function Dashboard() {
 
     // Extract parent info from Supabase user_metadata
     const parentName: string = (user?.user_metadata?.full_name as string) || '';
-    const role: string = (user?.user_metadata?.role as string) || 'madre';
-    const isParentMother = role === 'madre';
-    const greeting = isParentMother ? `¡Hola, Mamá ${parentName}!` : `¡Hola, Papá ${parentName}!`;
-    const parentEmoji = isParentMother ? '🤱' : '👨‍🍼';
+    const role: string = (user?.user_metadata?.role as string) || '';
+    const isMother = role === 'madre';
+    const isFather = role === 'padre';
+    const greeting = isMother
+        ? `¡Hola, Mamá ${parentName}!`
+        : isFather
+            ? `¡Hola, Papá ${parentName}!`
+            : `¡Hola, ${parentName}!`;
+    const parentEmoji = isMother ? '🤱' : isFather ? '👨‍🍼' : '🍼';
+    const addBabyText = isFather
+        ? '¿Eres papá de más hijos? Agregar bebé'
+        : isMother
+            ? '¿Eres mamá de más hijos? Agregar bebé'
+            : '¿Tienes más hijos? Agregar bebé';
+    const subtitlePrefix = isMother ? 'Mamá de' : isFather ? 'Papá de' : 'Cuidando a';
 
     useEffect(() => {
         if (user) fetchDashboardData();
@@ -106,7 +117,7 @@ export function Dashboard() {
                     <div>
                         <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, lineHeight: 1.2 }}>{greeting}</h2>
                         <p style={{ margin: 0, color: 'var(--color-text-light)', fontSize: '0.88rem' }}>
-                            {isParentMother ? 'Mamá de' : 'Papá de'}{' '}
+                            {subtitlePrefix}{' '}
                             {babies.length > 0 ? babies.map(b => b.name).join(' y ') : 'tu bebé'}
                         </p>
                     </div>
@@ -227,9 +238,7 @@ export function Dashboard() {
                     }}
                 >
                     <PlusCircle size={22} />
-                    {isParentMother
-                        ? '¿Eres mamá de más hijos? Agregar bebé'
-                        : '¿Eres papá de más hijos? Agregar bebé'}
+                    {addBabyText}
                 </button>
             </div>
         </>
