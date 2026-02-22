@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, User } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -11,6 +11,19 @@ export function RegisterPage() {
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (role) {
+            document.documentElement.setAttribute('data-role', role);
+        } else {
+            document.documentElement.removeAttribute('data-role');
+        }
+
+        // Cleanup when leaving the register page without a user
+        return () => {
+            document.documentElement.removeAttribute('data-role');
+        };
+    }, [role]);
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -44,7 +57,7 @@ export function RegisterPage() {
                 <div style={{ textAlign: 'center', marginBottom: '30px' }}>
                     <img src="/logo.png" alt="LunaCare Logo" style={{ width: '64px', height: '64px', marginBottom: '15px', borderRadius: '16px', boxShadow: 'var(--shadow-md)' }} />
                     <h1 style={{ color: 'var(--color-primary-dark)', fontSize: '2.2rem', margin: '0 0 8px 0', letterSpacing: '-0.5px' }}>
-                        ¡Bienvenida!
+                        {role === 'padre' ? '¡Bienvenido!' : '¡Bienvenida!'}
                     </h1>
                     <p style={{ color: 'var(--color-text-light)', fontSize: '1rem' }}>
                         Crea tu cuenta para empezar ✨

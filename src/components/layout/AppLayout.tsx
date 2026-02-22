@@ -26,6 +26,10 @@ export function AppLayout() {
     };
 
     const handleLogout = async () => {
+        setTheme('light');
+        localStorage.setItem('theme', 'light');
+        document.documentElement.setAttribute('data-theme', 'light');
+        document.documentElement.removeAttribute('data-role');
         await supabase.auth.signOut();
         navigate('/login');
     };
