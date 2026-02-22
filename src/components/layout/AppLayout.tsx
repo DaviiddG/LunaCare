@@ -3,6 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { Home, Baby, Moon, Droplet, Sun, LogOut, Settings } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { LunaChatModal } from '../LunaChatModal';
 
 export function AppLayout() {
     const navigate = useNavigate();
@@ -130,6 +131,9 @@ export function AppLayout() {
                     <span>Sueño</span>
                 </NavLink>
             </nav>
+
+            {/* AI Assistant Floating Chat */}
+            <LunaChatModal />
         </div>
     );
 }
