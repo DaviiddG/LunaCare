@@ -56,6 +56,32 @@
   --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.8);
 }
 
+/* ── Padre theme: cool blue ── */
+[data-role='padre'] {
+  --color-primary: #60a5fa;
+  --color-primary-dark: #2563eb;
+  --color-primary-light: #dbeafe;
+}
+
+[data-role='padre'][data-theme='dark'] {
+  --color-primary: #3b82f6;
+  --color-primary-dark: #60a5fa;
+  --color-primary-light: #1e3a5f;
+}
+
+/* ── Madre theme: warm pink (default, explicit for clarity) ── */
+[data-role='madre'] {
+  --color-primary: #E8869F;
+  --color-primary-dark: #D4607C;
+  --color-primary-light: #FFE4E8;
+}
+
+[data-role='madre'][data-theme='dark'] {
+  --color-primary: #E8869F;
+  --color-primary-dark: #E8869F;
+  --color-primary-light: #3D2B2E;
+}
+
 .flex-center {
   display: flex;
   align-items: center;

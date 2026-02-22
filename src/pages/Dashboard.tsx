@@ -17,6 +17,10 @@ function getBabyAge(birthDate: string): string {
     return `${days} día${days !== 1 ? 's' : ''}`;
 }
 
+function timeAgo(dateStr: string) {
+    return formatDistanceToNow(new Date(dateStr), { locale: es, addSuffix: true });
+}
+
 export function Dashboard() {
     const { user } = useAuth();
     const [babies, setBabies] = useState<any[]>([]);
@@ -25,8 +29,8 @@ export function Dashboard() {
     const [latestSleep, setLatestSleep] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [hoveredBaby, setHoveredBaby] = useState<string | null>(null);
 
-    // Extract parent info from Supabase user_metadata
     const parentName: string = (user?.user_metadata?.full_name as string) || '';
     const role: string = (user?.user_metadata?.role as string) || '';
     const isMother = role === 'madre';
@@ -37,12 +41,12 @@ export function Dashboard() {
             ? `¡Hola, Papá ${parentName}!`
             : `¡Hola, ${parentName}!`;
     const parentEmoji = isMother ? '🤱' : isFather ? '👨‍🍼' : '🍼';
+    const subtitlePrefix = isMother ? 'Mamá de' : isFather ? 'Papá de' : 'Cuidando a';
     const addBabyText = isFather
         ? '¿Eres papá de más hijos? Agregar bebé'
         : isMother
             ? '¿Eres mamá de más hijos? Agregar bebé'
             : '¿Tienes más hijos? Agregar bebé';
-    const subtitlePrefix = isMother ? 'Mamá de' : isFather ? 'Papá de' : 'Cuidando a';
 
     useEffect(() => {
         if (user) fetchDashboardData();
@@ -50,22 +54,17 @@ export function Dashboard() {
 
     const fetchDashboardData = async () => {
         setIsLoading(true);
-
         const [babyRes, dietRes, diaperRes, sleepRes] = await Promise.all([
             dbHelpers.getAllBabyProfiles(user!.id),
             dbHelpers.getDiets(),
             dbHelpers.getDiapers(),
             dbHelpers.getSleepLogs(),
         ]);
-
         if (babyRes.data) setBabies(babyRes.data);
-        // If no babies yet, show the modal to add the first one
         if (!babyRes.data || babyRes.data.length === 0) setShowModal(true);
-
         if (dietRes.data && dietRes.data.length > 0) setLatestDiet(dietRes.data[0]);
         if (diaperRes.data && diaperRes.data.length > 0) setLatestDiaper(diaperRes.data[0]);
         if (sleepRes.data && sleepRes.data.length > 0) setLatestSleep(sleepRes.data[0]);
-
         setIsLoading(false);
     };
 
@@ -83,35 +82,32 @@ export function Dashboard() {
             setShowModal(false);
             fetchDashboardData();
         } else {
-            // Re-throw so BabyProfileModal can show the error
             throw new Error(error.message);
         }
     };
 
-    if (isLoading) {
-        return (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60vh', gap: '15px' }}>
-                <div className="pulse-ring" style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Baby size={28} color="white" />
-                </div>
-                <p style={{ color: 'var(--color-text-light)' }}>Cargando...</p>
+    if (isLoading) return (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60vh', gap: '15px' }}>
+            <div className="pulse-ring" style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Baby size={28} color="white" />
             </div>
-        );
-    }
+            <p style={{ color: 'var(--color-text-light)' }}>Cargando...</p>
+        </div>
+    );
 
     return (
         <>
             {showModal && <BabyProfileModal onSave={handleModalSave} />}
 
             <div className="animate-fade-in">
-                {/* Parent Greeting */}
+                {/* ── Parent Greeting ── */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px' }}>
                     <div style={{
                         width: '56px', height: '56px', borderRadius: '50%',
                         background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '1.6rem', boxShadow: '0 4px 15px rgba(232,134,159,0.4)',
-                        flexShrink: 0
+                        fontSize: '1.6rem', boxShadow: '0 4px 15px color-mix(in srgb, var(--color-primary) 40%, transparent)',
+                        flexShrink: 0, transition: 'transform 0.3s ease',
                     }}>
                         {parentEmoji}
                     </div>
@@ -119,123 +115,125 @@ export function Dashboard() {
                         <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, lineHeight: 1.2 }}>{greeting}</h2>
                         <p style={{ margin: 0, color: 'var(--color-text-light)', fontSize: '0.88rem' }}>
                             {subtitlePrefix}{' '}
-                            {babies.length > 0 ? babies.map(b => b.name).join(' y ') : 'tu bebé'}
+                            {babies.length > 0 ? babies.map((b: any) => b.name).join(' y ') : 'tu bebé'}
                         </p>
                     </div>
                 </div>
 
-                {/* Baby cards */}
-                {babies.map((baby, i) => (
-                    <div key={baby.id} className="card animate-scale-in" style={{
-                        marginBottom: '16px',
-                        borderTop: `4px solid ${baby.gender === 'niño' ? '#60a5fa' : 'var(--color-primary)'}`,
-                        animationDelay: `${i * 0.06}s`
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                            {/* Baby avatar */}
-                            <div style={{
-                                width: '52px', height: '52px', borderRadius: '50%',
-                                background: baby.gender === 'niño'
-                                    ? 'linear-gradient(135deg, #93c5fd, #3b82f6)'
-                                    : 'linear-gradient(135deg, #f9a8d4, #ec4899)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: '1.5rem', flexShrink: 0,
-                                boxShadow: `0 4px 12px ${baby.gender === 'niño' ? 'rgba(59,130,246,0.35)' : 'rgba(236,72,153,0.35)'}`
-                            }}>
-                                {baby.gender === 'niño' ? '👦' : '👧'}
-                            </div>
-                            <div style={{ flex: 1 }}>
-                                <div style={{ fontWeight: 800, fontSize: '1.15rem' }}>{baby.name}</div>
-                                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-light)', display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '2px' }}>
-                                    {baby.birth_date && (
-                                        <span>🎂 {getBabyAge(baby.birth_date)}</span>
-                                    )}
-                                    {baby.weight > 0 && <span>⚖️ {baby.weight} kg</span>}
-                                    {baby.height > 0 && <span>📏 {baby.height} cm</span>}
+                {/* ── Baby cards with stats ── */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '14px' }}>
+                    {babies.map((baby, i) => {
+                        const isHovered = hoveredBaby === baby.id;
+                        const babyColor = baby.gender === 'niño' ? '#3b82f6' : 'var(--color-primary-dark)';
+                        const babyGrad = baby.gender === 'niño'
+                            ? 'linear-gradient(135deg, #93c5fd, #3b82f6)'
+                            : 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))';
+
+                        return (
+                            <div key={baby.id}
+                                onMouseEnter={() => setHoveredBaby(baby.id)}
+                                onMouseLeave={() => setHoveredBaby(null)}
+                                style={{
+                                    background: 'var(--color-surface)',
+                                    borderRadius: '20px',
+                                    boxShadow: isHovered
+                                        ? `0 8px 32px color-mix(in srgb, ${babyColor} 25%, transparent), var(--shadow-md)`
+                                        : 'var(--shadow-sm)',
+                                    transform: isHovered ? 'translateY(-3px) scale(1.01)' : 'translateY(0) scale(1)',
+                                    transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                                    border: `1px solid ${isHovered ? babyColor + '44' : 'var(--color-border)'}`,
+                                    overflow: 'hidden',
+                                    animationDelay: `${i * 0.07}s`
+                                }}
+                            >
+                                {/* Top accent bar */}
+                                <div style={{ height: '4px', background: babyGrad }} />
+
+                                {/* Baby info row */}
+                                <div style={{ padding: '16px 16px 12px', display: 'flex', alignItems: 'center', gap: '14px' }}>
+                                    <div style={{
+                                        width: '52px', height: '52px', borderRadius: '50%',
+                                        background: babyGrad,
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        fontSize: '1.5rem', flexShrink: 0,
+                                        boxShadow: `0 4px 12px color-mix(in srgb, ${babyColor} 35%, transparent)`,
+                                        transition: 'transform 0.3s ease',
+                                        transform: isHovered ? 'rotate(-10deg) scale(1.1)' : 'rotate(0deg) scale(1)',
+                                    }}>
+                                        {baby.gender === 'niño' ? '👦' : '👧'}
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ fontWeight: 800, fontSize: '1.15rem', color: 'var(--color-text)' }}>{baby.name}</div>
+                                        <div style={{ fontSize: '0.82rem', color: 'var(--color-text-light)', display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '3px' }}>
+                                            {baby.birth_date && <span>🎂 {getBabyAge(baby.birth_date)}</span>}
+                                            {baby.weight > 0 && <span>⚖️ {baby.weight} kg</span>}
+                                            {baby.height > 0 && <span>📏 {baby.height} cm</span>}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Stats for this baby */}
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1px', background: 'var(--color-border)', borderTop: '1px solid var(--color-border)' }}>
+                                    {/* Last feeding */}
+                                    <StatCell
+                                        color="var(--color-primary-dark)"
+                                        emoji={<Droplet size={13} />}
+                                        label="Última Comida"
+                                        value={latestDiet ? timeAgo(latestDiet.created_at) : '—'}
+                                        sub={latestDiet
+                                            ? (latestDiet.type === 'breast' ? 'Pecho' : latestDiet.type === 'formula' ? 'Fórmula' : 'Sólidos') +
+                                            (latestDiet.amount ? ` · ${latestDiet.amount}ml` : '')
+                                            : 'Sin registros'}
+                                    />
+                                    {/* Last diaper change */}
+                                    <StatCell
+                                        color="var(--color-success)"
+                                        emoji={<Baby size={13} />}
+                                        label="Último Cambio de Pañal"
+                                        value={latestDiaper ? timeAgo(latestDiaper.created_at) : '—'}
+                                        sub={latestDiaper
+                                            ? (latestDiaper.status === 'wet' ? 'Mojado' : 'Sucio')
+                                            : 'Sin registros'}
+                                    />
+                                </div>
+                                {/* Last sleep — full width */}
+                                <div style={{ borderTop: '1px solid var(--color-border)' }}>
+                                    <StatCell
+                                        color="var(--color-secondary-dark)"
+                                        emoji={<Moon size={13} />}
+                                        label="Último Sueño"
+                                        value={latestSleep ? latestSleep.duration : '—'}
+                                        sub={latestSleep ? timeAgo(latestSleep.created_at) : 'Sin registros'}
+                                        wide
+                                    />
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                ))}
-
-                {/* Stats grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '18px' }}>
-                    <div className="card animate-scale-in" style={{ padding: '16px', animationDelay: '0.1s' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', color: 'var(--color-primary-dark)', marginBottom: '8px', fontSize: '0.82rem', fontWeight: 700 }}>
-                            <Droplet size={14} /> Última Comida
-                        </div>
-                        <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>
-                            {latestDiet
-                                ? formatDistanceToNow(new Date(latestDiet.created_at), { locale: es, addSuffix: true })
-                                : '—'}
-                        </div>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', marginTop: '3px' }}>
-                            {latestDiet
-                                ? (latestDiet.type === 'breast' ? 'Pecho' : latestDiet.type === 'formula' ? 'Fórmula' : 'Sólidos') +
-                                (latestDiet.amount ? ` · ${latestDiet.amount}ml` : '')
-                                : 'Sin registros'}
-                        </div>
-                    </div>
-
-                    <div className="card animate-scale-in" style={{ padding: '16px', animationDelay: '0.15s' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', color: 'var(--color-success)', marginBottom: '8px', fontSize: '0.82rem', fontWeight: 700 }}>
-                            <Baby size={14} /> Último Pañal
-                        </div>
-                        <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>
-                            {latestDiaper
-                                ? formatDistanceToNow(new Date(latestDiaper.created_at), { locale: es, addSuffix: true })
-                                : '—'}
-                        </div>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', marginTop: '3px' }}>
-                            {latestDiaper
-                                ? (latestDiaper.status === 'wet' ? 'Mojado' : 'Sucio')
-                                : 'Sin registros'}
-                        </div>
-                    </div>
-
-                    <div className="card animate-scale-in" style={{ padding: '16px', gridColumn: 'span 2', animationDelay: '0.2s' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', color: 'var(--color-secondary-dark)', marginBottom: '8px', fontSize: '0.82rem', fontWeight: 700 }}>
-                            <Moon size={14} /> Último Sueño
-                        </div>
-                        <div style={{ fontWeight: 700, fontSize: '1.5rem' }}>
-                            {latestSleep ? latestSleep.duration : '—'}
-                        </div>
-                        {latestSleep && (
-                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', marginTop: '3px' }}>
-                                {formatDistanceToNow(new Date(latestSleep.created_at), { locale: es, addSuffix: true })}
-                            </div>
-                        )}
-                    </div>
+                        );
+                    })}
                 </div>
 
-                {/* Add another baby button */}
+                {/* ── Add another baby ── */}
                 <button
                     onClick={() => setShowModal(true)}
                     style={{
-                        width: '100%',
-                        padding: '16px',
-                        borderRadius: '18px',
-                        border: '2px dashed var(--color-border)',
-                        background: 'transparent',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '12px',
-                        color: 'var(--color-text-light)',
-                        fontWeight: 600,
-                        fontSize: '0.95rem',
+                        width: '100%', padding: '16px',
+                        borderRadius: '18px', border: '2px dashed var(--color-border)',
+                        background: 'transparent', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
+                        color: 'var(--color-text-light)', fontWeight: 600, fontSize: '0.95rem',
                         transition: 'all 0.25s ease',
                     }}
                     onMouseEnter={e => {
                         (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-primary)';
                         (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-primary-dark)';
-                        (e.currentTarget as HTMLButtonElement).style.background = 'rgba(232,134,159,0.06)';
+                        (e.currentTarget as HTMLButtonElement).style.background = 'color-mix(in srgb, var(--color-primary) 6%, transparent)';
+                        (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.01)';
                     }}
                     onMouseLeave={e => {
                         (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-border)';
                         (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-text-light)';
                         (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+                        (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)';
                     }}
                 >
                     <PlusCircle size={22} />
@@ -243,5 +241,34 @@ export function Dashboard() {
                 </button>
             </div>
         </>
+    );
+}
+
+// ── Small reusable Stat Cell ──────────────────────────────
+function StatCell({ color, emoji, label, value, sub, wide }: {
+    color: string; emoji: React.ReactNode;
+    label: string; value: string; sub: string; wide?: boolean;
+}) {
+    const [hov, setHov] = useState(false);
+    return (
+        <div
+            onMouseEnter={() => setHov(true)}
+            onMouseLeave={() => setHov(false)}
+            style={{
+                padding: '12px 14px',
+                background: hov ? `color-mix(in srgb, ${color} 8%, var(--color-surface))` : 'var(--color-surface)',
+                transition: 'background 0.2s ease',
+                cursor: 'default',
+                gridColumn: wide ? 'span 2' : undefined,
+            }}
+        >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color, marginBottom: '5px', fontSize: '0.78rem', fontWeight: 700 }}>
+                {emoji} {label}
+            </div>
+            <div style={{ fontWeight: 700, fontSize: wide ? '1.3rem' : '0.95rem', color: 'var(--color-text)', transition: 'transform 0.2s', transform: hov ? 'scale(1.03)' : 'scale(1)' }}>
+                {value}
+            </div>
+            <div style={{ fontSize: '0.76rem', color: 'var(--color-text-light)', marginTop: '2px' }}>{sub}</div>
+        </div>
     );
 }

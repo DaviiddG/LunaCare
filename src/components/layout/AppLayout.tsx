@@ -2,15 +2,24 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { Home, Baby, Moon, Droplet, Sun, LogOut, Settings } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 
 export function AppLayout() {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
 
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
     }, [theme]);
+
+    // Apply role-based color theme
+    useEffect(() => {
+        const role = (user?.user_metadata?.role as string) || '';
+        if (role) document.documentElement.setAttribute('data-role', role);
+        else document.documentElement.removeAttribute('data-role');
+    }, [user]);
 
     const toggleTheme = () => {
         setTheme(prev => prev === 'light' ? 'dark' : 'light');
