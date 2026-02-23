@@ -119,87 +119,93 @@ export function LunaChatModal() {
             const babyContext = await buildBabyContext();
 
             // 4. Send to Gemini
-            const { text, action, error } = await geminiHelpers.sendMessageWithContext(userText, chatHistory, babyContext);
+            const { text, actions, error } = await geminiHelpers.sendMessageWithContext(userText, chatHistory, babyContext);
 
-            if (action && !error) {
-                const call = action.args as any;
-                let actionText = "He registrado la acción solicitada.";
+            if (actions && actions.length > 0 && !error) {
+                let combinedActionText = "";
 
-                try {
-                    const targetBabyId = call.babyId || selectedBaby.id;
-                    const targetBaby = babies.find(b => b.id === targetBabyId) || selectedBaby;
+                for (const action of actions) {
+                    const call = action.args as any;
+                    let actionText = "He registrado la acción solicitada.";
 
-                    if (action.name === 'logBabyDiet') {
-                        await dbHelpers.insertDiet({
-                            user_id: user.id,
-                            baby_id: targetBabyId,
-                            type: call.type,
-                            amount: call.amount,
-                            observations: call.observations || "Registrado por Luna"
-                        });
-                        actionText = `🍼 Listo, he anotado la toma de ${call.type} (${call.amount}${call.type === 'pecho' ? ' min' : ' ml'}) para ${targetBaby.name}.`;
-                    } else if (action.name === 'logBabyDiaper') {
-                        await dbHelpers.insertDiaper({
-                            user_id: user.id,
-                            baby_id: targetBabyId,
-                            status: call.status,
-                            observations: call.observations || "Registrado por Luna"
-                        });
-                        actionText = `✨ Listo, he anotado el cambio de pañal (${call.status}) de ${targetBaby.name}.`;
-                    } else if (action.name === 'logBabySleep') {
-                        const end = new Date();
-                        const start = new Date(end.getTime() - ((call.durationMinutes || 0) * 60 * 1000));
-                        await dbHelpers.insertSleepLog({
-                            user_id: user.id,
-                            baby_id: targetBabyId,
-                            start_time: start.toISOString(),
-                            end_time: end.toISOString(),
-                            duration: `${call.durationMinutes} minutos`
-                        });
-                        actionText = `😴 Listo, he anotado que ${targetBaby.name} durmió por ${call.durationMinutes} minutos.`;
-                    } else if (action.name === 'logAddBaby') {
-                        await dbHelpers.upsertBabyProfile({
-                            user_id: user.id,
-                            name: call.name,
-                            gender: call.gender || null,
-                            birth_date: call.birthDate || new Date().toISOString().split('T')[0],
-                            weight: call.weight || 0,
-                            height: call.height || 0
-                        });
-                        await fetchBabies();
-                        actionText = `👶 ¡Listo! He agregado el perfil de ${call.name} a tu familia.`;
-                    } else if (action.name === 'logDeleteBaby') {
-                        if (targetBabyId) {
-                            await dbHelpers.deleteBabyProfile(targetBabyId, user.id);
+                    try {
+                        const targetBabyId = call.babyId || selectedBaby.id;
+                        const targetBaby = babies.find(b => b.id === targetBabyId) || selectedBaby;
+
+                        if (action.name === 'logBabyDiet') {
+                            await dbHelpers.insertDiet({
+                                user_id: user.id,
+                                baby_id: targetBabyId,
+                                type: call.type,
+                                amount: call.amount,
+                                observations: call.observations || "Registrado por Luna"
+                            });
+                            actionText = `🍼 Listo, he anotado la toma de ${call.type} (${call.amount}${call.type === 'pecho' ? ' min' : ' ml'}) para ${targetBaby.name}.`;
+                        } else if (action.name === 'logBabyDiaper') {
+                            await dbHelpers.insertDiaper({
+                                user_id: user.id,
+                                baby_id: targetBabyId,
+                                status: call.status,
+                                observations: call.observations || "Registrado por Luna"
+                            });
+                            actionText = `✨ Listo, he anotado el cambio de pañal (${call.status}) de ${targetBaby.name}.`;
+                        } else if (action.name === 'logBabySleep') {
+                            const end = new Date();
+                            const start = new Date(end.getTime() - ((call.durationMinutes || 0) * 60 * 1000));
+                            await dbHelpers.insertSleepLog({
+                                user_id: user.id,
+                                baby_id: targetBabyId,
+                                start_time: start.toISOString(),
+                                end_time: end.toISOString(),
+                                duration: `${call.durationMinutes} minutos`
+                            });
+                            actionText = `😴 Listo, he anotado que ${targetBaby.name} durmió por ${call.durationMinutes} minutos.`;
+                        } else if (action.name === 'logAddBaby') {
+                            await dbHelpers.upsertBabyProfile({
+                                user_id: user.id,
+                                name: call.name,
+                                gender: call.gender || null,
+                                birth_date: call.birthDate || new Date().toISOString().split('T')[0],
+                                weight: call.weight || 0,
+                                height: call.height || 0
+                            });
                             await fetchBabies();
-                            const deletedName = babies.find(b => b.id === targetBabyId)?.name || 'el bebé';
-                            actionText = `🗑️ He borrado de manera permanente el perfil y todos los historiales de ${deletedName}.`;
-                        } else {
-                            actionText = `No pude encontrar al bebé para borrar.`;
+                            actionText = `👶 ¡Listo! He agregado el perfil de ${call.name} a tu familia.`;
+                        } else if (action.name === 'logDeleteBaby') {
+                            if (targetBabyId) {
+                                await dbHelpers.deleteBabyProfile(targetBabyId, user.id);
+                                await fetchBabies();
+                                const deletedName = babies.find(b => b.id === targetBabyId)?.name || 'el bebé';
+                                actionText = `🗑️ He borrado de manera permanente el perfil y todos los historiales de ${deletedName}.`;
+                            } else {
+                                actionText = `No pude encontrar al bebé para borrar.`;
+                            }
+                        } else if (action.name === 'logUpdateBaby') {
+                            const newWeight = call.weight !== undefined ? call.weight : targetBaby.weight;
+                            const newHeight = call.height !== undefined ? call.height : targetBaby.height;
+
+                            await dbHelpers.upsertBabyProfile({
+                                id: targetBabyId,
+                                user_id: user.id,
+                                name: targetBaby.name,
+                                gender: targetBaby.gender,
+                                birth_date: targetBaby.birth_date,
+                                weight: newWeight,
+                                height: newHeight
+                            });
+
+                            await fetchBabies();
+                            actionText = `📈 ¡Actualizado! He registrado las nuevas medidas para ${targetBaby.name}.`;
                         }
-                    } else if (action.name === 'logUpdateBaby') {
-                        const newWeight = call.weight !== undefined ? call.weight : targetBaby.weight;
-                        const newHeight = call.height !== undefined ? call.height : targetBaby.height;
-
-                        await dbHelpers.upsertBabyProfile({
-                            id: targetBabyId,
-                            user_id: user.id,
-                            name: targetBaby.name,
-                            gender: targetBaby.gender,
-                            birth_date: targetBaby.birth_date,
-                            weight: newWeight,
-                            height: newHeight
-                        });
-
-                        await fetchBabies();
-                        actionText = `📈 ¡Actualizado! He registrado las nuevas medidas para ${targetBaby.name}.`;
+                    } catch (dbErr) {
+                        console.error("DB Error processing action:", dbErr);
+                        actionText = "Lo siento, intenté registrarlo pero hubo un problema al guardarlo en tu historial.";
                     }
-                } catch (dbErr) {
-                    console.error("DB Error processing action:", dbErr);
-                    actionText = "Lo siento, intenté registrarlo pero hubo un problema al guardarlo en tu historial.";
+
+                    combinedActionText += actionText + "\n";
                 }
 
-                const finalText = text ? `${text}\n\n${actionText}` : actionText;
+                const finalText = text ? `${text}\n\n${combinedActionText.trim()}` : combinedActionText.trim();
 
                 const { data: savedMsg } = await dbHelpers.insertAiMessage({
                     user_id: user.id,

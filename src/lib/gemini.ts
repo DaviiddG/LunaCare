@@ -104,11 +104,12 @@ Reglas:
 2. Basarás tus respuestas en la información de TODOS los bebés (hijos) del padre actual que se te proporcionará en el contexto. El usuario puede tener uno o varios gemelos/hijos de distintas edades.
 3. CRÍTICO: Si el usuario te PIde registrar algo (ej. "durmió 1 hora" o "cambié un pañal") pero NO MENCIONA a cuál de sus bebés se refiere, y en su contexto hay MÁS DE UN BEBÉ, **DEBES preguntarle amablemente a cuál bebé se refiere** antes de usar las funciones. Si solo tiene un bebé o menciona su nombre claramente ("Sof tomó 10 min"), obtén el "babyId" del contexto y llama a la función correspondiente.
 4. AGREGAR BEBÉS: Puedes ejecutar la acción para registrar un nuevo bebé si el usuario te lo pide proporcionando el nombre.
-6. ELIMINACIÓN DE BEBÉS (REGLA DE DOBLE CONFIRMACIÓN): Si el usuario solicita eliminar el perfil de un bebé, NUNCA ejecutes la función de inmediato. 
+5. ELIMINACIÓN DE BEBÉS (REGLA DE DOBLE CONFIRMACIÓN): Si el usuario solicita eliminar el perfil de un bebé, NUNCA ejecutes la función de inmediato. 
    - PRIMERO, respóndele preguntando: "¿Estás seguro de que deseas eliminar el perfil de [Nombre] y todos sus recuerdos y registros irrevocablemente?"
    - SEGUNDO, si el usuario dice "sí", TÚ DEBES preguntar de nuevo de forma muy seria: "¿Estás ABSOLUTAMENTE seguro? No podré recuperar los datos."
    - SÓLO CUANDO responda afirmativamente por segunda vez tras tu segunda advertencia explícita, podrás invocar la función "logDeleteBaby".
-7. ACTUALIZACIÓN DE MEDIDAS: Si dicen "Leo pesa ahora 4kg", usa logUpdateBaby. Si no sabes a cuál bebé se refieren, pregunta.
+6. ACTUALIZACIÓN DE MEDIDAS: Si dicen "Leo pesa ahora 4kg", usa logUpdateBaby. Si no sabes a cuál bebé se refieren, pregunta.
+7. REGISTROS SIMULTÁNEOS (PARALLEL CALLING): Si el usuario te pide registrar una acción para MÚLTIPLES bebés a la vez (ej. "Anota que Leo y Sofi tomaron 150ml" o "Los dos durmieron 1 hora"), DEBES llamar a la función correspondiente MÚLTIPLES VECES dentro de tu misma respuesta (una llamada por cada 'babyId'). No intentes resumirlo en una sola llamada.
 8. Siempre enfatiza que tus consejos no reemplazan a un médico.`,
     tools: [
         {
@@ -143,9 +144,9 @@ ${message}
 
             const result = await chat.sendMessage(prompt);
 
-            // Check if model decided to call a function
+            // Check if model decided to call a function (can be multiple parallel calls)
             const functionCalls = result.response.functionCalls();
-            const action = functionCalls ? functionCalls[0] : null;
+            const actions = functionCalls || [];
 
             // Extract text if there is any
             let responseText = "";
@@ -155,10 +156,10 @@ ${message}
                 // Ignore, means there is no text part, only function call
             }
 
-            return { text: responseText, action, error: null };
+            return { text: responseText, actions, error: null };
         } catch (error: any) {
             console.error("Error en gemini:", error);
-            return { text: null, action: null, error: error.message };
+            return { text: null, actions: [], error: error.message };
         }
     }
 };
