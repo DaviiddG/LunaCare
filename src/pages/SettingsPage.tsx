@@ -26,6 +26,8 @@ export function SettingsPage() {
     const [babies, setBabies] = useState<BabyForm[]>([]);
     const [isEditingProfile, setIsEditingProfile] = useState(false);
     const [profileName, setProfileName] = useState('');
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [babyToDelete, setBabyToDelete] = useState<BabyForm | null>(null);
 
     useEffect(() => {
         if (user) {
@@ -78,6 +80,21 @@ export function SettingsPage() {
         setBabies(prev => prev.map(b =>
             b.id === baby.id ? { ...b, saving: false, saved: !error } : b
         ));
+    };
+
+    const handleDeleteClick = (baby: BabyForm) => {
+        setBabyToDelete(baby);
+        setShowDeleteModal(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!babyToDelete || !user) return;
+
+        await dbHelpers.deleteBabyProfile(babyToDelete.id, user.id);
+        setShowDeleteModal(false);
+        setBabyToDelete(null);
+        fetchBabies();
+        window.dispatchEvent(new CustomEvent('luna-action-completed'));
     };
 
 
@@ -229,13 +246,7 @@ export function SettingsPage() {
                                                 {baby.saving ? 'Guardando...' : baby.saved ? '¡Guardado con éxito!' : 'Guardar Datos'}
                                             </button>
                                             <button
-                                                onClick={async () => {
-                                                    if (window.confirm('¿Seguro que deseas eliminar el perfil de este bebé? Se borrarán todos sus datos.')) {
-                                                        await dbHelpers.deleteBabyProfile(baby.id, user!.id);
-                                                        fetchBabies();
-                                                        window.dispatchEvent(new CustomEvent('luna-action-completed'));
-                                                    }
-                                                }}
+                                                onClick={() => handleDeleteClick(baby)}
                                                 className="px-4 bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold py-2 rounded-lg text-sm transition-colors"
                                             >
                                                 Eliminar
@@ -275,6 +286,41 @@ export function SettingsPage() {
                     <p className="text-center text-slate-400 text-xs mt-4">LunaCare v2.4.0 • Hecho con amor para padres</p>
                 </div>
             </main>
+
+            {/* Custom Deletion Modal */}
+            {showDeleteModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowDeleteModal(false)} />
+                    <div className="relative bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-in zoom-in duration-200">
+                        <div className="flex flex-col items-center text-center">
+                            <div className="w-16 h-16 rounded-full bg-red-50 dark:bg-red-500/10 flex items-center justify-center mb-4">
+                                <span className="material-symbols-outlined text-red-500 text-3xl">delete_forever</span>
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+                                ¿Eliminar perfil?
+                            </h3>
+                            <p className="text-slate-500 dark:text-slate-400 text-sm mb-6 leading-relaxed">
+                                Estás a punto de eliminar el perfil de <span className="font-bold text-slate-700 dark:text-slate-300">{babyToDelete?.name}</span>.
+                                Esta acción es permanente y se borrarán todos sus registros.
+                            </p>
+                            <div className="flex flex-col w-full gap-3">
+                                <button
+                                    onClick={confirmDelete}
+                                    className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-4 rounded-2xl transition-all active:scale-[0.98] shadow-lg shadow-red-500/20"
+                                >
+                                    Sí, eliminar perfil
+                                </button>
+                                <button
+                                    onClick={() => setShowDeleteModal(false)}
+                                    className="w-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold py-4 rounded-2xl transition-all active:scale-[0.98]"
+                                >
+                                    Cancelar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
