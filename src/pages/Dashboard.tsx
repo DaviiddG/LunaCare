@@ -105,18 +105,18 @@ Bebé: ${currentBaby.name}
     return (
         <div className="bg-background-light dark:bg-[#121212] min-h-screen pb-32">
             {/* Custom Header in Dashboard */}
-            <header className="fixed top-0 w-full z-50 bg-background-light/80 dark:bg-[#121212]/80 backdrop-blur-2xl px-6 pt-12 pb-2">
-                <div className="flex justify-between items-center">
-                    <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center border-2 border-white dark:border-slate-800 overflow-hidden shadow-sm">
+            <header className="fixed top-0 w-full z-50 bg-background-light/80 dark:bg-[#121212]/80 backdrop-blur-2xl px-4 pt-12 pb-2">
+                <div className="flex justify-between items-center gap-2">
+                    <div className="flex items-center space-x-3 min-w-0 flex-1">
+                        <div className="w-10 h-10 flex-shrink-0 rounded-full bg-primary/20 flex items-center justify-center border-2 border-white dark:border-slate-800 overflow-hidden shadow-sm">
                             <span className="text-primary font-bold text-lg">{user?.email?.[0].toUpperCase() || 'D'}</span>
                         </div>
-                        <div>
+                        <div className="min-w-0">
                             <h2 className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-none">Usuario</h2>
-                            <p className="font-bold text-slate-800 dark:text-white capitalize">{user?.user_metadata?.first_name || user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Padre'}</p>
+                            <p className="font-bold text-slate-800 dark:text-white capitalize truncate">{user?.user_metadata?.first_name || user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Padre'}</p>
                         </div>
                     </div>
-                    <div className="flex space-x-2">
+                    <div className="flex space-x-2 flex-shrink-0">
                         <AnimatedThemeToggler className="w-10 h-10 shadow-sm border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none" />
                         <button className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm border border-slate-100 dark:border-slate-700 active:scale-95">
                             <span className="material-symbols-rounded text-slate-600 dark:text-slate-300">notifications</span>
@@ -158,9 +158,9 @@ Bebé: ${currentBaby.name}
                 </div>
 
                 {/* Luna AI Active Greeting */}
-                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-indigo-50 to-purple-100 dark:from-slate-800 dark:to-indigo-950 p-6 mb-8 border border-white/50 dark:border-white/10 shadow-sm transition-all animate-fade-in">
-                    <div className="flex items-start justify-between relative z-10">
-                        <div className="max-w-[70%]">
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-indigo-50 to-purple-100 dark:from-slate-800 dark:to-indigo-950 p-5 mb-8 border border-white/50 dark:border-white/10 shadow-sm transition-all animate-fade-in">
+                    <div className="flex items-start justify-between relative z-10 gap-3">
+                        <div className="flex-1 min-w-0">
                             <div className="inline-flex items-center space-x-2 bg-white/60 dark:bg-slate-700/60 px-3 py-1 rounded-full mb-3">
                                 <span className="relative flex h-2 w-2">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
@@ -168,25 +168,23 @@ Bebé: ${currentBaby.name}
                                 </span>
                                 <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Luna AI Activa</span>
                             </div>
-                            <h1 className="text-2xl font-bold text-slate-800 dark:text-white leading-tight">
-                                ¡Hola, <span className="capitalize">{user?.user_metadata?.first_name || user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Padre'}</span>! 👋<br />
+                            <h1 className="text-lg font-bold text-slate-800 dark:text-white leading-tight">
+                                ¡Hola, <span className="capitalize">{user?.user_metadata?.first_name || user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Padre'}</span>! 👋{' '}
                                 <span className="text-primary font-bold">¿Cómo está {currentBaby.name} hoy?</span>
                             </h1>
-                            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                            <p className="mt-2 text-xs text-slate-600 dark:text-slate-400 line-clamp-2">
                                 {insightLoading ? 'Luna está analizando...' : (insightText || `¡Es un buen día para cuidar a ${currentBaby.name}!`)}
                             </p>
                         </div>
-                        <div className="absolute -right-2 -bottom-4 w-32 h-44 flex items-end">
-                            <div className="relative">
-                                <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full"></div>
-                                <img
-                                    className="w-24 h-24 rounded-full border-4 border-white dark:border-slate-700 object-cover relative z-10"
-                                    src={`https://api.dicebear.com/7.x/pixel-art/svg?seed=${currentBaby.name}`}
-                                    alt="Luna AI"
-                                />
-                                <div className="absolute -bottom-1 -right-1 bg-white dark:bg-slate-800 p-1.5 rounded-full shadow-lg z-20 border border-slate-50 dark:border-slate-700">
-                                    <span className="material-symbols-rounded text-primary text-lg">auto_awesome</span>
-                                </div>
+                        <div className="flex-shrink-0 relative w-16 h-16">
+                            <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full"></div>
+                            <img
+                                className="w-16 h-16 rounded-full border-4 border-white dark:border-slate-700 object-cover relative z-10"
+                                src={`https://api.dicebear.com/7.x/pixel-art/svg?seed=${currentBaby.name}`}
+                                alt="Luna AI"
+                            />
+                            <div className="absolute -bottom-1 -right-1 bg-white dark:bg-slate-800 p-1 rounded-full shadow-lg z-20 border border-slate-50 dark:border-slate-700">
+                                <span className="material-symbols-rounded text-primary text-sm">auto_awesome</span>
                             </div>
                         </div>
                     </div>
@@ -264,19 +262,19 @@ Bebé: ${currentBaby.name}
 function ActivityTile({ title, subtitle, icon, color, full, onClick, ai, history, plus, arrow }: any) {
     return (
         <button
-            className={`${full ? 'col-span-2' : ''} group relative overflow-hidden p-5 rounded-xl text-left transition-transform active:scale-[0.98] card-shadow`}
+            className={`${full ? 'col-span-2' : ''} group relative overflow-hidden p-4 rounded-xl text-left transition-transform active:scale-[0.98] card-shadow`}
             style={{ backgroundColor: color, color: color === '#FBCB43' ? '#1e293b' : 'white' }}
             onClick={onClick}
         >
             <div className={`flex ${full ? 'justify-between items-center' : 'flex-col h-full'} relative z-10`}>
-                <div className={full ? 'flex items-center space-x-4' : ''}>
+                <div className={full ? 'flex items-center space-x-3' : ''}>
                     {full && title === 'Historial' ? (
-                        <div className="bg-white/20 p-3 rounded-full">
-                            <span className="material-symbols-rounded text-3xl opacity-90">{icon}</span>
+                        <div className="bg-white/20 p-2.5 rounded-full">
+                            <span className="material-symbols-rounded text-2xl opacity-90">{icon}</span>
                         </div>
                     ) : (
-                        <div className={full ? '' : 'flex justify-between items-start mb-4'}>
-                            <span className={`material-symbols-rounded ${full ? 'text-4xl' : 'text-3xl'} opacity-90 ${full ? 'mb-2' : ''}`}>{icon}</span>
+                        <div className={full ? '' : 'flex justify-between items-start mb-3'}>
+                            <span className={`material-symbols-rounded ${full ? 'text-3xl' : 'text-2xl'} opacity-90 ${full ? 'mb-1' : ''}`}>{icon}</span>
                             {!full && (ai || history || plus) && (
                                 <div className="bg-white/20 p-1.5 rounded-full backdrop-blur-md">
                                     <span className="material-symbols-rounded text-xs">{ai ? 'auto_awesome' : (history ? 'history' : 'add')}</span>
@@ -284,9 +282,9 @@ function ActivityTile({ title, subtitle, icon, color, full, onClick, ai, history
                             )}
                         </div>
                     )}
-                    <div>
-                        <h3 className={`${full ? 'text-xl' : 'text-lg'} font-bold`}>{title}</h3>
-                        <p className={`${full ? 'text-sm' : 'text-xs'} opacity-80 mt-1`}>{subtitle}</p>
+                    <div className="min-w-0">
+                        <h3 className={`${full ? 'text-base' : 'text-sm'} font-bold leading-tight`}>{title}</h3>
+                        <p className="text-xs opacity-80 mt-0.5 line-clamp-1">{subtitle}</p>
                     </div>
                 </div>
 
@@ -294,8 +292,8 @@ function ActivityTile({ title, subtitle, icon, color, full, onClick, ai, history
             </div>
 
             {title === 'Sueño' && (
-                <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform">
-                    <span className="material-symbols-rounded text-[120px]">dark_mode</span>
+                <div className="absolute -right-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform">
+                    <span className="material-symbols-rounded text-[80px]">dark_mode</span>
                 </div>
             )}
         </button>
