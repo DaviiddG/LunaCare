@@ -4,7 +4,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { useBabies } from '../hooks/useBabies';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { BabyProfileModal } from '../components/BabyProfileModal';
 import { AnimatedThemeToggler } from '../components/AnimatedThemeToggler';
 import { useNavigate } from 'react-router-dom';
 
@@ -20,7 +19,6 @@ export function Dashboard() {
     const [insightLoading, setInsightLoading] = useState(false);
     const [insightText, setInsightText] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [showModal, setShowModal] = useState(false);
     const navigate = useNavigate();
 
 
@@ -63,7 +61,7 @@ export function Dashboard() {
             const currentBabyForInsight = selectedBaby || babyProfiles[0];
             generateInsight(stats, currentBabyForInsight);
         } else {
-            setShowModal(true);
+            navigate('/add-baby');
         }
         setIsLoading(false);
     };
@@ -148,7 +146,7 @@ Bebé: ${currentBaby.name}
                                 <span className={`text-xs font-bold ${selectedBaby?.id === b.id ? 'text-primary' : 'text-slate-500 dark:text-slate-400'}`}>{b.name}</span>
                             </button>
                         ))}
-                        <button className="flex flex-col items-center space-y-1 flex-shrink-0" onClick={() => setShowModal(true)}>
+                        <button className="flex flex-col items-center space-y-1 flex-shrink-0" onClick={() => navigate('/add-baby')}>
                             <div className="w-14 h-14 rounded-full border-2 border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center">
                                 <span className="material-symbols-rounded text-slate-400">add</span>
                             </div>
@@ -247,16 +245,10 @@ Bebé: ${currentBaby.name}
 
             </main>
 
-            {showModal && <BabyProfileModal onSave={handleDashboardSave} />}
         </div>
     );
 
-    async function handleDashboardSave(profileData: any) {
-        if (!user) return;
-        await dbHelpers.upsertBabyProfile({ ...profileData, user_id: user.id });
-        setShowModal(false);
-        fetchDashboardData();
-    }
+
 }
 
 function ActivityTile({ title, subtitle, icon, color, full, onClick, ai, history, plus, arrow }: any) {

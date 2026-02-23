@@ -10,6 +10,7 @@ import { SolidsPage } from './pages/SolidsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { HistoryPage } from './pages/HistoryPage';
+import { AddBabyPage } from './pages/AddBabyPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { AuthProvider } from './contexts/AuthContext';
@@ -44,6 +45,7 @@ const router = createBrowserRouter([
           { path: 'solids', element: <SolidsPage /> },
           { path: 'reports', element: <ReportsPage /> },
           { path: 'history', element: <HistoryPage /> },
+          { path: 'add-baby', element: <AddBabyPage /> },
           { path: 'settings', element: <SettingsPage /> },
         ],
       }
