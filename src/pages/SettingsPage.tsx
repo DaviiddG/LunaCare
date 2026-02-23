@@ -17,6 +17,9 @@ type BabyForm = {
     expanded: boolean;
     saving: boolean;
     saved: boolean;
+    avatar_url: string;
+    imageFile: File | null;
+    imagePreview: string | null;
 };
 
 export function SettingsPage() {
@@ -50,6 +53,9 @@ export function SettingsPage() {
                 expanded: false,
                 saving: false,
                 saved: false,
+                avatar_url: b.avatar_url || '',
+                imageFile: null,
+                imagePreview: null,
             })));
         }
         setIsLoading(false);
@@ -57,6 +63,17 @@ export function SettingsPage() {
 
     const toggleExpand = (id: string) => {
         setBabies(prev => prev.map(b => b.id === id ? { ...b, expanded: !b.expanded } : b));
+    };
+
+    const handleFileChange = (id: string, e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setBabies(prev => prev.map(b => b.id === id ? { ...b, imageFile: file, imagePreview: reader.result as string, saved: false } : b));
+            };
+            reader.readAsDataURL(file);
+        }
     };
 
     const updateBabyField = (id: string, field: string, value: string) => {
@@ -67,6 +84,23 @@ export function SettingsPage() {
         if (!user) return;
         setBabies(prev => prev.map(b => b.id === baby.id ? { ...b, saving: true } : b));
 
+        let avatar_url = baby.avatar_url;
+
+        if (baby.imageFile) {
+            const fileExt = baby.imageFile.name.split('.').pop();
+            const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+            const { error: uploadError } = await supabase.storage
+                .from('avatars')
+                .upload(fileName, baby.imageFile);
+
+            if (!uploadError) {
+                const { data: { publicUrl } } = supabase.storage
+                    .from('avatars')
+                    .getPublicUrl(fileName);
+                avatar_url = publicUrl;
+            }
+        }
+
         const { error } = await dbHelpers.upsertBabyProfile({
             id: baby.id,
             user_id: user.id,
@@ -75,11 +109,14 @@ export function SettingsPage() {
             weight: parseFloat(baby.weight) || 0,
             height: parseFloat(baby.height) || 0,
             gender: baby.gender,
+            avatar_url: avatar_url,
         });
 
         setBabies(prev => prev.map(b =>
-            b.id === baby.id ? { ...b, saving: false, saved: !error } : b
+            b.id === baby.id ? { ...b, saving: false, saved: !error, avatar_url: avatar_url, imageFile: null, imagePreview: null } : b
         ));
+
+        window.dispatchEvent(new CustomEvent('luna-action-completed'));
     };
 
     const handleDeleteClick = (baby: BabyForm) => {
@@ -171,8 +208,12 @@ export function SettingsPage() {
                                     className="flex items-center p-4 gap-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
                                     onClick={() => toggleExpand(baby.id)}
                                 >
-                                    <div className="w-12 h-12 rounded-lg bg-[#a8e6cf]/20 flex items-center justify-center">
-                                        <span className="material-symbols-outlined text-green-600">child_care</span>
+                                    <div className="w-12 h-12 rounded-lg bg-[#a8e6cf]/20 flex items-center justify-center overflow-hidden">
+                                        {baby.avatar_url ? (
+                                            <img src={baby.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <span className="material-symbols-outlined text-green-600">child_care</span>
+                                        )}
                                     </div>
                                     <div className="flex-1">
                                         <p className="font-semibold text-slate-900 dark:text-slate-100">Perfil de {baby.name || 'Bebé'}</p>
@@ -184,6 +225,33 @@ export function SettingsPage() {
                                 </div>
                                 {baby.expanded && (
                                     <div className="p-4 bg-slate-50 dark:bg-slate-800/30 space-y-4">
+                                        <div className="flex flex-col items-center mb-6">
+                                            <div className="relative">
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    id={`file-upload-${baby.id}`}
+                                                    onChange={(e) => handleFileChange(baby.id, e)}
+                                                />
+                                                <div
+                                                    onClick={() => document.getElementById(`file-upload-${baby.id}`)?.click()}
+                                                    className="w-24 h-24 rounded-full bg-slate-100 dark:bg-slate-800 border-4 border-white dark:border-slate-700 shadow-md flex items-center justify-center overflow-hidden cursor-pointer group hover:opacity-90 transition-opacity"
+                                                >
+                                                    {baby.imagePreview || baby.avatar_url ? (
+                                                        <img src={baby.imagePreview || baby.avatar_url} alt="Preview" className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <span className="material-symbols-rounded text-slate-300 text-5xl group-hover:scale-110 transition-transform">person</span>
+                                                    )}
+                                                </div>
+                                                <button
+                                                    onClick={() => document.getElementById(`file-upload-${baby.id}`)?.click()}
+                                                    className="absolute bottom-0 right-0 bg-[#8c2bee] text-white w-8 h-8 rounded-full border-4 border-white dark:border-slate-800 flex items-center justify-center shadow-lg active:scale-90 transition-transform"
+                                                >
+                                                    <span className="material-symbols-rounded text-sm">edit</span>
+                                                </button>
+                                            </div>
+                                        </div>
                                         <div>
                                             <label className="text-xs font-semibold text-slate-500 mb-1 block">Nombre</label>
                                             <input
