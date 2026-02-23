@@ -50,6 +50,13 @@ export function Dashboard() {
 
     useEffect(() => {
         if (user) fetchDashboardData();
+
+        const handleRefresh = () => {
+            if (user) fetchDashboardData();
+        };
+
+        window.addEventListener('luna-action-completed', handleRefresh);
+        return () => window.removeEventListener('luna-action-completed', handleRefresh);
     }, [user]);
 
     const fetchDashboardData = async () => {

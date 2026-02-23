@@ -21,6 +21,16 @@ export function LunaChatModal() {
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
+    const parentName: string = (user?.user_metadata?.full_name as string)?.split(' ')[0] || '';
+    const role: string = (user?.user_metadata?.role as string) || '';
+    const isMother = role === 'madre';
+    const isFather = role === 'padre';
+    const creativeSubtitle = isMother
+        ? `Aliada incondicional de Mamá ${parentName} 🌟`
+        : isFather
+            ? `Asistente estrella de Papá ${parentName} 🚀`
+            : `Guía familiar de ${parentName} 🍼`;
+
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // Fetch conversation when modal opens or baby changes
@@ -205,6 +215,9 @@ export function LunaChatModal() {
                     combinedActionText += actionText + "\n";
                 }
 
+                // Dispatch event so Dashboard can reload stats automatically without page refresh
+                window.dispatchEvent(new Event('luna-action-completed'));
+
                 const finalText = text ? `${text}\n\n${combinedActionText.trim()}` : combinedActionText.trim();
 
                 const { data: savedMsg } = await dbHelpers.insertAiMessage({
@@ -343,7 +356,7 @@ export function LunaChatModal() {
                             <div>
                                 <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 600 }}>Luna</h3>
                                 <p style={{ margin: 0, fontSize: '0.8rem', opacity: 0.9 }}>
-                                    Asesora de {selectedBaby.name}
+                                    {creativeSubtitle}
                                 </p>
                             </div>
                         </div>
