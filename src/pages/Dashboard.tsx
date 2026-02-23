@@ -1,6 +1,7 @@
 ﻿import { useEffect, useState } from 'react';
 import { dbHelpers } from '../lib/db';
 import { useAuth } from '../contexts/AuthContext';
+import { useBabies } from '../hooks/useBabies';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { BabyProfileModal } from '../components/BabyProfileModal';
@@ -14,13 +15,12 @@ function timeAgo(dateStr: string) {
 
 export function Dashboard() {
     const { user } = useAuth();
-    const [babies, setBabies] = useState<any[]>([]);
+    const { babies, selectedBaby, setSelectedBaby } = useBabies();
     const [babyStats, setBabyStats] = useState<Record<string, any>>({});
     const [insightLoading, setInsightLoading] = useState(false);
     const [insightText, setInsightText] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
-    const [selectedBabyIndex, setSelectedBabyIndex] = useState(0);
     const navigate = useNavigate();
 
 
@@ -41,7 +41,6 @@ export function Dashboard() {
         const { data: babyProfiles } = await dbHelpers.getAllBabyProfiles(user!.id);
 
         if (babyProfiles && babyProfiles.length > 0) {
-            setBabies(babyProfiles);
             const stats: Record<string, any> = {};
 
             for (const baby of babyProfiles) {
@@ -60,17 +59,19 @@ export function Dashboard() {
                 };
             }
             setBabyStats(stats);
-            generateInsight(babyProfiles, stats, selectedBabyIndex);
+            // Generate insight for the currently selected baby
+            const currentBabyForInsight = selectedBaby || babyProfiles[0];
+            generateInsight(stats, currentBabyForInsight);
         } else {
             setShowModal(true);
         }
         setIsLoading(false);
     };
 
-    const generateInsight = async (babyProfiles: any[], stats: any, babyIndex: number) => {
+    const generateInsight = async (stats: any, currentBaby: any) => {
         setInsightLoading(true);
+        setInsightText(null);
         try {
-            const currentBaby = babyProfiles[babyIndex];
             if (!currentBaby) return;
 
             const babyData = stats[currentBaby.id];
@@ -96,7 +97,7 @@ Bebé: ${currentBaby.name}
 
     if (isLoading) return <div className="p-8 text-center bg-background-light dark:bg-[#121212] min-h-screen text-slate-500">Cargando...</div>;
 
-    const currentBaby = babies[selectedBabyIndex];
+    const currentBaby = selectedBaby || babies[0];
     if (!currentBaby) return null;
 
     const stats = babyStats[currentBaby.id] || {};
@@ -128,23 +129,23 @@ Bebé: ${currentBaby.name}
                 {/* Baby Selector */}
                 <div className="mb-6">
                     <div className="flex items-center space-x-4 overflow-x-auto hide-scrollbar py-2">
-                        {babies.map((b, idx) => (
+                        {babies.map((b) => (
                             <button
                                 key={b.id}
-                                className={`flex flex-col items-center space-y-1 flex-shrink-0 transition-opacity ${selectedBabyIndex === idx ? 'opacity-100' : 'opacity-60'}`}
+                                className={`flex flex-col items-center space-y-1 flex-shrink-0 transition-opacity ${selectedBaby?.id === b.id ? 'opacity-100' : 'opacity-60'}`}
                                 onClick={() => {
-                                    setSelectedBabyIndex(idx);
-                                    generateInsight(babies, babyStats, idx);
+                                    setSelectedBaby(b);
+                                    generateInsight(babyStats, b);
                                 }}
                             >
-                                <div className={`w-14 h-14 rounded-full p-1 border-2 bg-white dark:bg-slate-800 shadow-md ${selectedBabyIndex === idx ? 'border-primary' : 'border-transparent'}`}>
+                                <div className={`w-14 h-14 rounded-full p-1 border-2 bg-white dark:bg-slate-800 shadow-md ${selectedBaby?.id === b.id ? 'border-primary' : 'border-transparent'}`}>
                                     <img
                                         alt={b.name}
                                         className="w-full h-full rounded-full object-cover"
                                         src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${b.name}`}
                                     />
                                 </div>
-                                <span className={`text-xs font-bold ${selectedBabyIndex === idx ? 'text-primary' : 'text-slate-500 dark:text-slate-400'}`}>{b.name}</span>
+                                <span className={`text-xs font-bold ${selectedBaby?.id === b.id ? 'text-primary' : 'text-slate-500 dark:text-slate-400'}`}>{b.name}</span>
                             </button>
                         ))}
                         <button className="flex flex-col items-center space-y-1 flex-shrink-0" onClick={() => setShowModal(true)}>
@@ -235,28 +236,17 @@ Bebé: ${currentBaby.name}
                         plus
                     />
                     <ActivityTile
-                        title="Extracción"
-                        subtitle={stats.latestPumping ? `${stats.latestPumping.amount}ml (${stats.latestPumping.side})` : "Ver historial"}
-                        icon="airware"
+                        title="Historial"
+                        subtitle="Últimos eventos"
+                        icon="history"
                         color="#A592FF"
                         full
-                        onClick={() => navigate('/diet')}
+                        onClick={() => navigate('/history')}
                         arrow
                     />
                 </div>
 
-                {/* Luna AI Tip Card */}
-                <div className="mt-8 p-4 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 flex items-center space-x-4">
-                    <div className="bg-primary p-2 rounded-full flex-shrink-0 animate-pulse">
-                        <span className="material-symbols-rounded text-white">lightbulb</span>
-                    </div>
-                    <div className="flex-1">
-                        <p className="text-xs font-bold text-primary uppercase">Luna AI Tip</p>
-                        <p className="text-sm text-slate-600 dark:text-slate-400">
-                            {insightText ? insightText : `Es probable que ${currentBaby.name} necesite atención pronto.`}
-                        </p>
-                    </div>
-                </div>
+
             </main>
 
             {showModal && <BabyProfileModal onSave={handleDashboardSave} />}
@@ -280,7 +270,7 @@ function ActivityTile({ title, subtitle, icon, color, full, onClick, ai, history
         >
             <div className={`flex ${full ? 'justify-between items-center' : 'flex-col h-full'} relative z-10`}>
                 <div className={full ? 'flex items-center space-x-4' : ''}>
-                    {full && title === 'Extracción' ? (
+                    {full && title === 'Historial' ? (
                         <div className="bg-white/20 p-3 rounded-full">
                             <span className="material-symbols-rounded text-3xl opacity-90">{icon}</span>
                         </div>

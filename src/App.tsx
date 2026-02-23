@@ -9,9 +9,11 @@ import { SleepPage } from './pages/SleepPage';
 import { SolidsPage } from './pages/SolidsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { ReportsPage } from './pages/ReportsPage';
+import { HistoryPage } from './pages/HistoryPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { AuthProvider } from './contexts/AuthContext';
+import { BabiesProvider } from './contexts/BabiesContext';
 
 const router = createBrowserRouter([
   {
@@ -28,7 +30,11 @@ const router = createBrowserRouter([
     children: [
       {
         path: '/',
-        element: <AppLayout />,
+        element: (
+          <BabiesProvider>
+            <AppLayout />
+          </BabiesProvider>
+        ),
         children: [
           { index: true, element: <Dashboard /> },
           { path: 'diet', element: <DietPage /> },
@@ -37,6 +43,7 @@ const router = createBrowserRouter([
           { path: 'sleep', element: <SleepPage /> },
           { path: 'solids', element: <SolidsPage /> },
           { path: 'reports', element: <ReportsPage /> },
+          { path: 'history', element: <HistoryPage /> },
           { path: 'settings', element: <SettingsPage /> },
         ],
       }

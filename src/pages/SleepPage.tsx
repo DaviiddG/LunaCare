@@ -51,12 +51,19 @@ export function SleepPage() {
     const elapsed = useTimer(startTime);
 
     useEffect(() => {
-        const savedStart = localStorage.getItem('sleep_start');
-        if (savedStart) {
-            setStartTime(new Date(savedStart));
-            setIsSleeping(true);
+        // Always reset timer state first when baby changes
+        setIsSleeping(false);
+        setStartTime(null);
+
+        if (selectedBaby) {
+            // Check if THIS baby specifically has an active sleep session
+            const savedStart = localStorage.getItem(`sleep_start_${selectedBaby.id}`);
+            if (savedStart) {
+                setStartTime(new Date(savedStart));
+                setIsSleeping(true);
+            }
+            fetchInsight();
         }
-        if (selectedBaby) fetchInsight();
     }, [selectedBaby?.id]);
 
     const fetchInsight = async () => {
@@ -91,7 +98,7 @@ export function SleepPage() {
             const now = new Date();
             setStartTime(now);
             setIsSleeping(true);
-            localStorage.setItem('sleep_start', now.toISOString());
+            localStorage.setItem(`sleep_start_${selectedBaby.id}`, now.toISOString());
         } else {
             setLoading(true);
             const endTime = new Date();
@@ -113,7 +120,7 @@ export function SleepPage() {
             if (!error) {
                 setIsSleeping(false);
                 setStartTime(null);
-                localStorage.removeItem('sleep_start');
+                localStorage.removeItem(`sleep_start_${selectedBaby.id}`);
                 fetchInsight();
                 window.dispatchEvent(new CustomEvent('luna-action-completed'));
             }

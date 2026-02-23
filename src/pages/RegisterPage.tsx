@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, User } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { ShineBorder } from '../components/ui/shine-border';
+import { NeonGradientCard } from '../components/ui/neon-gradient-card';
 
 export function RegisterPage() {
     const navigate = useNavigate();
@@ -54,8 +54,13 @@ export function RegisterPage() {
         <div className="auth-page">
             <div className="auth-overlay"></div>
 
-            <div className="glass-card animate-fade-in relative overflow-hidden">
-                <ShineBorder shineColor={['#9D85E1', '#3994ef', '#9d8cf2']} borderWidth={2} duration={10} />
+            <NeonGradientCard
+                className="animate-fade-in w-full max-w-sm"
+                neonColors={{ firstColor: '#9D85E1', secondColor: '#3994ef' }}
+                borderSize={2}
+                borderRadius={24}
+                innerClassName="p-8 !rounded-[22px]"
+            >
                 <div style={{ textAlign: 'center', marginBottom: '30px' }}>
                     <img src="/logo.png" alt="LunaCare Logo" style={{ display: 'block', margin: '0 auto 15px auto', width: '64px', height: '64px', borderRadius: '16px', boxShadow: 'var(--shadow-md)' }} />
                     <h1 style={{ color: 'var(--color-primary-dark)', fontSize: '2.2rem', margin: '0 0 8px 0', letterSpacing: '-0.5px' }}>
@@ -152,7 +157,7 @@ export function RegisterPage() {
                         Inicia sesión
                     </Link>
                 </div>
-            </div>
+            </NeonGradientCard>
         </div>
     );
 }
