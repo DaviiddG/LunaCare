@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+﻿import { useEffect, useState, useRef } from 'react';
 import { dbHelpers } from '../lib/db';
 import { useAuth } from '../contexts/AuthContext';
 import { useBabies } from '../hooks/useBabies';
@@ -7,6 +7,7 @@ import { es } from 'date-fns/locale';
 import { AnimatedThemeToggler } from '../components/AnimatedThemeToggler';
 import { NotificationSidebar } from '../components/NotificationSidebar';
 import { useNavigate } from 'react-router-dom';
+import { LunaChatModal } from '../components/LunaChatModal';
 
 function timeAgo(dateStr: string) {
     if (!dateStr) return '';
@@ -22,6 +23,9 @@ export function Dashboard() {
     const [isLoading, setIsLoading] = useState(true);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+    const [isLunaChatOpen, setIsLunaChatOpen] = useState(false);
+    const [lunaIcon, setLunaIcon] = useState(localStorage.getItem('luna_icon') || '/luna-avatar.png');
+    const lunaFileInputRef = useRef<HTMLInputElement>(null);
     const navigate = useNavigate();
 
 
@@ -101,7 +105,20 @@ Bebé: ${currentBaby.name}
     const currentBaby = selectedBaby || babies[0];
     if (!currentBaby) return null;
 
-    const stats = babyStats[currentBaby.id] || {};
+    const stats = selectedBaby ? babyStats[selectedBaby.id] || {} : {};
+
+    const handleLunaIconChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64 = reader.result as string;
+                localStorage.setItem('luna_icon', base64);
+                setLunaIcon(base64);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
     return (
         <div className="bg-background-light dark:bg-[#121212] min-h-screen pb-32">
@@ -179,17 +196,39 @@ Bebé: ${currentBaby.name}
                             </div>
                             <h1 className="text-lg font-bold text-slate-800 dark:text-white leading-tight">
                                 ¡Hola, <span className="capitalize">{user?.user_metadata?.first_name || user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Padre'}</span>! 👋{' '}
-                                <span className="text-primary font-bold">¿Cómo está {currentBaby.name} hoy?</span>
+                                <span className="text-primary font-bold">¿Cómo está {selectedBaby?.name || 'tu bebé'} hoy?</span>
                             </h1>
                             <p className="mt-2 text-xs text-slate-600 dark:text-slate-400 line-clamp-2">
-                                {insightLoading ? 'Luna está analizando...' : (insightText || `¡Es un buen día para cuidar a ${currentBaby.name}!`)}
+                                {insightLoading ? 'Luna está analizando...' : (insightText || `¡Es un buen día para cuidar a ${selectedBaby?.name || 'tu bebé'}!`)}
                             </p>
+                            <div className="mt-3 flex gap-2">
+                                <button
+                                    onClick={() => setIsLunaChatOpen(true)}
+                                    className="px-3 py-1.5 bg-primary text-white text-[10px] font-bold rounded-lg shadow-sm active:scale-95 transition-all"
+                                >
+                                    Hablar con Luna
+                                </button>
+                                <button
+                                    onClick={() => lunaFileInputRef.current?.click()}
+                                    className="px-3 py-1.5 bg-white/60 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 text-[10px] font-bold rounded-lg shadow-sm border border-white/20 active:scale-95 transition-all flex items-center gap-1"
+                                >
+                                    <span className="material-symbols-rounded text-[14px]">edit_square</span>
+                                    Personalizar Luna
+                                </button>
+                                <input
+                                    type="file"
+                                    ref={lunaFileInputRef}
+                                    className="hidden"
+                                    accept="image/*"
+                                    onChange={handleLunaIconChange}
+                                />
+                            </div>
                         </div>
                         <div className="flex-shrink-0 relative w-16 h-16">
                             <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full"></div>
                             <img
                                 className="w-16 h-16 rounded-full border-4 border-white dark:border-slate-700 object-cover relative z-10"
-                                src={`https://api.dicebear.com/7.x/pixel-art/svg?seed=${currentBaby.name}`}
+                                src={lunaIcon}
                                 alt="Luna AI"
                             />
                             <div className="absolute -bottom-1 -right-1 bg-white dark:bg-slate-800 p-1 rounded-full shadow-lg z-20 border border-slate-50 dark:border-slate-700">
@@ -261,6 +300,13 @@ Bebé: ${currentBaby.name}
                 onClose={() => setIsNotificationOpen(false)}
                 onUnreadChange={setUnreadCount}
             />
+
+            {isLunaChatOpen && (
+                <LunaChatModal
+                    isOpen={isLunaChatOpen}
+                    onClose={() => setIsLunaChatOpen(false)}
+                />
+            )}
         </div>
     );
 }

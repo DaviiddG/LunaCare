@@ -151,7 +151,7 @@ export function ReportsPage() {
                     <div className="bg-gradient-to-br from-indigo-500 to-[#8c2bee] p-5 rounded-xl text-white shadow-lg relative overflow-hidden w-full">
                         <div className="relative z-10 flex items-start space-x-4">
                             <div className="w-12 h-12 rounded-full border-2 border-white/50 overflow-hidden flex-shrink-0">
-                                <img alt="Luna AI Avatar" className="w-full h-full object-cover" src="/luna-avatar.png" onError={(e) => { (e.target as HTMLImageElement).src = 'https://lh3.googleusercontent.com/aida-public/AB6AXuBzp9ULmCSR-715iwzlJptbBIBpXKq50y-nSGTvw48EB1wAoxmZ876NSg9R0tVxdcMowmLHfu8WtoBBK7pyOg-FQIOcOLPpf2E21KVoZ9DH1zn9HPAWysFZENQBBPrcO2iPjxggME_fAuGsyWRVf7OcXV3HnvAkQH-b_PYcGdG3rKiG5_ilp6DqxISYIBCcSKVRrBDicw1kR-PaA1CEOk6ONjhxKdy275OeXOU12pRgB8EGcmoiZPyk5lSYpB7G3TBzYcXZzBIrvmY' }} />
+                                <img alt="Luna AI Avatar" className="w-full h-full object-cover" src="/luna-avatar.png" />
                             </div>
                             <div>
                                 <div className="flex items-center space-x-1 mb-1">

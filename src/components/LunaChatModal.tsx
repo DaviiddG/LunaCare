@@ -204,8 +204,8 @@ OTRA INSTRUCCIÓN CRÍTICA: NUNCA uses sintaxis de markdown para formatear tu te
 
     if (!isOpen) return null;
 
-    // Icono base de Luna (personalizable desde la configuración en el futuro)
-    const lunaIconUrl = localStorage.getItem('luna_icon') || 'https://lh3.googleusercontent.com/aida-public/AB6AXuATPmbM_BQr_UYlCyodNlSUfTIGiKw9cRE5eNX3NA5Tswrj3Gpa5T3pVD0_DWDZNEROs7xAAaiLmK5sNBrcUbrCCOcilEpvd3jG9DzIRSE83U9oh1WzMSZjBeP2mV2v70J7XinGCPTq-QWhaFGRc3W7TddKrpfaYs1H9CDOXYa-YiicWKqFJYSZl_45eChHk8tGlOEwy60o0-hf_bTS6py9zXQu-YYX7NyYHSuPu4gfukz8Zl4IftDw93D5xCTUKAjF4bgG94QjUAo';
+    // Icono base de Luna (personalizable desde la configuración)
+    const lunaIconUrl = localStorage.getItem('luna_icon') || '/luna-avatar.png';
 
     return (
         <div className="fixed inset-0 z-[100] bg-background-light dark:bg-[#0a110c] text-slate-900 dark:text-slate-100 flex flex-col animate-fade-in font-chat">

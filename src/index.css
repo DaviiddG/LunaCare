@@ -23,6 +23,8 @@
     -webkit-tap-highlight-color: transparent;
     @apply bg-background-light dark:bg-[#121212] text-slate-800 dark:text-slate-100 min-h-screen;
     scrollbar-gutter: stable;
+    touch-action: manipulation;
+    overflow-x: hidden;
   }
 }
 
