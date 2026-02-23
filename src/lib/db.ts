@@ -98,7 +98,7 @@ export const dbHelpers = {
     },
 
     // Baby Profiles — supports MULTIPLE babies per user
-    async upsertBabyProfile(data: { user_id: string; id?: string; name: string; birth_date: string; weight: number; height: number; gender?: string }) {
+    async upsertBabyProfile(data: { user_id: string; id?: string; name: string; birth_date: string; weight: number; height: number; gender?: string; avatar_url?: string }) {
         if (data.id) {
             // Edit existing baby by id
             const { id, ...rest } = data;

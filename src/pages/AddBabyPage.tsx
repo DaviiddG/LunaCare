@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { dbHelpers } from '../lib/db';
+import { supabase } from '../lib/supabase';
 
 const GOALS = [
     { id: 'sleep', label: 'Mejorar el sueño', icon: 'bedtime' },
@@ -21,11 +22,26 @@ export function AddBabyPage() {
     const [goals, setGoals] = useState<string[]>(['sleep']);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const toggleGoal = (id: string) => {
         setGoals(prev =>
             prev.includes(id) ? prev.filter(g => g !== id) : [...prev, id]
         );
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setImageFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImagePreview(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
     };
 
     const handleSave = async () => {
@@ -37,6 +53,24 @@ export function AddBabyPage() {
         setSaving(true);
         setError(null);
         try {
+            let avatar_url = '';
+
+            if (imageFile) {
+                const fileExt = imageFile.name.split('.').pop();
+                const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+                const { error: uploadError } = await supabase.storage
+                    .from('avatars')
+                    .upload(fileName, imageFile);
+
+                if (uploadError) throw uploadError;
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('avatars')
+                    .getPublicUrl(fileName);
+
+                avatar_url = publicUrl;
+            }
+
             await dbHelpers.upsertBabyProfile({
                 user_id: user.id,
                 name: name.trim(),
@@ -44,6 +78,7 @@ export function AddBabyPage() {
                 weight: weight ? parseFloat(weight) : 0,
                 height: height ? parseFloat(height) : 0,
                 gender,
+                avatar_url,
             });
             // Trigger refresh across the app
             window.dispatchEvent(new Event('luna-action-completed'));
@@ -76,14 +111,36 @@ export function AddBabyPage() {
                 {/* Avatar */}
                 <div className="flex flex-col items-center mb-8">
                     <div className="relative">
-                        <div className="w-28 h-28 rounded-full bg-slate-100 dark:bg-slate-800 border-4 border-white dark:border-slate-700 shadow-md flex items-center justify-center overflow-hidden">
-                            <span className="material-symbols-rounded text-slate-300 text-5xl">person</span>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            ref={fileInputRef}
+                            onChange={handleFileChange}
+                        />
+                        <div
+                            onClick={() => fileInputRef.current?.click()}
+                            className="w-28 h-28 rounded-full bg-slate-100 dark:bg-slate-800 border-4 border-white dark:border-slate-700 shadow-md flex items-center justify-center overflow-hidden cursor-pointer"
+                        >
+                            {imagePreview ? (
+                                <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                            ) : (
+                                <span className="material-symbols-rounded text-slate-300 text-5xl">person</span>
+                            )}
                         </div>
-                        <button className="absolute bottom-0 right-0 bg-primary text-white w-9 h-9 rounded-full border-4 border-white dark:border-slate-900 flex items-center justify-center shadow-lg active:scale-90 transition-transform">
+                        <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="absolute bottom-0 right-0 bg-primary text-white w-9 h-9 rounded-full border-4 border-white dark:border-slate-900 flex items-center justify-center shadow-lg active:scale-90 transition-transform"
+                        >
                             <span className="material-symbols-rounded text-base">add</span>
                         </button>
                     </div>
-                    <span className="mt-3 text-sm font-semibold text-primary">Subir foto</span>
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="mt-3 text-sm font-semibold text-primary"
+                    >
+                        Subir foto
+                    </button>
                 </div>
 
                 {/* Form */}
@@ -208,8 +265,8 @@ export function AddBabyPage() {
                                     key={goal.id}
                                     onClick={() => toggleGoal(goal.id)}
                                     className={`w-full flex items-center justify-between px-4 py-4 rounded-2xl bg-white dark:bg-slate-800 shadow-sm transition-all active:scale-[0.98] border ${active
-                                            ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
-                                            : 'border-slate-100 dark:border-slate-700'
+                                        ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
+                                        : 'border-slate-100 dark:border-slate-700'
                                         }`}
                                 >
                                     <div className="flex items-center space-x-3">

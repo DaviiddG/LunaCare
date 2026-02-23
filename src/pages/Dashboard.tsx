@@ -140,7 +140,7 @@ Bebé: ${currentBaby.name}
                                     <img
                                         alt={b.name}
                                         className="w-full h-full rounded-full object-cover"
-                                        src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${b.name}`}
+                                        src={b.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${b.name}`}
                                     />
                                 </div>
                                 <span className={`text-xs font-bold ${selectedBaby?.id === b.id ? 'text-primary' : 'text-slate-500 dark:text-slate-400'}`}>{b.name}</span>
