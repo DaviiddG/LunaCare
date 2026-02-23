@@ -139,39 +139,57 @@ export function LunaChatModal() {
                     let actionText = "He registrado la acción solicitada.";
 
                     try {
-                        const targetBabyId = call.babyId || selectedBaby.id;
-                        const targetBaby = babies.find(b => b.id === targetBabyId) || selectedBaby;
+                        let targetBabyId = call.babyId || selectedBaby.id;
+                        let targetBaby = babies.find(b => b.id === targetBabyId);
+
+                        // Si Gemini pasa el nombre en vez del ID, intenta resolverlo por nombre
+                        if (!targetBaby && call.babyId) {
+                            const nameMatch = babies.find((b: any) => b.name.toLowerCase() === String(call.babyId).toLowerCase());
+                            if (nameMatch) {
+                                targetBabyId = nameMatch.id;
+                                targetBaby = nameMatch;
+                            }
+                        }
+
+                        // Fallback final
+                        if (!targetBaby) {
+                            targetBabyId = selectedBaby.id;
+                            targetBaby = selectedBaby;
+                        }
 
                         if (action.name === 'logBabyDiet') {
-                            await dbHelpers.insertDiet({
+                            const { error: dbErr } = await dbHelpers.insertDiet({
                                 user_id: user.id,
                                 baby_id: targetBabyId,
                                 type: call.type,
                                 amount: call.amount,
                                 observations: call.observations || "Registrado por Luna"
                             });
+                            if (dbErr) throw new Error(dbErr.message);
                             actionText = `🍼 Listo, he anotado la toma de ${call.type} (${call.amount}${call.type === 'pecho' ? ' min' : ' ml'}) para ${targetBaby.name}.`;
                         } else if (action.name === 'logBabyDiaper') {
-                            await dbHelpers.insertDiaper({
+                            const { error: dbErr } = await dbHelpers.insertDiaper({
                                 user_id: user.id,
                                 baby_id: targetBabyId,
                                 status: call.status,
                                 observations: call.observations || "Registrado por Luna"
                             });
+                            if (dbErr) throw new Error(dbErr.message);
                             actionText = `✨ Listo, he anotado el cambio de pañal (${call.status}) de ${targetBaby.name}.`;
                         } else if (action.name === 'logBabySleep') {
                             const end = new Date();
                             const start = new Date(end.getTime() - ((call.durationMinutes || 0) * 60 * 1000));
-                            await dbHelpers.insertSleepLog({
+                            const { error: dbErr } = await dbHelpers.insertSleepLog({
                                 user_id: user.id,
                                 baby_id: targetBabyId,
                                 start_time: start.toISOString(),
                                 end_time: end.toISOString(),
                                 duration: `${call.durationMinutes} minutos`
                             });
+                            if (dbErr) throw new Error(dbErr.message);
                             actionText = `😴 Listo, he anotado que ${targetBaby.name} durmió por ${call.durationMinutes} minutos.`;
                         } else if (action.name === 'logAddBaby') {
-                            await dbHelpers.upsertBabyProfile({
+                            const { error: dbErr } = await dbHelpers.upsertBabyProfile({
                                 user_id: user.id,
                                 name: call.name,
                                 gender: call.gender || null,
@@ -179,11 +197,13 @@ export function LunaChatModal() {
                                 weight: call.weight || 0,
                                 height: call.height || 0
                             });
+                            if (dbErr) throw new Error(dbErr.message);
                             await fetchBabies();
                             actionText = `👶 ¡Listo! He agregado el perfil de ${call.name} a tu familia.`;
                         } else if (action.name === 'logDeleteBaby') {
                             if (targetBabyId) {
-                                await dbHelpers.deleteBabyProfile(targetBabyId, user.id);
+                                const { error: dbErr } = await dbHelpers.deleteBabyProfile(targetBabyId, user.id);
+                                if (dbErr) throw new Error(dbErr.message);
                                 await fetchBabies();
                                 const deletedName = babies.find(b => b.id === targetBabyId)?.name || 'el bebé';
                                 actionText = `🗑️ He borrado de manera permanente el perfil y todos los historiales de ${deletedName}.`;
@@ -194,7 +214,7 @@ export function LunaChatModal() {
                             const newWeight = call.weight !== undefined ? call.weight : targetBaby.weight;
                             const newHeight = call.height !== undefined ? call.height : targetBaby.height;
 
-                            await dbHelpers.upsertBabyProfile({
+                            const { error: dbErr } = await dbHelpers.upsertBabyProfile({
                                 id: targetBabyId,
                                 user_id: user.id,
                                 name: targetBaby.name,
@@ -203,6 +223,7 @@ export function LunaChatModal() {
                                 weight: newWeight,
                                 height: newHeight
                             });
+                            if (dbErr) throw new Error(dbErr.message);
 
                             await fetchBabies();
                             actionText = `📈 ¡Actualizado! He registrado las nuevas medidas para ${targetBaby.name}.`;
@@ -215,7 +236,7 @@ export function LunaChatModal() {
                     combinedActionText += actionText + "\n";
                 }
 
-                // Dispatch event so Dashboard can reload stats automatically without page refresh
+                // Dispatch event to trigger Dashboard auto-reload
                 window.dispatchEvent(new Event('luna-action-completed'));
 
                 const finalText = text ? `${text}\n\n${combinedActionText.trim()}` : combinedActionText.trim();
