@@ -3,6 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { NeonGradientCard } from '../components/ui/neon-gradient-card';
+import { AuroraText } from '../components/ui/aurora-text';
+import { ShimmerButton } from '../components/ui/shimmer-button';
 
 export function LoginPage() {
     const navigate = useNavigate();
@@ -43,7 +45,7 @@ export function LoginPage() {
                 <div style={{ textAlign: 'center', marginBottom: '35px' }}>
                     <img src="/logo.png" alt="LunaCare Logo" style={{ display: 'block', margin: '0 auto 15px auto', width: '64px', height: '64px', borderRadius: '16px', boxShadow: 'var(--shadow-md)' }} />
                     <h1 style={{ color: 'var(--color-primary-dark)', fontSize: '2.2rem', margin: '0 0 8px 0', letterSpacing: '-0.5px' }}>
-                        LunaCare
+                        <AuroraText>LunaCare</AuroraText>
                     </h1>
                     <p style={{ color: 'var(--color-text-light)', fontSize: '1rem', fontWeight: 400 }}>
                         Tu aliada en el descanso de tu bebé ✨
@@ -96,21 +98,17 @@ export function LoginPage() {
                         </div>
                     </div>
 
-                    <button
+                    <ShimmerButton
                         type="submit"
-                        className="button-primary"
-                        style={{
-                            padding: '16px',
-                            fontSize: '1.1rem',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '10px'
-                        }}
+                        shimmerColor="#ffffff"
+                        shimmerSize="0.1em"
+                        shimmerDuration="2s"
+                        background="#9D85E1"
+                        className="w-full text-white font-bold rounded-xl shadow-md h-14"
                         disabled={isLoading}
                     >
                         {isLoading ? 'Iniciando sesión...' : 'Comenzar con LunaCare'}
-                    </button>
+                    </ShimmerButton>
                 </form>
 
                 <div style={{ textAlign: 'center', marginTop: '25px', fontSize: '0.95rem' }}>

@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { dbHelpers } from '../lib/db';
 import { useAuth } from '../contexts/AuthContext';
 import { useBabies } from '../hooks/useBabies';
+import { LunaSettingsModal } from './LunaSettingsModal';
 
 interface Message {
     id: string;
@@ -24,6 +25,9 @@ export function LunaChatModal({ isOpen, onClose }: LunaChatModalProps) {
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isListening, setIsListening] = useState(false);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [lunaIconUrl, setLunaIconUrl] = useState(localStorage.getItem('luna_icon') || '/luna-avatar.png');
+    const [lunaProfile, setLunaProfile] = useState(localStorage.getItem('luna_profile') || 'serena');
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -45,6 +49,15 @@ export function LunaChatModal({ isOpen, onClose }: LunaChatModalProps) {
             setMessages(data as Message[]);
         }
     };
+
+    useEffect(() => {
+        const handleSettingsUpdate = () => {
+            setLunaIconUrl(localStorage.getItem('luna_icon') || '/luna-avatar.png');
+            setLunaProfile(localStorage.getItem('luna_profile') || 'serena');
+        };
+        window.addEventListener('luna-settings-updated', handleSettingsUpdate);
+        return () => window.removeEventListener('luna-settings-updated', handleSettingsUpdate);
+    }, []);
 
     const toggleListen = () => {
         if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
@@ -111,9 +124,14 @@ export function LunaChatModal({ isOpen, onClose }: LunaChatModalProps) {
                 parts: [{ text: msg.content }]
             }));
 
+            const profile = localStorage.getItem('luna_profile') || 'serena';
+            const frequency = localStorage.getItem('luna_frequency') || 'balanced';
+
             let context = `Eres Luna, una asistente de LunaCare.
 Responde de forma muy natural, empática y conversacional en ESPAÑOL, como si fueras una pediatra o una amiga con experiencia.
 Bebé actual (en contexto del chat): ${selectedBaby.name}.
+PERSONALIDAD ACTUAL: ${profile === 'serena' ? 'Eres Luna Noche Serena. Tu tono es extremadamente dulce, calmado y empático. Buscas transmitir tranquilidad.' : 'Eres Luna Día Activo. Tu tono es energético, directo y motivador. Buscas ser eficiente y clara.'}
+FRECUENCIA DE CONSEJOS: ${frequency === 'frequent' ? 'Aprovecha cada oportunidad para dar consejos útiles.' : frequency === 'occasional' ? 'Solo da consejos si el usuario los pide explícitamente.' : 'Da consejos de forma equilibrada cuando sea realmente relevante.'}
 INSTRUCCIÓN CRÍTICA: Tienes funciones disponibles. Si el usuario te pide explícitamente agregar o registrar a un hijo nuevo, LLAMA A LA FUNCIÓN logAddBaby pasando todos los datos (nombre, fecha de nacimiento o calcularla según lo que te digan p.ej 'nació antier', peso en kg, altura en cm). ¡No le digas al usuario que no puedes hacerlo, USA LA FUNCIÓN! Si te piden agregar un bebé nuevo pero no te dicen nombre, peso o altura, pregúntales amablemente esos datos primero.
 OTRA INSTRUCCIÓN CRÍTICA: NUNCA uses sintaxis de markdown para formatear tu texto (no uses asteriscos ** para negritas ni itálicas). Habla en párrafos normales, claros y fluidos. No parezcas un bot, sé muy humana.
 `;
@@ -205,7 +223,7 @@ OTRA INSTRUCCIÓN CRÍTICA: NUNCA uses sintaxis de markdown para formatear tu te
     if (!isOpen) return null;
 
     // Icono base de Luna (personalizable desde la configuración)
-    const lunaIconUrl = localStorage.getItem('luna_icon') || '/luna-avatar.png';
+    // const lunaIconUrl = localStorage.getItem('luna_icon') || '/luna-avatar.png'; // Moved to state
 
     return (
         <div className="fixed inset-0 z-[100] bg-background-light dark:bg-[#0a110c] text-slate-900 dark:text-slate-100 flex flex-col animate-fade-in font-chat">
@@ -216,12 +234,28 @@ OTRA INSTRUCCIÓN CRÍTICA: NUNCA uses sintaxis de markdown para formatear tu te
                 </button>
                 <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-primary text-[22px]">auto_awesome</span>
-                    <h1 className="text-lg font-bold tracking-tight">Luna AI</h1>
+                    <h1 className="text-lg font-bold tracking-tight">
+                        Luna {lunaProfile === 'serena' ? 'Noche Serena' : 'Día Activo'}
+                    </h1>
                 </div>
-                <button className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-primary/10 transition-colors">
+                <button
+                    onClick={() => setIsSettingsOpen(true)}
+                    className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-primary/10 transition-colors"
+                >
                     <span className="material-symbols-outlined text-primary">more_vert</span>
                 </button>
             </header>
+
+            {/* Settings Modal */}
+            <LunaSettingsModal
+                isOpen={isSettingsOpen}
+                onClose={() => setIsSettingsOpen(false)}
+                onSave={() => {
+                    setIsSettingsOpen(false);
+                    // Force refresh icon if it changed
+                    window.dispatchEvent(new CustomEvent('luna-settings-updated'));
+                }}
+            />
 
             {/* Chat Area */}
             <main className="flex-1 overflow-y-auto px-4 py-6 space-y-6 hide-scrollbar">

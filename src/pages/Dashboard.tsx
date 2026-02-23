@@ -8,6 +8,8 @@ import { AnimatedThemeToggler } from '../components/AnimatedThemeToggler';
 import { NotificationSidebar } from '../components/NotificationSidebar';
 import { useNavigate } from 'react-router-dom';
 import { LunaChatModal } from '../components/LunaChatModal';
+import { AuroraText } from '../components/ui/aurora-text';
+import { ShimmerButton } from '../components/ui/shimmer-button';
 
 function timeAgo(dateStr: string) {
     if (!dateStr) return '';
@@ -25,6 +27,7 @@ export function Dashboard() {
     const [isNotificationOpen, setIsNotificationOpen] = useState(false);
     const [isLunaChatOpen, setIsLunaChatOpen] = useState(false);
     const [lunaIcon, setLunaIcon] = useState(localStorage.getItem('luna_icon') || '/luna-avatar.png');
+    const [lunaProfile, setLunaProfile] = useState(localStorage.getItem('luna_profile') || 'serena');
     const lunaFileInputRef = useRef<HTMLInputElement>(null);
     const navigate = useNavigate();
 
@@ -40,6 +43,15 @@ export function Dashboard() {
         window.addEventListener('luna-action-completed', handleRefresh);
         return () => window.removeEventListener('luna-action-completed', handleRefresh);
     }, [user]);
+
+    useEffect(() => {
+        const handleSettingsUpdate = () => {
+            setLunaIcon(localStorage.getItem('luna_icon') || '/luna-avatar.png');
+            setLunaProfile(localStorage.getItem('luna_profile') || 'serena');
+        };
+        window.addEventListener('luna-settings-updated', handleSettingsUpdate);
+        return () => window.removeEventListener('luna-settings-updated', handleSettingsUpdate);
+    }, []);
 
     const fetchDashboardData = async () => {
         setIsLoading(true);
@@ -192,22 +204,28 @@ Bebé: ${currentBaby.name}
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                                     <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                                 </span>
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Luna AI Activa</span>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
+                                    Luna {lunaProfile === 'serena' ? 'Noche Serena' : 'Día Activo'}
+                                </span>
                             </div>
                             <h1 className="text-lg font-bold text-slate-800 dark:text-white leading-tight">
                                 ¡Hola, <span className="capitalize">{user?.user_metadata?.first_name || user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Padre'}</span>! 👋{' '}
-                                <span className="text-primary font-bold">¿Cómo está {selectedBaby?.name || 'tu bebé'} hoy?</span>
+                                <AuroraText className="text-primary font-bold">¿Cómo está {selectedBaby?.name || 'tu bebé'} hoy?</AuroraText>
                             </h1>
                             <p className="mt-2 text-xs text-slate-600 dark:text-slate-400 line-clamp-2">
                                 {insightLoading ? 'Luna está analizando...' : (insightText || `¡Es un buen día para cuidar a ${selectedBaby?.name || 'tu bebé'}!`)}
                             </p>
                             <div className="mt-3 flex gap-2">
-                                <button
+                                <ShimmerButton
                                     onClick={() => setIsLunaChatOpen(true)}
-                                    className="px-3 py-1.5 bg-primary text-white text-[10px] font-bold rounded-lg shadow-sm active:scale-95 transition-all"
+                                    shimmerColor="#ffffff"
+                                    shimmerSize="0.1em"
+                                    shimmerDuration="2s"
+                                    background="#9D85E1"
+                                    className="px-4 py-1.5 text-[10px] font-bold shadow-md h-10"
                                 >
                                     Hablar con Luna
-                                </button>
+                                </ShimmerButton>
                                 <button
                                     onClick={() => lunaFileInputRef.current?.click()}
                                     className="px-3 py-1.5 bg-white/60 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 text-[10px] font-bold rounded-lg shadow-sm border border-white/20 active:scale-95 transition-all flex items-center gap-1"
@@ -259,7 +277,7 @@ Bebé: ${currentBaby.name}
                     />
                     <ActivityTile
                         title="Biberón"
-                        subtitle={stats.latestDiet ? `Hace ${timeAgo(stats.latestDiet.created_at)}` : "No registrado"}
+                        subtitle={stats.latestDiet ? timeAgo(stats.latestDiet.created_at) : "No registrado"}
                         icon="baby_changing_station"
                         color="#FF8C69"
                         onClick={() => navigate('/bottle')}
