@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useBabies } from '../hooks/useBabies';
 import { dbHelpers } from '../lib/db';
 import { AnimatedList } from '../components/ui/animated-list';
+import { NotificationSidebar } from '../components/NotificationSidebar';
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, format, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -16,6 +17,8 @@ export function ReportsPage() {
     const [feedingData, setFeedingData] = useState({ breastmilk: 0, formula: 0, solid: 0, total: 0 });
     const [diaperData, setDiaperData] = useState<{ day: Date, count: number }[]>([]);
     const [insightText, setInsightText] = useState('Analizando datos de esta semana...');
+    const [unreadCount, setUnreadCount] = useState(0);
+    const [isNotificationOpen, setIsNotificationOpen] = useState(false);
 
     useEffect(() => {
         if (selectedBaby && user) {
@@ -113,8 +116,16 @@ export function ReportsPage() {
                     <div className="flex justify-between items-center">
                         <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Reportes</h1>
                         <div className="flex space-x-2">
-                            <button className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm border border-slate-100 dark:border-slate-700 active:scale-95">
+                            <button
+                                onClick={() => setIsNotificationOpen(true)}
+                                className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm border border-slate-100 dark:border-slate-700 active:scale-95 relative"
+                            >
                                 <span className="material-symbols-outlined text-slate-600 dark:text-slate-300">notifications</span>
+                                {unreadCount > 0 && (
+                                    <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full border-2 border-white dark:border-slate-800">
+                                        {unreadCount > 9 ? '9+' : unreadCount}
+                                    </span>
+                                )}
                             </button>
                         </div>
                     </div>
@@ -281,6 +292,12 @@ export function ReportsPage() {
                     </section>
                 </AnimatedList>
             </main>
+
+            <NotificationSidebar
+                isOpen={isNotificationOpen}
+                onClose={() => setIsNotificationOpen(false)}
+                onUnreadChange={setUnreadCount}
+            />
         </div>
     );
 }

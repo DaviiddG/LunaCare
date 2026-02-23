@@ -191,5 +191,39 @@ export const dbHelpers = {
         const { data, error } = await supabase
             .from('user_settings').upsert({ user_id: userId, dashboard_layout: layout, updated_at: new Date().toISOString() }).select();
         return { data, error };
+    },
+
+    // Notifications
+    async getNotifications(userId: string) {
+        const { data, error } = await supabase
+            .from('notifications')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false });
+        return { data, error };
+    },
+
+    async markNotificationAsRead(notificationId: string) {
+        const { error } = await supabase
+            .from('notifications')
+            .update({ is_read: true })
+            .eq('id', notificationId);
+        return { error };
+    },
+
+    async markAllNotificationsAsRead(userId: string) {
+        const { error } = await supabase
+            .from('notifications')
+            .update({ is_read: true })
+            .eq('user_id', userId);
+        return { error };
+    },
+
+    async deleteAllNotifications(userId: string) {
+        const { error } = await supabase
+            .from('notifications')
+            .delete()
+            .eq('user_id', userId);
+        return { error };
     }
 };

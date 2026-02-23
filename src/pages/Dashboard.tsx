@@ -5,6 +5,7 @@ import { useBabies } from '../hooks/useBabies';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { AnimatedThemeToggler } from '../components/AnimatedThemeToggler';
+import { NotificationSidebar } from '../components/NotificationSidebar';
 import { useNavigate } from 'react-router-dom';
 
 function timeAgo(dateStr: string) {
@@ -19,6 +20,8 @@ export function Dashboard() {
     const [insightLoading, setInsightLoading] = useState(false);
     const [insightText, setInsightText] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [unreadCount, setUnreadCount] = useState(0);
+    const [isNotificationOpen, setIsNotificationOpen] = useState(false);
     const navigate = useNavigate();
 
 
@@ -116,8 +119,16 @@ Bebé: ${currentBaby.name}
                     </div>
                     <div className="flex space-x-2 flex-shrink-0">
                         <AnimatedThemeToggler className="w-10 h-10 shadow-sm border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none" />
-                        <button className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm border border-slate-100 dark:border-slate-700 active:scale-95">
+                        <button
+                            onClick={() => setIsNotificationOpen(true)}
+                            className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm border border-slate-100 dark:border-slate-700 active:scale-95 relative"
+                        >
                             <span className="material-symbols-rounded text-slate-600 dark:text-slate-300">notifications</span>
+                            {unreadCount > 0 && (
+                                <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full border-2 border-white dark:border-slate-800">
+                                    {unreadCount > 9 ? '9+' : unreadCount}
+                                </span>
+                            )}
                         </button>
                     </div>
                 </div>
@@ -245,10 +256,13 @@ Bebé: ${currentBaby.name}
 
             </main>
 
+            <NotificationSidebar
+                isOpen={isNotificationOpen}
+                onClose={() => setIsNotificationOpen(false)}
+                onUnreadChange={setUnreadCount}
+            />
         </div>
     );
-
-
 }
 
 function ActivityTile({ title, subtitle, icon, color, full, onClick, ai, history, plus, arrow }: any) {
