@@ -8,6 +8,7 @@ import { DiapersPage } from './pages/DiapersPage';
 import { SleepPage } from './pages/SleepPage';
 import { SolidsPage } from './pages/SolidsPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { ReportsPage } from './pages/ReportsPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { AuthProvider } from './contexts/AuthContext';
@@ -35,6 +36,7 @@ const router = createBrowserRouter([
           { path: 'diapers', element: <DiapersPage /> },
           { path: 'sleep', element: <SleepPage /> },
           { path: 'solids', element: <SolidsPage /> },
+          { path: 'reports', element: <ReportsPage /> },
           { path: 'settings', element: <SettingsPage /> },
         ],
       }

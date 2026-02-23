@@ -14,13 +14,17 @@
     "@fontsource/plus-jakarta-sans": "^5.2.8",
     "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.97.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.575.0",
+    "motion": "^12.34.3",
     "pg": "^8.18.0",
     "postgres": "^3.4.8",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.13.0",
+    "tailwind-merge": "^3.5.0",
     "vite-plugin-pwa": "^1.2.0"
   },
   "devDependencies": {

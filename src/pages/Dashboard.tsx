@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { BabyProfileModal } from '../components/BabyProfileModal';
+import { AnimatedThemeToggler } from '../components/AnimatedThemeToggler';
 import { useNavigate } from 'react-router-dom';
 
 function timeAgo(dateStr: string) {
@@ -22,7 +23,7 @@ export function Dashboard() {
     const [selectedBabyIndex, setSelectedBabyIndex] = useState(0);
     const navigate = useNavigate();
 
-    const [isDarkMode, setIsDarkMode] = useState(document.documentElement.classList.contains('dark'));
+
 
     useEffect(() => {
         if (user) fetchDashboardData();
@@ -91,11 +92,7 @@ Bebé: ${currentBaby.name}
         setInsightLoading(false);
     };
 
-    const toggleDark = () => {
-        const isDark = document.documentElement.classList.toggle('dark');
-        localStorage.setItem('theme', isDark ? 'dark' : 'light');
-        setIsDarkMode(isDark);
-    };
+
 
     if (isLoading) return <div className="p-8 text-center bg-background-light dark:bg-[#121212] min-h-screen text-slate-500">Cargando...</div>;
 
@@ -119,14 +116,7 @@ Bebé: ${currentBaby.name}
                         </div>
                     </div>
                     <div className="flex space-x-2">
-                        <button
-                            className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm border border-slate-100 dark:border-slate-700 active:scale-95"
-                            onClick={toggleDark}
-                        >
-                            <span className={`material-symbols-rounded ${isDarkMode ? 'text-yellow-400' : 'text-slate-600'}`}>
-                                {isDarkMode ? 'light_mode' : 'dark_mode'}
-                            </span>
-                        </button>
+                        <AnimatedThemeToggler className="w-10 h-10 shadow-sm border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none" />
                         <button className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm border border-slate-100 dark:border-slate-700 active:scale-95">
                             <span className="material-symbols-rounded text-slate-600 dark:text-slate-300">notifications</span>
                         </button>

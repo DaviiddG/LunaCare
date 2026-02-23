@@ -10,13 +10,26 @@ export function useBabies() {
 
     useEffect(() => {
         if (user) fetchBabies();
+
+        const handleRefresh = () => {
+            if (user) fetchBabies();
+        };
+
+        window.addEventListener('luna-action-completed', handleRefresh);
+        return () => window.removeEventListener('luna-action-completed', handleRefresh);
     }, [user]);
 
     const fetchBabies = async () => {
         const { data } = await dbHelpers.getAllBabyProfiles(user!.id);
         if (data && data.length > 0) {
             setBabies(data);
-            setSelectedBaby(data[0]);
+            setSelectedBaby((prev: any) => {
+                const stillExists = prev ? data.find((b: any) => b.id === prev.id) : null;
+                return stillExists || data[0];
+            });
+        } else {
+            setBabies([]);
+            setSelectedBaby(null);
         }
         setLoading(false);
     };

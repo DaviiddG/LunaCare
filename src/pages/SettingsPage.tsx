@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { dbHelpers } from '../lib/db';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { AnimatedThemeToggler } from '../components/AnimatedThemeToggler';
 
 const today = new Date().toISOString().split('T')[0];
 
@@ -23,7 +24,6 @@ export function SettingsPage() {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(true);
     const [babies, setBabies] = useState<BabyForm[]>([]);
-    const [isDarkMode, setIsDarkMode] = useState(() => document.documentElement.classList.contains('dark'));
     const [isEditingProfile, setIsEditingProfile] = useState(false);
     const [profileName, setProfileName] = useState('');
 
@@ -80,12 +80,7 @@ export function SettingsPage() {
         ));
     };
 
-    const toggleTheme = () => {
-        const isDark = document.documentElement.classList.toggle('dark');
-        localStorage.setItem('theme', isDark ? 'dark' : 'light');
-        setIsDarkMode(isDark);
-        window.dispatchEvent(new Event('theme-changed'));
-    };
+
 
     const handleLogout = async () => {
         localStorage.setItem('theme', 'light');
@@ -238,6 +233,7 @@ export function SettingsPage() {
                                                     if (window.confirm('¿Seguro que deseas eliminar el perfil de este bebé? Se borrarán todos sus datos.')) {
                                                         await dbHelpers.deleteBabyProfile(baby.id, user!.id);
                                                         fetchBabies();
+                                                        window.dispatchEvent(new CustomEvent('luna-action-completed'));
                                                     }
                                                 }}
                                                 className="px-4 bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold py-2 rounded-lg text-sm transition-colors"
@@ -257,18 +253,12 @@ export function SettingsPage() {
                     <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest px-1 mb-2 ml-1">Ajustes de la App</h3>
                     <div className="bg-white dark:bg-slate-900/50 rounded-xl ios-shadow border border-[#8c2bee]/5 overflow-hidden" style={{ boxShadow: '0 2px 12px -2px rgba(140, 43, 238, 0.08)' }}>
                         {/* Night Mode Toggle */}
-                        <div className="flex items-center p-4 gap-4 bg-[#8c2bee]/5 text-slate-900 dark:text-slate-100">
-                            <div className="w-10 h-10 rounded-full bg-[#8c2bee]/20 flex items-center justify-center">
-                                <span className="material-symbols-outlined text-[#8c2bee] text-[20px]">{isDarkMode ? 'dark_mode' : 'light_mode'}</span>
+                        <div className="flex items-center p-4 gap-4 bg-[#8c2bee]/5 text-slate-900 dark:text-slate-100 justify-between">
+                            <div>
+                                <p className="font-semibold text-[#8c2bee]">Tema Visual</p>
+                                <p className="text-[10px] text-[#8c2bee]/70">Modo día y noche animado</p>
                             </div>
-                            <div className="flex-1">
-                                <p className="font-semibold text-[#8c2bee]">Modo Oscuro</p>
-                                <p className="text-[10px] text-[#8c2bee]/70">Mejora la lectura nocturna</p>
-                            </div>
-                            <label className="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" className="sr-only peer" checked={isDarkMode} onChange={toggleTheme} />
-                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-500 peer-checked:bg-[#8c2bee]"></div>
-                            </label>
+                            <AnimatedThemeToggler className="w-12 h-12 bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700" />
                         </div>
                     </div>
                 </section>
