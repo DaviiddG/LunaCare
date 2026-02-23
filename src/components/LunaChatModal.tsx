@@ -134,6 +134,9 @@ PERSONALIDAD ACTUAL: ${profile === 'serena' ? 'Eres Luna Noche Serena. Tu tono e
 FRECUENCIA DE CONSEJOS: ${frequency === 'frequent' ? 'Aprovecha cada oportunidad para dar consejos útiles.' : frequency === 'occasional' ? 'Solo da consejos si el usuario los pide explícitamente.' : 'Da consejos de forma equilibrada cuando sea realmente relevante.'}
 INSTRUCCIÓN CRÍTICA: Tienes funciones disponibles. Si el usuario te pide explícitamente agregar o registrar a un hijo nuevo, LLAMA A LA FUNCIÓN logAddBaby pasando todos los datos (nombre, fecha de nacimiento o calcularla según lo que te digan p.ej 'nació antier', peso en kg, altura en cm). ¡No le digas al usuario que no puedes hacerlo, USA LA FUNCIÓN! Si te piden agregar un bebé nuevo pero no te dicen nombre, peso o altura, pregúntales amablemente esos datos primero.
 OTRA INSTRUCCIÓN CRÍTICA: NUNCA uses sintaxis de markdown para formatear tu texto (no uses asteriscos ** para negritas ni itálicas). Habla en párrafos normales, claros y fluidos. No parezcas un bot, sé muy humana.
+CONSEJOS DINÁMICOS: Si decides dar un consejo relevante o tip, hazlo SIEMPRE al final de tu respuesta usando EXACTAMENTE la siguiente estructura (en líneas separadas y sin asteriscos ni markdown extra):
+TIP_TITLE: [Escribe aquí el título del tip]
+TIP_CONTENT: [Escribe aquí el contenido del tip]
 `;
 
             const { geminiHelpers } = await import('../lib/gemini');
@@ -272,8 +275,24 @@ OTRA INSTRUCCIÓN CRÍTICA: NUNCA uses sintaxis de markdown para formatear tu te
                     </div>
                 )}
 
-                {messages.map((msg, idx) => {
+                {messages.map((msg) => {
                     const isLuna = msg.role === 'assistant';
+
+                    let displayText = msg.content;
+                    let tipTitle = null;
+                    let tipContent = null;
+
+                    if (isLuna && displayText.includes('TIP_TITLE:') && displayText.includes('TIP_CONTENT:')) {
+                        const titleMatch = displayText.match(/TIP_TITLE:\s*(.+)/);
+                        const contentMatch = displayText.match(/TIP_CONTENT:\s*([\s\S]+)/);
+                        if (titleMatch && contentMatch) {
+                            tipTitle = titleMatch[1].trim();
+                            tipContent = contentMatch[1].trim();
+                            // Remove tip from display text
+                            displayText = displayText.replace(/TIP_TITLE:[\s\S]*/, '').trim();
+                        }
+                    }
+
                     return (
                         <div key={msg.id} className={`flex items-start gap-3 ${isLuna ? 'max-w-[85%]' : 'justify-end ml-auto max-w-[85%]'}`}>
                             {isLuna && (
@@ -286,9 +305,9 @@ OTRA INSTRUCCIÓN CRÍTICA: NUNCA uses sintaxis de markdown para formatear tu te
                                     ? 'bg-white dark:bg-[#1a251b] text-slate-800 dark:text-slate-100 rounded-tl-none border border-[#8c2bee]/10'
                                     : 'bg-[#8c2bee]/20 dark:bg-primary/20 text-slate-900 dark:text-slate-100 rounded-tr-none'
                                     }`}>
-                                    {msg.content}
-                                    {isLuna && idx === messages.length - 1 && msg.content.toLowerCase().includes('consejo') && (
-                                        <RichTipCard babyName={selectedBaby?.name || 'Leo'} />
+                                    {displayText}
+                                    {tipTitle && tipContent && (
+                                        <RichTipCard title={tipTitle} content={tipContent} />
                                     )}
                                 </div>
                                 <span className={`text-[10px] text-slate-500 ${isLuna ? 'ml-1' : 'mr-1'}`}>
@@ -298,6 +317,7 @@ OTRA INSTRUCCIÓN CRÍTICA: NUNCA uses sintaxis de markdown para formatear tu te
                         </div>
                     );
                 })}
+
                 {isLoading && (
                     <div className="flex items-start gap-3 max-w-[85%] animate-pulse">
                         <div className="size-8 rounded-full bg-slate-200 dark:bg-slate-800 shrink-0 mt-1 overflow-hidden" />
@@ -355,7 +375,7 @@ OTRA INSTRUCCIÓN CRÍTICA: NUNCA uses sintaxis de markdown para formatear tu te
     );
 }
 
-function RichTipCard({ babyName }: { babyName: string }) {
+function RichTipCard({ title, content }: { title: string, content: string }) {
     return (
         <div className="bg-[#16251b] border border-primary/20 rounded-2xl overflow-hidden shadow-xl max-w-sm mt-4 animate-fade-in">
             <div className="h-32 w-full bg-cover bg-center relative" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuAKp0d8jBm26y7VELDtHoftH0B9n86hcRA273hdl1oijF0cv--z2Ty_ijmCzjMj8GsMNS2XQxbVH7-KIV0W9xu7klpHuXcgSiAwI2faQsD8MuDgA1Ix7X6c19MpMAv2OZp8GmQ_cGDMdXZMey-jwLoBxJt4pyhmpr1kbDx0iEgSxj3rgz9E0AVXWmEzlJBHvtgP_DRgqRXnOqoGmiynGOcLj7cegBMYboWjc9yLsnfjcXCYW5pyxcQHKSnHpjTMyEDjyAXyp3GwW_w')" }}>
@@ -364,10 +384,10 @@ function RichTipCard({ babyName }: { babyName: string }) {
             <div className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                     <span className="material-symbols-outlined text-primary text-lg">lightbulb</span>
-                    <h3 className="text-white font-bold text-base">Tip del día</h3>
+                    <h3 className="text-white font-bold text-base">{title}</h3>
                 </div>
                 <p className="text-slate-300 text-sm mb-4">
-                    <strong>Estimulación visual:</strong> Los contrastes suaves y una luz cálida 30 minutos antes de dormir ayudan a {babyName} a segregar melatonina de forma natural.
+                    {content}
                 </p>
                 <button className="w-full py-2 bg-primary text-[#0a110c] font-bold text-sm rounded-lg hover:opacity-90 transition-opacity">
                     Saber más
