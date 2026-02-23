@@ -34,12 +34,12 @@ export function LoginPage() {
 
             <div className="glass-card animate-fade-in">
                 <div style={{ textAlign: 'center', marginBottom: '35px' }}>
-                    <img src="/logo.png" alt="LunaCare Logo" style={{ width: '64px', height: '64px', marginBottom: '15px', borderRadius: '16px', boxShadow: 'var(--shadow-md)' }} />
+                    <img src="/logo.png" alt="LunaCare Logo" style={{ display: 'block', margin: '0 auto 15px auto', width: '64px', height: '64px', borderRadius: '16px', boxShadow: 'var(--shadow-md)' }} />
                     <h1 style={{ color: 'var(--color-primary-dark)', fontSize: '2.2rem', margin: '0 0 8px 0', letterSpacing: '-0.5px' }}>
                         LunaCare
                     </h1>
                     <p style={{ color: 'var(--color-text-light)', fontSize: '1rem', fontWeight: 400 }}>
-                        Bienvenida de nuevo, Mamá ✨
+                        Tu aliada en el descanso de tu bebé ✨
                     </p>
                 </div>
 
@@ -102,7 +102,7 @@ export function LoginPage() {
                         }}
                         disabled={isLoading}
                     >
-                        {isLoading ? 'Iniciando sesión...' : 'Entrar ahora'}
+                        {isLoading ? 'Iniciando sesión...' : 'Comenzar con LunaCare'}
                     </button>
                 </form>
 

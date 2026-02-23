@@ -37,6 +37,66 @@ export const dbHelpers = {
         return { data, error };
     },
 
+    // Solids
+    async insertSolids(data: { foods: string[]; amount: string; observations: string; user_id: string; baby_id: string }) {
+        const { data: result, error } = await supabase
+            .from('solids_logs').insert([data]).select();
+        return { data: result, error };
+    },
+    async getSolids(babyId: string) {
+        const { data, error } = await supabase
+            .from('solids_logs').select('*').eq('baby_id', babyId).order('created_at', { ascending: false });
+        return { data, error };
+    },
+
+    // Medicine
+    async insertMedicine(data: { name: string; dosage: string; observations: string; user_id: string; baby_id: string }) {
+        const { data: result, error } = await supabase
+            .from('medicine_logs').insert([data]).select();
+        return { data: result, error };
+    },
+    async getMedicine(babyId: string) {
+        const { data, error } = await supabase
+            .from('medicine_logs').select('*').eq('baby_id', babyId).order('created_at', { ascending: false });
+        return { data, error };
+    },
+
+    // Growth
+    async insertGrowth(data: { weight: number; height: number; head_circumference?: number; user_id: string; baby_id: string }) {
+        const { data: result, error } = await supabase
+            .from('growth_logs').insert([data]).select();
+        return { data: result, error };
+    },
+    async getGrowth(babyId: string) {
+        const { data, error } = await supabase
+            .from('growth_logs').select('*').eq('baby_id', babyId).order('created_at', { ascending: false });
+        return { data, error };
+    },
+
+    // Temperature
+    async insertTemperature(data: { temperature: number; unit: string; user_id: string; baby_id: string }) {
+        const { data: result, error } = await supabase
+            .from('temperature_logs').insert([data]).select();
+        return { data: result, error };
+    },
+    async getTemperature(babyId: string) {
+        const { data, error } = await supabase
+            .from('temperature_logs').select('*').eq('baby_id', babyId).order('created_at', { ascending: false });
+        return { data, error };
+    },
+
+    // Activity
+    async insertActivity(data: { activity_type: string; duration_minutes: number; observations: string; user_id: string; baby_id: string }) {
+        const { data: result, error } = await supabase
+            .from('activity_logs').insert([data]).select();
+        return { data: result, error };
+    },
+    async getActivity(babyId: string) {
+        const { data, error } = await supabase
+            .from('activity_logs').select('*').eq('baby_id', babyId).order('created_at', { ascending: false });
+        return { data, error };
+    },
+
     // Baby Profiles — supports MULTIPLE babies per user
     async upsertBabyProfile(data: { user_id: string; id?: string; name: string; birth_date: string; weight: number; height: number; gender?: string }) {
         if (data.id) {
@@ -111,5 +171,25 @@ export const dbHelpers = {
             .select()
             .single();
         return { data: result, error };
+    },
+
+    async deleteAiConversations(babyId: string) {
+        const { error } = await supabase
+            .from('ai_conversations')
+            .delete()
+            .eq('baby_id', babyId);
+        return { error };
+    },
+
+    // User Settings
+    async getUserSettings(userId: string) {
+        const { data, error } = await supabase
+            .from('user_settings').select('*').eq('user_id', userId).maybeSingle();
+        return { data, error };
+    },
+    async updateUserSettings(userId: string, layout: string[]) {
+        const { data, error } = await supabase
+            .from('user_settings').upsert({ user_id: userId, dashboard_layout: layout, updated_at: new Date().toISOString() }).select();
+        return { data, error };
     }
 };

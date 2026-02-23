@@ -3,8 +3,10 @@ import { AppLayout } from './components/layout/AppLayout';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { Dashboard } from './pages/Dashboard';
 import { DietPage } from './pages/DietPage';
+import { BottlePage } from './pages/BottlePage';
 import { DiapersPage } from './pages/DiapersPage';
 import { SleepPage } from './pages/SleepPage';
+import { SolidsPage } from './pages/SolidsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
@@ -29,8 +31,10 @@ const router = createBrowserRouter([
         children: [
           { index: true, element: <Dashboard /> },
           { path: 'diet', element: <DietPage /> },
+          { path: 'bottle', element: <BottlePage /> },
           { path: 'diapers', element: <DiapersPage /> },
           { path: 'sleep', element: <SleepPage /> },
+          { path: 'solids', element: <SolidsPage /> },
           { path: 'settings', element: <SettingsPage /> },
         ],
       }

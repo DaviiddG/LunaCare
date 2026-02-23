@@ -1,8 +1,8 @@
 ﻿import { useState, useEffect } from 'react';
-import { Baby, Ruler, Weight, Calendar, Save, User, ChevronDown, ChevronUp } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { dbHelpers } from '../lib/db';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const today = new Date().toISOString().split('T')[0];
 
@@ -20,27 +20,32 @@ type BabyForm = {
 
 export function SettingsPage() {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(true);
-    const [role, setRole] = useState<string>((user?.user_metadata?.role as string) || '');
-    const [roleSaved, setRoleSaved] = useState(false);
     const [babies, setBabies] = useState<BabyForm[]>([]);
+    const [isDarkMode, setIsDarkMode] = useState(() => document.documentElement.classList.contains('dark'));
+    const [isEditingProfile, setIsEditingProfile] = useState(false);
+    const [profileName, setProfileName] = useState('');
 
     useEffect(() => {
-        if (user) fetchBabies();
+        if (user) {
+            setProfileName(user.user_metadata?.full_name || 'Padre/Madre');
+            fetchBabies();
+        }
     }, [user]);
 
     const fetchBabies = async () => {
         setIsLoading(true);
         const { data } = await dbHelpers.getAllBabyProfiles(user!.id);
         if (data) {
-            setBabies(data.map((b: any, i: number) => ({
+            setBabies(data.map((b: any) => ({
                 id: b.id,
                 name: b.name || '',
                 birth_date: b.birth_date || '',
                 weight: b.weight?.toString() || '',
                 height: b.height?.toString() || '',
                 gender: b.gender || '',
-                expanded: i === 0, // first baby expanded by default
+                expanded: false,
                 saving: false,
                 saved: false,
             })));
@@ -48,12 +53,12 @@ export function SettingsPage() {
         setIsLoading(false);
     };
 
-    const updateBabyField = (id: string, field: string, value: string) => {
-        setBabies(prev => prev.map(b => b.id === id ? { ...b, [field]: value, saved: false } : b));
-    };
-
     const toggleExpand = (id: string) => {
         setBabies(prev => prev.map(b => b.id === id ? { ...b, expanded: !b.expanded } : b));
+    };
+
+    const updateBabyField = (id: string, field: string, value: string) => {
+        setBabies(prev => prev.map(b => b.id === id ? { ...b, [field]: value, saved: false } : b));
     };
 
     const saveBaby = async (baby: BabyForm) => {
@@ -75,172 +80,211 @@ export function SettingsPage() {
         ));
     };
 
-    const saveRole = async () => {
-        if (!role) return;
-        await supabase.auth.updateUser({ data: { role } });
-        setRoleSaved(true);
-        setTimeout(() => setRoleSaved(false), 3000);
+    const toggleTheme = () => {
+        const isDark = document.documentElement.classList.toggle('dark');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        setIsDarkMode(isDark);
+        window.dispatchEvent(new Event('theme-changed'));
+    };
+
+    const handleLogout = async () => {
+        localStorage.setItem('theme', 'light');
+        document.documentElement.classList.remove('dark');
+        document.documentElement.removeAttribute('data-role');
+        await supabase.auth.signOut();
+        navigate('/login');
+    };
+
+    const saveProfile = async () => {
+        if (!user) return;
+        setIsEditingProfile(false);
+        await supabase.auth.updateUser({ data: { full_name: profileName } });
     };
 
     if (isLoading) return (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-            <p style={{ color: 'var(--color-text-light)' }}>Cargando perfil...</p>
+        <div className="flex items-center justify-center min-h-[60vh] text-slate-500">
+            Cargando configuración...
         </div>
     );
 
     return (
-        <div className="animate-fade-in" style={{ paddingBottom: '40px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <div>
-                <h2 style={{ fontSize: '1.75rem', marginBottom: '4px', fontWeight: 800 }}>Ajustes</h2>
-                <p style={{ color: 'var(--color-text-light)', margin: 0, fontSize: '0.9rem' }}>
-                    Gestiona tu perfil y el de tus bebés.
-                </p>
-            </div>
+        <div className="bg-[#fbfaff] dark:bg-[#191022] text-slate-900 dark:text-slate-100 min-h-screen pb-24 font-['Plus_Jakarta_Sans',sans-serif]">
+            {/* Header Navigation */}
+            <header className="sticky top-0 z-50 bg-[#fbfaff]/80 dark:bg-[#191022]/80 backdrop-blur-md px-4 py-4 flex items-center justify-center border-b border-[#8c2bee]/10">
+                <h1 className="text-lg font-bold tracking-tight">Configuración</h1>
+            </header>
 
-            {/* ─── Role Card ─── */}
-            <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div style={{ fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <User size={16} color="var(--color-primary-dark)" /> Soy...
-                </div>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                    {[
-                        { val: 'madre', emoji: '🤱', label: 'Mamá' },
-                        { val: 'padre', emoji: '👨‍🍼', label: 'Papá' }
-                    ].map(opt => (
-                        <button key={opt.val} type="button" onClick={() => setRole(opt.val)} style={{
-                            flex: 1, padding: '12px', borderRadius: '14px',
-                            border: `2px solid ${role === opt.val ? 'var(--color-primary-dark)' : 'var(--color-border)'}`,
-                            background: role === opt.val ? 'rgba(232,134,159,0.1)' : 'transparent',
-                            cursor: 'pointer', transition: 'all 0.2s',
-                            fontWeight: 700, fontSize: '0.9rem',
-                            color: role === opt.val ? 'var(--color-primary-dark)' : 'var(--color-text)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
-                        }}>
-                            <span style={{ fontSize: '1.3rem' }}>{opt.emoji}</span>{opt.label}
-                        </button>
-                    ))}
-                </div>
-                <button onClick={saveRole} className="button-primary" style={{
-                    padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
-                }}>
-                    <Save size={16} />
-                    {roleSaved ? '¡Guardado! ✅' : 'Guardar rol'}
-                </button>
-            </div>
-
-            {/* ─── Baby Cards ─── */}
-            <div style={{ fontWeight: 700, fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Baby size={18} color="var(--color-primary-dark)" />
-                Mis bebés ({babies.length})
-            </div>
-
-            {babies.length === 0 && (
-                <div className="card" style={{ textAlign: 'center', padding: '30px', color: 'var(--color-text-light)' }}>
-                    Aún no has registrado ningún bebé. Ve al Inicio para agregar uno.
-                </div>
-            )}
-
-            {babies.map((baby) => (
-                <div key={baby.id} className="card animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-                    {/* Baby card header — click to expand/collapse */}
-                    <button type="button" onClick={() => toggleExpand(baby.id)} style={{
-                        background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0 12px',
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%',
-                        color: 'var(--color-text)'
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <div style={{
-                                width: '40px', height: '40px', borderRadius: '50%',
-                                background: baby.gender === 'niño'
-                                    ? 'linear-gradient(135deg, #93c5fd, #3b82f6)'
-                                    : 'linear-gradient(135deg, #f9a8d4, #ec4899)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: '1.1rem',
-                            }}>
-                                {baby.gender === 'niño' ? '👦' : '👧'}
-                            </div>
-                            <div style={{ textAlign: 'left' }}>
-                                <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--color-text)' }}>{baby.name || 'Sin nombre'}</div>
-                                {baby.saved && <div style={{ fontSize: '0.75rem', color: '#4d7c0f' }}>¡Guardado! ✅</div>}
+            <main className="max-w-md mx-auto px-4 pt-6 space-y-6">
+                {/* Parent Profile Section */}
+                <section className="bg-white dark:bg-slate-900/50 p-4 rounded-xl ios-shadow border border-[#8c2bee]/5" style={{ boxShadow: '0 2px 12px -2px rgba(140, 43, 238, 0.08)' }}>
+                    <div className="flex items-center gap-4">
+                        <div className="relative">
+                            <div className="w-20 h-20 rounded-full bg-[#8c2bee]/10 flex items-center justify-center overflow-hidden border-2 border-[#8c2bee]/20">
+                                <span className="text-[#8c2bee] font-bold text-3xl">{profileName.charAt(0).toUpperCase()}</span>
                             </div>
                         </div>
-                        {baby.expanded ? <ChevronUp size={18} color="var(--color-text-light)" /> : <ChevronDown size={18} color="var(--color-text-light)" />}
-                    </button>
-
-                    {baby.expanded && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', paddingTop: '12px', borderTop: '1px solid var(--color-border)' }}>
-                            {/* Name */}
-                            <div>
-                                <label style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', display: 'block', marginBottom: '6px' }}>
-                                    Nombre del Bebé
-                                </label>
+                        <div className="flex-1">
+                            {isEditingProfile ? (
                                 <input
                                     type="text"
-                                    className="auth-input"
-                                    style={{ paddingLeft: '14px' }}
-                                    value={baby.name}
-                                    onChange={e => updateBabyField(baby.id, 'name', e.target.value)}
-                                    placeholder="Ej. Sofía"
+                                    value={profileName}
+                                    onChange={(e) => setProfileName(e.target.value)}
+                                    className="w-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white px-2 py-1 rounded text-xl font-bold leading-tight outline-none focus:ring-2 focus:ring-[#8c2bee]"
+                                    autoFocus
                                 />
-                            </div>
-
-                            {/* Date + Gender */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-                                <div className="auth-input-group">
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <Calendar size={13} /> F. Nacimiento
-                                    </label>
-                                    <input type="date" className="auth-input" style={{ paddingLeft: '12px' }}
-                                        max={today} value={baby.birth_date}
-                                        onChange={e => updateBabyField(baby.id, 'birth_date', e.target.value)} />
-                                </div>
-                                <div className="auth-input-group">
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <User size={13} /> Género
-                                    </label>
-                                    <select className="auth-input" style={{ paddingLeft: '12px' }}
-                                        value={baby.gender}
-                                        onChange={e => updateBabyField(baby.id, 'gender', e.target.value)}>
-                                        <option value="">Seleccionar...</option>
-                                        <option value="niña">Niña</option>
-                                        <option value="niño">Niño</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            {/* Weight + Height */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-                                <div className="auth-input-group">
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <Weight size={13} /> Peso (kg)
-                                    </label>
-                                    <input type="number" step="0.01" className="auth-input" style={{ paddingLeft: '12px' }}
-                                        value={baby.weight} placeholder="3.5"
-                                        onChange={e => updateBabyField(baby.id, 'weight', e.target.value)} />
-                                </div>
-                                <div className="auth-input-group">
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <Ruler size={13} /> Altura (cm)
-                                    </label>
-                                    <input type="number" step="0.1" className="auth-input" style={{ paddingLeft: '12px' }}
-                                        value={baby.height} placeholder="50"
-                                        onChange={e => updateBabyField(baby.id, 'height', e.target.value)} />
-                                </div>
-                            </div>
-
-                            <button
-                                onClick={() => saveBaby(baby)}
-                                disabled={baby.saving}
-                                className="button-primary"
-                                style={{ padding: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-                            >
-                                <Save size={16} />
-                                {baby.saving ? 'Guardando...' : `Guardar cambios de ${baby.name || 'bebé'}`}
-                            </button>
+                            ) : (
+                                <h2 className="text-xl font-bold leading-tight">{profileName}</h2>
+                            )}
+                            <p className="text-slate-500 dark:text-slate-400 text-sm">{user?.email}</p>
                         </div>
-                    )}
+                        {isEditingProfile ? (
+                            <button onClick={saveProfile} className="bg-[#8c2bee] text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-[#8c2bee]/90 transition-colors">
+                                Guardar
+                            </button>
+                        ) : (
+                            <button onClick={() => setIsEditingProfile(true)} className="bg-[#8c2bee]/10 text-[#8c2bee] px-4 py-2 rounded-lg text-sm font-bold hover:bg-[#8c2bee]/20 transition-colors">
+                                Editar
+                            </button>
+                        )}
+                    </div>
+                </section>
+
+                {/* Baby Profile Management */}
+                <section>
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest px-1 mb-2 ml-1">Mi Familia</h3>
+                    <div className="bg-white dark:bg-slate-900/50 rounded-xl ios-shadow border border-[#8c2bee]/5 overflow-hidden" style={{ boxShadow: '0 2px 12px -2px rgba(140, 43, 238, 0.08)' }}>
+                        {babies.map((baby) => (
+                            <div key={baby.id} className="border-b border-slate-100 dark:border-slate-800 last:border-0">
+                                <div
+                                    className="flex items-center p-4 gap-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
+                                    onClick={() => toggleExpand(baby.id)}
+                                >
+                                    <div className="w-12 h-12 rounded-lg bg-[#a8e6cf]/20 flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-green-600">child_care</span>
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="font-semibold text-slate-900 dark:text-slate-100">Perfil de {baby.name || 'Bebé'}</p>
+                                        <p className="text-xs text-slate-500">{baby.gender === 'niño' ? 'Niño' : baby.gender === 'niña' ? 'Niña' : 'Bebé'}</p>
+                                    </div>
+                                    <span className="material-symbols-outlined text-slate-300">
+                                        {baby.expanded ? 'expand_less' : 'chevron_right'}
+                                    </span>
+                                </div>
+                                {baby.expanded && (
+                                    <div className="p-4 bg-slate-50 dark:bg-slate-800/30 space-y-4">
+                                        <div>
+                                            <label className="text-xs font-semibold text-slate-500 mb-1 block">Nombre</label>
+                                            <input
+                                                type="text"
+                                                value={baby.name}
+                                                onChange={e => updateBabyField(baby.id, 'name', e.target.value)}
+                                                className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-[#8c2bee] outline-none"
+                                            />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-xs font-semibold text-slate-500 mb-1 block">Fecha de Nacimiento</label>
+                                                <input
+                                                    type="date"
+                                                    value={baby.birth_date}
+                                                    max={today}
+                                                    onChange={e => updateBabyField(baby.id, 'birth_date', e.target.value)}
+                                                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-[#8c2bee] outline-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-semibold text-slate-500 mb-1 block">Género</label>
+                                                <select
+                                                    value={baby.gender}
+                                                    onChange={e => updateBabyField(baby.id, 'gender', e.target.value)}
+                                                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-[#8c2bee] outline-none"
+                                                >
+                                                    <option value="">Seleccionar...</option>
+                                                    <option value="niña">Niña</option>
+                                                    <option value="niño">Niño</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-xs font-semibold text-slate-500 mb-1 block">Peso (kg)</label>
+                                                <input
+                                                    type="number" step="0.01"
+                                                    value={baby.weight}
+                                                    onChange={e => updateBabyField(baby.id, 'weight', e.target.value)}
+                                                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-[#8c2bee] outline-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-semibold text-slate-500 mb-1 block">Altura (cm)</label>
+                                                <input
+                                                    type="number" step="0.1"
+                                                    value={baby.height}
+                                                    onChange={e => updateBabyField(baby.id, 'height', e.target.value)}
+                                                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-[#8c2bee] outline-none"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2 mt-2">
+                                            <button
+                                                onClick={() => saveBaby(baby)}
+                                                disabled={baby.saving}
+                                                className="flex-1 bg-[#8c2bee] hover:bg-[#8c2bee]/90 text-white font-bold py-2 rounded-lg text-sm transition-colors"
+                                            >
+                                                {baby.saving ? 'Guardando...' : baby.saved ? '¡Guardado con éxito!' : 'Guardar Datos'}
+                                            </button>
+                                            <button
+                                                onClick={async () => {
+                                                    if (window.confirm('¿Seguro que deseas eliminar el perfil de este bebé? Se borrarán todos sus datos.')) {
+                                                        await dbHelpers.deleteBabyProfile(baby.id, user!.id);
+                                                        fetchBabies();
+                                                    }
+                                                }}
+                                                className="px-4 bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold py-2 rounded-lg text-sm transition-colors"
+                                            >
+                                                Eliminar
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
+                {/* AI Preferences */}
+                <section>
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest px-1 mb-2 ml-1">Ajustes de la App</h3>
+                    <div className="bg-white dark:bg-slate-900/50 rounded-xl ios-shadow border border-[#8c2bee]/5 overflow-hidden" style={{ boxShadow: '0 2px 12px -2px rgba(140, 43, 238, 0.08)' }}>
+                        {/* Night Mode Toggle */}
+                        <div className="flex items-center p-4 gap-4 bg-[#8c2bee]/5 text-slate-900 dark:text-slate-100">
+                            <div className="w-10 h-10 rounded-full bg-[#8c2bee]/20 flex items-center justify-center">
+                                <span className="material-symbols-outlined text-[#8c2bee] text-[20px]">{isDarkMode ? 'dark_mode' : 'light_mode'}</span>
+                            </div>
+                            <div className="flex-1">
+                                <p className="font-semibold text-[#8c2bee]">Modo Oscuro</p>
+                                <p className="text-[10px] text-[#8c2bee]/70">Mejora la lectura nocturna</p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" className="sr-only peer" checked={isDarkMode} onChange={toggleTheme} />
+                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-500 peer-checked:bg-[#8c2bee]"></div>
+                            </label>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Logout Button */}
+                <div className="pt-4 pb-8">
+                    <button
+                        onClick={handleLogout}
+                        className="w-full py-4 rounded-xl bg-[#ff8a8a]/10 text-red-500 font-bold hover:bg-[#ff8a8a]/20 transition-colors flex items-center justify-center gap-2"
+                    >
+                        <span className="material-symbols-outlined">logout</span>
+                        Cerrar Sesión
+                    </button>
+                    <p className="text-center text-slate-400 text-xs mt-4">LunaCare v2.4.0 • Hecho con amor para padres</p>
                 </div>
-            ))}
+            </main>
         </div>
     );
 }

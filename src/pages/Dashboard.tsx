@@ -1,23 +1,13 @@
 ﻿import { useEffect, useState } from 'react';
-import { Droplet, Moon, Baby, PlusCircle } from 'lucide-react';
 import { dbHelpers } from '../lib/db';
 import { useAuth } from '../contexts/AuthContext';
-import { formatDistanceToNow, differenceInDays, differenceInMonths, differenceInYears } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { BabyProfileModal } from '../components/BabyProfileModal';
-
-function getBabyAge(birthDate: string): string {
-    if (!birthDate) return '';
-    const bd = new Date(birthDate);
-    const years = differenceInYears(new Date(), bd);
-    if (years >= 1) return `${years} año${years > 1 ? 's' : ''}`;
-    const months = differenceInMonths(new Date(), bd);
-    if (months >= 1) return `${months} mes${months > 1 ? 'es' : ''}`;
-    const days = differenceInDays(new Date(), bd);
-    return `${days} día${days !== 1 ? 's' : ''}`;
-}
+import { useNavigate } from 'react-router-dom';
 
 function timeAgo(dateStr: string) {
+    if (!dateStr) return '';
     return formatDistanceToNow(new Date(dateStr), { locale: es, addSuffix: true });
 }
 
@@ -29,24 +19,10 @@ export function Dashboard() {
     const [insightText, setInsightText] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
-    const [hoveredBaby, setHoveredBaby] = useState<string | null>(null);
+    const [selectedBabyIndex, setSelectedBabyIndex] = useState(0);
+    const navigate = useNavigate();
 
-    const parentName: string = (user?.user_metadata?.full_name as string) || '';
-    const role: string = (user?.user_metadata?.role as string) || '';
-    const isMother = role === 'madre';
-    const isFather = role === 'padre';
-    const greeting = isMother
-        ? `¡Hola, Mamá ${parentName}!`
-        : isFather
-            ? `¡Hola, Papá ${parentName}!`
-            : `¡Hola, ${parentName}!`;
-    const parentEmoji = isMother ? '🤱' : isFather ? '👨‍🍼' : '🍼';
-    const subtitlePrefix = isMother ? 'Mamá de' : isFather ? 'Papá de' : 'Cuidando a';
-    const addBabyText = isFather
-        ? '¿Eres papá de más hijos? Agregar bebé'
-        : isMother
-            ? '¿Eres mamá de más hijos? Agregar bebé'
-            : '¿Tienes más hijos? Agregar bebé';
+    const [isDarkMode, setIsDarkMode] = useState(document.documentElement.classList.contains('dark'));
 
     useEffect(() => {
         if (user) fetchDashboardData();
@@ -68,304 +44,295 @@ export function Dashboard() {
             const stats: Record<string, any> = {};
 
             for (const baby of babyProfiles) {
-                const [dietRes, diaperRes, sleepRes] = await Promise.all([
+                const [dietRes, diaperRes, sleepRes, solidsRes] = await Promise.all([
                     dbHelpers.getDiets(baby.id),
                     dbHelpers.getDiapers(baby.id),
                     dbHelpers.getSleepLogs(baby.id),
+                    dbHelpers.getSolids(baby.id),
                 ]);
                 stats[baby.id] = {
                     latestDiet: dietRes.data?.[0] || null,
                     latestDiaper: diaperRes.data?.[0] || null,
                     latestSleep: sleepRes.data?.[0] || null,
+                    latestSolids: solidsRes.data?.[0] || null,
+                    latestPumping: null,
                 };
             }
             setBabyStats(stats);
-            // Autogenerate an insight for all babies
-            generateInsight(babyProfiles, stats);
+            generateInsight(babyProfiles, stats, selectedBabyIndex);
         } else {
             setShowModal(true);
         }
         setIsLoading(false);
     };
 
-    const generateInsight = async (babyProfiles: any[], stats: any) => {
-        const cacheKey = `luna_insight_all_${babyProfiles.map(b => b.id).join('_')}`;
-        const cached = sessionStorage.getItem(cacheKey);
-        if (cached) {
-            try {
-                const parsed = JSON.parse(cached);
-                // Check if less than 4 hours old within this session
-                if (Date.now() - parsed.timestamp < 4 * 60 * 60 * 1000) {
-                    setInsightText(parsed.text);
-                    return;
-                }
-            } catch (e) {
-                // Ignore parse errors
-            }
-        }
-
+    const generateInsight = async (babyProfiles: any[], stats: any, babyIndex: number) => {
         setInsightLoading(true);
         try {
+            const currentBaby = babyProfiles[babyIndex];
+            if (!currentBaby) return;
+
+            const babyData = stats[currentBaby.id];
+            const dataContext = `
+Bebé: ${currentBaby.name}
+Última comida: ${babyData?.latestDiet ? timeAgo(babyData.latestDiet.created_at) : "ninguna"}
+Último sueño: ${babyData?.latestSleep ? timeAgo(babyData.latestSleep.created_at) : "ninguno"}
+Último pañal: ${babyData?.latestDiaper ? timeAgo(babyData.latestDiaper.created_at) : "ninguno"}
+`;
+
             const { geminiHelpers } = await import('../lib/gemini');
-
-            const dataContext = babyProfiles.map(baby => `
-Bebé: ${baby.name}
-Última comida: ${stats[baby.id]?.latestDiet ? timeAgo(stats[baby.id].latestDiet.created_at) + " de " + stats[baby.id].latestDiet.type : "ninguna"}
-Último pañal: ${stats[baby.id]?.latestDiaper ? timeAgo(stats[baby.id].latestDiaper.created_at) + " (" + stats[baby.id].latestDiaper.status + ")" : "ninguno"}
-Último sueño: ${stats[baby.id]?.latestSleep ? timeAgo(stats[baby.id].latestSleep.created_at) + " duración: " + stats[baby.id].latestSleep.duration : "ninguno"}
-`).join('\n').trim();
-
-            const prompt = `Basado en esta info actual de los bebés, dale un solo consejo o recomendación súper proactiva GENERAL (MÁXIMO 2 líneas cortas) a ${isMother ? 'su mamá' : isFather ? 'su papá' : 'sus padres'}. Habla en general de todos los bebés o enfócate en el que más lo necesite ahora mismo según sus tiempos. Ej: "Asegúrate de preparar el siguiente biberón de Pipe porque hace 3 horas que comió, mientras Luisa sigue durmiendo".\n${dataContext}`;
-
-            const chatModel = [{ role: 'user' as 'user', parts: [{ text: prompt }] }];
+            const prompt = `Eres Luna, experta en cuidado de bebés. Analiza a ${currentBaby.name} y da un consejo de 1 línea corto y útil. IMPORTANTE: El único bebé del que debes hablar es ${currentBaby.name}, NO inventes nombres.`;
+            const chatModel = [{ role: 'user' as const, parts: [{ text: prompt }] }];
             const res = await geminiHelpers.sendMessageWithContext(prompt, chatModel, dataContext);
-            if (res.text) {
-                setInsightText(res.text);
-                sessionStorage.setItem(cacheKey, JSON.stringify({
-                    text: res.text,
-                    timestamp: Date.now()
-                }));
-            }
+            if (res.text) setInsightText(res.text);
         } catch (e) {
-            console.error("No se pudo generar insight", e);
+            console.error(e);
         }
         setInsightLoading(false);
     };
 
-    const handleModalSave = async (profileData: any) => {
-        if (!user) return;
-        const { error } = await dbHelpers.upsertBabyProfile({
-            user_id: user.id,
-            name: profileData.name,
-            birth_date: profileData.birth_date,
-            weight: profileData.weight || 0,
-            height: profileData.height || 0,
-            gender: profileData.gender || '',
-        });
-        if (!error) {
-            setShowModal(false);
-            fetchDashboardData();
-        } else {
-            throw new Error(error.message);
-        }
+    const toggleDark = () => {
+        const isDark = document.documentElement.classList.toggle('dark');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        setIsDarkMode(isDark);
     };
 
-    if (isLoading) return (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60vh', gap: '15px' }}>
-            <div className="pulse-ring" style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Baby size={28} color="white" />
-            </div>
-            <p style={{ color: 'var(--color-text-light)' }}>Cargando...</p>
-        </div>
-    );
+    if (isLoading) return <div className="p-8 text-center bg-background-light dark:bg-[#121212] min-h-screen text-slate-500">Cargando...</div>;
+
+    const currentBaby = babies[selectedBabyIndex];
+    if (!currentBaby) return null;
+
+    const stats = babyStats[currentBaby.id] || {};
 
     return (
-        <>
-            {showModal && <BabyProfileModal onSave={handleModalSave} />}
-
-            <div className="animate-fade-in">
-                {/* ── Parent Greeting ── */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px' }}>
-                    <div style={{
-                        width: '56px', height: '56px', borderRadius: '50%',
-                        background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '1.6rem', boxShadow: '0 4px 15px color-mix(in srgb, var(--color-primary) 40%, transparent)',
-                        flexShrink: 0, transition: 'transform 0.3s ease',
-                    }}>
-                        {parentEmoji}
+        <div className="bg-background-light dark:bg-[#121212] min-h-screen pb-32">
+            {/* Custom Header in Dashboard */}
+            <header className="fixed top-0 w-full z-50 bg-background-light/80 dark:bg-[#121212]/80 backdrop-blur-2xl px-6 pt-12 pb-2">
+                <div className="flex justify-between items-center">
+                    <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center border-2 border-white dark:border-slate-800 overflow-hidden shadow-sm">
+                            <span className="text-primary font-bold text-lg">{user?.email?.[0].toUpperCase() || 'D'}</span>
+                        </div>
+                        <div>
+                            <h2 className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-none">Usuario</h2>
+                            <p className="font-bold text-slate-800 dark:text-white capitalize">{user?.user_metadata?.first_name || user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Padre'}</p>
+                        </div>
                     </div>
-                    <div>
-                        <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, lineHeight: 1.2 }}>{greeting}</h2>
-                        <p style={{ margin: 0, color: 'var(--color-text-light)', fontSize: '0.88rem' }}>
-                            {subtitlePrefix}{' '}
-                            {babies.length > 0 ? babies.map((b: any) => b.name).join(' y ') : 'tu bebé'}
+                    <div className="flex space-x-2">
+                        <button
+                            className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm border border-slate-100 dark:border-slate-700 active:scale-95"
+                            onClick={toggleDark}
+                        >
+                            <span className={`material-symbols-rounded ${isDarkMode ? 'text-yellow-400' : 'text-slate-600'}`}>
+                                {isDarkMode ? 'light_mode' : 'dark_mode'}
+                            </span>
+                        </button>
+                        <button className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm border border-slate-100 dark:border-slate-700 active:scale-95">
+                            <span className="material-symbols-rounded text-slate-600 dark:text-slate-300">notifications</span>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <main className="pt-28 px-5">
+                {/* Baby Selector */}
+                <div className="mb-6">
+                    <div className="flex items-center space-x-4 overflow-x-auto hide-scrollbar py-2">
+                        {babies.map((b, idx) => (
+                            <button
+                                key={b.id}
+                                className={`flex flex-col items-center space-y-1 flex-shrink-0 transition-opacity ${selectedBabyIndex === idx ? 'opacity-100' : 'opacity-60'}`}
+                                onClick={() => {
+                                    setSelectedBabyIndex(idx);
+                                    generateInsight(babies, babyStats, idx);
+                                }}
+                            >
+                                <div className={`w-14 h-14 rounded-full p-1 border-2 bg-white dark:bg-slate-800 shadow-md ${selectedBabyIndex === idx ? 'border-primary' : 'border-transparent'}`}>
+                                    <img
+                                        alt={b.name}
+                                        className="w-full h-full rounded-full object-cover"
+                                        src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${b.name}`}
+                                    />
+                                </div>
+                                <span className={`text-xs font-bold ${selectedBabyIndex === idx ? 'text-primary' : 'text-slate-500 dark:text-slate-400'}`}>{b.name}</span>
+                            </button>
+                        ))}
+                        <button className="flex flex-col items-center space-y-1 flex-shrink-0" onClick={() => setShowModal(true)}>
+                            <div className="w-14 h-14 rounded-full border-2 border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center">
+                                <span className="material-symbols-rounded text-slate-400">add</span>
+                            </div>
+                            <span className="text-[10px] font-medium text-slate-400">Añadir</span>
+                        </button>
+                    </div>
+                </div>
+
+                {/* Luna AI Active Greeting */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-indigo-50 to-purple-100 dark:from-slate-800 dark:to-indigo-950 p-6 mb-8 border border-white/50 dark:border-white/10 shadow-sm transition-all animate-fade-in">
+                    <div className="flex items-start justify-between relative z-10">
+                        <div className="max-w-[70%]">
+                            <div className="inline-flex items-center space-x-2 bg-white/60 dark:bg-slate-700/60 px-3 py-1 rounded-full mb-3">
+                                <span className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                                </span>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Luna AI Activa</span>
+                            </div>
+                            <h1 className="text-2xl font-bold text-slate-800 dark:text-white leading-tight">
+                                ¡Hola, <span className="capitalize">{user?.user_metadata?.first_name || user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Padre'}</span>! 👋<br />
+                                <span className="text-primary font-bold">¿Cómo está {currentBaby.name} hoy?</span>
+                            </h1>
+                            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                                {insightLoading ? 'Luna está analizando...' : (insightText || `¡Es un buen día para cuidar a ${currentBaby.name}!`)}
+                            </p>
+                        </div>
+                        <div className="absolute -right-2 -bottom-4 w-32 h-44 flex items-end">
+                            <div className="relative">
+                                <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full"></div>
+                                <img
+                                    className="w-24 h-24 rounded-full border-4 border-white dark:border-slate-700 object-cover relative z-10"
+                                    src={`https://api.dicebear.com/7.x/pixel-art/svg?seed=${currentBaby.name}`}
+                                    alt="Luna AI"
+                                />
+                                <div className="absolute -bottom-1 -right-1 bg-white dark:bg-slate-800 p-1.5 rounded-full shadow-lg z-20 border border-slate-50 dark:border-slate-700">
+                                    <span className="material-symbols-rounded text-primary text-lg">auto_awesome</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Activity Grid */}
+                <div className="grid grid-cols-2 gap-4">
+                    <ActivityTile
+                        title="Sueño"
+                        subtitle={stats.latestSleep ? `Durmió ${timeAgo(stats.latestSleep.created_at)}` : `${currentBaby.name} está durmiendo`}
+                        icon="bedtime"
+                        color="#7ACDF1"
+                        full
+                        onClick={() => navigate('/sleep')}
+                        ai
+                    />
+                    <ActivityTile
+                        title="Lactancia"
+                        subtitle="Sugerido pronto"
+                        icon="child_care"
+                        color="#FF9D76"
+                        onClick={() => navigate('/diet')}
+                        ai
+                    />
+                    <ActivityTile
+                        title="Biberón"
+                        subtitle={stats.latestDiet ? `Hace ${timeAgo(stats.latestDiet.created_at)}` : "No registrado"}
+                        icon="baby_changing_station"
+                        color="#FF8C69"
+                        onClick={() => navigate('/bottle')}
+                        history
+                    />
+                    <ActivityTile
+                        title="Sólidos"
+                        subtitle={stats.latestSolids ? stats.latestSolids.foods?.[0] || 'Sólidos' : "Puré registrado"}
+                        icon="restaurant"
+                        color="#D45079"
+                        onClick={() => navigate('/solids')}
+                        ai
+                    />
+                    <ActivityTile
+                        title="Pañal"
+                        subtitle={stats.latestDiaper ? `Limpio ${timeAgo(stats.latestDiaper.created_at)}` : "Limpio hace poco"}
+                        icon="soap"
+                        color="#FBCB43"
+                        onClick={() => navigate('/diapers')}
+                        plus
+                    />
+                    <ActivityTile
+                        title="Extracción"
+                        subtitle={stats.latestPumping ? `${stats.latestPumping.amount}ml (${stats.latestPumping.side})` : "Ver historial"}
+                        icon="airware"
+                        color="#A592FF"
+                        full
+                        onClick={() => navigate('/diet')}
+                        arrow
+                    />
+                </div>
+
+                {/* Luna AI Tip Card */}
+                <div className="mt-8 p-4 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 flex items-center space-x-4">
+                    <div className="bg-primary p-2 rounded-full flex-shrink-0 animate-pulse">
+                        <span className="material-symbols-rounded text-white">lightbulb</span>
+                    </div>
+                    <div className="flex-1">
+                        <p className="text-xs font-bold text-primary uppercase">Luna AI Tip</p>
+                        <p className="text-sm text-slate-600 dark:text-slate-400">
+                            {insightText ? insightText : `Es probable que ${currentBaby.name} necesite atención pronto.`}
                         </p>
                     </div>
                 </div>
+            </main>
 
-                {/* ── El Ojo de Luna (AI Insight) ── */}
-                {babies.length > 0 && (
-                    <div style={{
-                        background: 'linear-gradient(135deg, rgba(255,255,255,0.7), rgba(255,255,255,0.3))',
-                        backdropFilter: 'blur(10px)',
-                        border: '1px solid var(--color-border)',
-                        borderRadius: '20px',
-                        padding: '16px',
-                        marginBottom: '24px',
-                        boxShadow: 'var(--shadow-sm)',
-                        display: 'flex', gap: '12px', alignItems: 'flex-start'
-                    }}>
-                        <div style={{
-                            width: '40px', height: '40px', borderRadius: '20px',
-                            background: 'var(--color-primary)', flexShrink: 0,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white',
-                            boxShadow: 'inset 0 -2px 5px rgba(0,0,0,0.1)'
-                        }}>✨</div>
-                        <div style={{ flex: 1 }}>
-                            <h4 style={{ margin: '0 0 6px 0', fontSize: '0.95rem', color: 'var(--color-primary-dark)' }}>Luna dice...</h4>
-                            {insightLoading ? (
-                                <div style={{ height: '20px', background: 'var(--color-surface-variant)', borderRadius: '10px', width: '80%', animation: 'pulse 1.5s infinite' }} />
-                            ) : (
-                                <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--color-text)', lineHeight: 1.4 }}>
-                                    {insightText || "Todo se ve bien por ahora. ¡Disfruta el día con tu bebé!"}
-                                </p>
+            {showModal && <BabyProfileModal onSave={handleDashboardSave} />}
+        </div>
+    );
+
+    async function handleDashboardSave(profileData: any) {
+        if (!user) return;
+        await dbHelpers.upsertBabyProfile({ ...profileData, user_id: user.id });
+        setShowModal(false);
+        fetchDashboardData();
+    }
+}
+
+function ActivityTile({ title, subtitle, icon, color, full, onClick, ai, history, plus, arrow }: any) {
+    return (
+        <button
+            className={`${full ? 'col-span-2' : ''} group relative overflow-hidden p-5 rounded-xl text-left transition-transform active:scale-[0.98] card-shadow`}
+            style={{ backgroundColor: color, color: color === '#FBCB43' ? '#1e293b' : 'white' }}
+            onClick={onClick}
+        >
+            <div className={`flex ${full ? 'justify-between items-center' : 'flex-col h-full'} relative z-10`}>
+                <div className={full ? 'flex items-center space-x-4' : ''}>
+                    {full && title === 'Extracción' ? (
+                        <div className="bg-white/20 p-3 rounded-full">
+                            <span className="material-symbols-rounded text-3xl opacity-90">{icon}</span>
+                        </div>
+                    ) : (
+                        <div className={full ? '' : 'flex justify-between items-start mb-4'}>
+                            <span className={`material-symbols-rounded ${full ? 'text-4xl' : 'text-3xl'} opacity-90 ${full ? 'mb-2' : ''}`}>{icon}</span>
+                            {!full && (ai || history || plus) && (
+                                <div className="bg-white/20 p-1.5 rounded-full backdrop-blur-md">
+                                    <span className="material-symbols-rounded text-xs">{ai ? 'auto_awesome' : (history ? 'history' : 'add')}</span>
+                                </div>
                             )}
                         </div>
+                    )}
+                    <div>
+                        <h3 className={`${full ? 'text-xl' : 'text-lg'} font-bold`}>{title}</h3>
+                        <p className={`${full ? 'text-sm' : 'text-xs'} opacity-80 mt-1`}>{subtitle}</p>
                     </div>
-                )}
-
-                {/* ── Baby cards with stats ── */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '14px' }}>
-                    {babies.map((baby, i) => {
-                        const isHovered = hoveredBaby === baby.id;
-                        const genderStr = baby.gender?.toLowerCase() || '';
-                        const isBoy = ['niño', 'nino', 'masculino', 'm', 'boy', 'male'].includes(genderStr);
-                        const babyColor = isBoy ? '#3b82f6' : 'var(--color-primary-dark)';
-                        const babyGrad = isBoy
-                            ? 'linear-gradient(135deg, #93c5fd, #3b82f6)'
-                            : 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))';
-
-                        return (
-                            <div key={baby.id}
-                                onMouseEnter={() => setHoveredBaby(baby.id)}
-                                onMouseLeave={() => setHoveredBaby(null)}
-                                style={{
-                                    background: 'var(--color-surface)',
-                                    borderRadius: '20px',
-                                    boxShadow: isHovered
-                                        ? `0 8px 32px color-mix(in srgb, ${babyColor} 25%, transparent), var(--shadow-md)`
-                                        : 'var(--shadow-sm)',
-                                    transform: isHovered ? 'translateY(-3px) scale(1.01)' : 'translateY(0) scale(1)',
-                                    transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                                    border: `1px solid ${isHovered ? babyColor + '44' : 'var(--color-border)'}`,
-                                    overflow: 'hidden',
-                                    animationDelay: `${i * 0.07}s`
-                                }}
-                            >
-                                {/* Top accent bar */}
-                                <div style={{ height: '4px', background: babyGrad }} />
-
-                                {/* Baby info row */}
-                                <div style={{ padding: '16px 16px 12px', display: 'flex', alignItems: 'center', gap: '14px' }}>
-                                    <div style={{
-                                        width: '52px', height: '52px', borderRadius: '50%',
-                                        background: babyGrad,
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        fontSize: '1.5rem', flexShrink: 0,
-                                        boxShadow: `0 4px 12px color-mix(in srgb, ${babyColor} 35%, transparent)`,
-                                        transition: 'transform 0.3s ease',
-                                        transform: isHovered ? 'rotate(-10deg) scale(1.1)' : 'rotate(0deg) scale(1)',
-                                    }}>
-                                        {isBoy ? '👦' : '👧'}
-                                    </div>
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ fontWeight: 800, fontSize: '1.15rem', color: 'var(--color-text)' }}>{baby.name}</div>
-                                        <div style={{ fontSize: '0.82rem', color: 'var(--color-text-light)', display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '3px' }}>
-                                            {baby.birth_date && <span>🎂 {getBabyAge(baby.birth_date)}</span>}
-                                            {baby.weight > 0 && <span>⚖️ {baby.weight} kg</span>}
-                                            {baby.height > 0 && <span>📏 {baby.height} cm</span>}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Stats for this baby */}
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1px', background: 'var(--color-border)', borderTop: '1px solid var(--color-border)' }}>
-                                    {/* Last feeding */}
-                                    <StatCell
-                                        color="var(--color-primary-dark)"
-                                        emoji={<Droplet size={13} />}
-                                        label="Última Comida"
-                                        value={babyStats[baby.id]?.latestDiet ? timeAgo(babyStats[baby.id].latestDiet.created_at) : '—'}
-                                        sub={babyStats[baby.id]?.latestDiet
-                                            ? (babyStats[baby.id].latestDiet.type === 'breast' ? 'Pecho' : babyStats[baby.id].latestDiet.type === 'formula' ? 'Fórmula' : 'Sólidos') +
-                                            (babyStats[baby.id].latestDiet.amount ? ` · ${babyStats[baby.id].latestDiet.amount}ml` : '')
-                                            : 'Sin registros'}
-                                    />
-                                    {/* Last diaper change */}
-                                    <StatCell
-                                        color="var(--color-success)"
-                                        emoji={<Baby size={13} />}
-                                        label="Último Cambio de Pañal"
-                                        value={babyStats[baby.id]?.latestDiaper ? timeAgo(babyStats[baby.id].latestDiaper.created_at) : '—'}
-                                        sub={babyStats[baby.id]?.latestDiaper
-                                            ? (babyStats[baby.id].latestDiaper.status === 'wet' ? 'Mojado' : 'Sucio')
-                                            : 'Sin registros'}
-                                    />
-                                </div>
-                                {/* Last sleep — full width */}
-                                <div style={{ borderTop: '1px solid var(--color-border)' }}>
-                                    <StatCell
-                                        color="var(--color-secondary-dark)"
-                                        emoji={<Moon size={13} />}
-                                        label="Último Sueño"
-                                        value={babyStats[baby.id]?.latestSleep ? babyStats[baby.id].latestSleep.duration : '—'}
-                                        sub={babyStats[baby.id]?.latestSleep ? timeAgo(babyStats[baby.id].latestSleep.created_at) : 'Sin registros'}
-                                        wide
-                                    />
-                                </div>
-                            </div>
-                        );
-                    })}
                 </div>
 
-                {/* ── Add another baby ── */}
-                <button
-                    onClick={() => setShowModal(true)}
-                    style={{
-                        width: '100%', padding: '16px',
-                        borderRadius: '18px', border: '2px dashed var(--color-border)',
-                        background: 'transparent', cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
-                        color: 'var(--color-text-light)', fontWeight: 600, fontSize: '0.95rem',
-                        transition: 'all 0.25s ease',
-                    }}
-                    onMouseEnter={e => {
-                        (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-primary)';
-                        (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-primary-dark)';
-                        (e.currentTarget as HTMLButtonElement).style.background = 'color-mix(in srgb, var(--color-primary) 6%, transparent)';
-                        (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.01)';
-                    }}
-                    onMouseLeave={e => {
-                        (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-border)';
-                        (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-text-light)';
-                        (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
-                        (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)';
-                    }}
-                >
-                    <PlusCircle size={22} />
-                    {addBabyText}
-                </button>
-            </div >
-        </>
+                {full && tileAiBadge(title, ai, arrow)}
+            </div>
+
+            {title === 'Sueño' && (
+                <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform">
+                    <span className="material-symbols-rounded text-[120px]">dark_mode</span>
+                </div>
+            )}
+        </button>
     );
 }
 
-// ── Small reusable Stat Cell ──────────────────────────────
-function StatCell({ color, emoji, label, value, sub, wide }: {
-    color: string; emoji: React.ReactNode;
-    label: string; value: string; sub: string; wide?: boolean;
-}) {
-    const [hov, setHov] = useState(false);
-    return (
-        <div
-            onMouseEnter={() => setHov(true)}
-            onMouseLeave={() => setHov(false)}
-            style={{
-                padding: '12px 14px',
-                background: hov ? `color-mix(in srgb, ${color} 8%, var(--color-surface))` : 'var(--color-surface)',
-                transition: 'background 0.2s ease',
-                cursor: 'default',
-                gridColumn: wide ? 'span 2' : undefined,
-            }}
-        >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color, marginBottom: '5px', fontSize: '0.78rem', fontWeight: 700 }}>
-                {emoji} {label}
+function tileAiBadge(title: string, ai: boolean, arrow: boolean) {
+    if (title === 'Sueño' && ai) {
+        return (
+            <div className="bg-white/20 p-2 rounded-lg backdrop-blur-md border border-white/30 flex items-center space-x-1">
+                <span className="material-symbols-rounded text-sm">auto_awesome</span>
+                <span className="text-[10px] font-bold">Luna AI</span>
             </div>
-            <div style={{ fontWeight: 700, fontSize: wide ? '1.3rem' : '0.95rem', color: 'var(--color-text)', transition: 'transform 0.2s', transform: hov ? 'scale(1.03)' : 'scale(1)' }}>
-                {value}
-            </div>
-            <div style={{ fontSize: '0.76rem', color: 'var(--color-text-light)', marginTop: '2px' }}>{sub}</div>
-        </div>
-    );
+        );
+    }
+    if (arrow) {
+        return <span className="material-symbols-rounded opacity-40">chevron_right</span>;
+    }
+    return null;
 }

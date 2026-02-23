@@ -55,12 +55,12 @@ export function RegisterPage() {
 
             <div className="glass-card animate-fade-in">
                 <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-                    <img src="/logo.png" alt="LunaCare Logo" style={{ width: '64px', height: '64px', marginBottom: '15px', borderRadius: '16px', boxShadow: 'var(--shadow-md)' }} />
+                    <img src="/logo.png" alt="LunaCare Logo" style={{ display: 'block', margin: '0 auto 15px auto', width: '64px', height: '64px', borderRadius: '16px', boxShadow: 'var(--shadow-md)' }} />
                     <h1 style={{ color: 'var(--color-primary-dark)', fontSize: '2.2rem', margin: '0 0 8px 0', letterSpacing: '-0.5px' }}>
                         {role === 'padre' ? '¡Bienvenido!' : '¡Bienvenida!'}
                     </h1>
                     <p style={{ color: 'var(--color-text-light)', fontSize: '1rem' }}>
-                        Crea tu cuenta para empezar ✨
+                        Únete a la comunidad de padres proactivos ✨
                     </p>
                 </div>
 
@@ -140,7 +140,7 @@ export function RegisterPage() {
                     <button type="submit" className="button-primary"
                         style={{ padding: '16px', fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
                         disabled={isLoading}>
-                        {isLoading ? 'Creando cuenta...' : 'Crear Cuenta ✨'}
+                        {isLoading ? 'Creando cuenta...' : 'Empezar ahora ✨'}
                     </button>
                 </form>
 

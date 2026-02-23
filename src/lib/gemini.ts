@@ -11,16 +11,31 @@ const genAI = new GoogleGenerativeAI(apiKey || "");
 
 const logBabyDietDeclaration: FunctionDeclaration = {
     name: "logBabyDiet",
-    description: "Registra una toma de alimento para un bebé específico. Ejecuta esto ÚNICAMENTE cuando se solicite o confirme explícitamente haber alimentado a un bebé del hogar.",
+    description: "Registra una toma de alimento (pecho o biberón) para un bebé. Para sólidos usa logBabySolids.",
     parameters: {
         type: SchemaType.OBJECT,
         properties: {
-            babyId: { type: SchemaType.STRING, description: "El ID del bebé al que se le aplicará el registro. Búscalo en el contexto." },
-            type: { type: SchemaType.STRING, description: "Tipo de alimentación: 'pecho', 'formula', 'mixta' u 'otros'" },
-            amount: { type: SchemaType.NUMBER, description: "Cantidad en mililitros (ml) si es fórmula o biberón, o minutos si es pecho." },
-            observations: { type: SchemaType.STRING, description: "Observaciones adicionales si las hay (vacío si no hay)." },
+            babyId: { type: SchemaType.STRING, description: "ID del bebé." },
+            type: { type: SchemaType.STRING, description: "Tipo: 'pecho', 'formula', 'mixta'" },
+            amount: { type: SchemaType.NUMBER, description: "ML o minutos." },
+            observations: { type: SchemaType.STRING, description: "Notas." },
         },
         required: ["babyId", "type", "amount"],
+    },
+};
+
+const logBabySolidsDeclaration: FunctionDeclaration = {
+    name: "logBabySolids",
+    description: "Registra comida sólida (papillas, trozos, etc.).",
+    parameters: {
+        type: SchemaType.OBJECT,
+        properties: {
+            babyId: { type: SchemaType.STRING, description: "ID del bebé." },
+            foods: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "Lista de alimentos (ej: ['manzana', 'avena'])." },
+            amount: { type: SchemaType.STRING, description: "Cantidad (ej: 'media taza', '3 cucharadas')." },
+            observations: { type: SchemaType.STRING, description: "Notas." },
+        },
+        required: ["babyId", "foods"],
     },
 };
 
@@ -40,15 +55,74 @@ const logBabyDiaperDeclaration: FunctionDeclaration = {
 
 const logBabySleepDeclaration: FunctionDeclaration = {
     name: "logBabySleep",
-    description: "Registra que un bebé ha dormido. Úsalo cuando te digan el nombre del bebé y el tiempo que durmió.",
+    description: "Registra que un bebé ha dormido.",
     parameters: {
         type: SchemaType.OBJECT,
         properties: {
-            babyId: { type: SchemaType.STRING, description: "El ID del bebé al que se le aplicará el registro. Búscalo en el contexto." },
-            durationMinutes: { type: SchemaType.NUMBER, description: "Duración en minutos totales de cuánto durmió." },
-            observations: { type: SchemaType.STRING, description: "Observaciones sobre cómo durmió (vacío si no hay)." },
+            babyId: { type: SchemaType.STRING, description: "ID del bebé." },
+            durationMinutes: { type: SchemaType.NUMBER, description: "Minutos totales." },
+            observations: { type: SchemaType.STRING, description: "Notas." },
         },
         required: ["babyId", "durationMinutes"],
+    },
+};
+
+const logBabyMedicineDeclaration: FunctionDeclaration = {
+    name: "logBabyMedicine",
+    description: "Registra administración de medicamento.",
+    parameters: {
+        type: SchemaType.OBJECT,
+        properties: {
+            babyId: { type: SchemaType.STRING, description: "ID del bebé." },
+            name: { type: SchemaType.STRING, description: "Nombre del medicamento." },
+            dosage: { type: SchemaType.STRING, description: "Dosis (ej: '2.5ml', '1 gota')." },
+            observations: { type: SchemaType.STRING, description: "Notas." },
+        },
+        required: ["babyId", "name"],
+    },
+};
+
+const logBabyGrowthDeclaration: FunctionDeclaration = {
+    name: "logBabyGrowth",
+    description: "Registra peso, altura o perímetro cefálico.",
+    parameters: {
+        type: SchemaType.OBJECT,
+        properties: {
+            babyId: { type: SchemaType.STRING, description: "ID del bebé." },
+            weight: { type: SchemaType.NUMBER, description: "Peso en kg." },
+            height: { type: SchemaType.NUMBER, description: "Altura en cm." },
+            headCircumference: { type: SchemaType.NUMBER, description: "Perímetro cefálico en cm." },
+        },
+        required: ["babyId"],
+    },
+};
+
+const logBabyTemperatureDeclaration: FunctionDeclaration = {
+    name: "logBabyTemperature",
+    description: "Registra temperatura corporal.",
+    parameters: {
+        type: SchemaType.OBJECT,
+        properties: {
+            babyId: { type: SchemaType.STRING, description: "ID del bebé." },
+            temperature: { type: SchemaType.NUMBER, description: "Valor (ej: 37.5)." },
+            unit: { type: SchemaType.STRING, description: "C o F." },
+        },
+        required: ["babyId", "temperature"],
+    },
+};
+
+const logBabyActivityDeclaration: FunctionDeclaration = {
+    name: "logBabyActivity",
+    description: "Registra tiempo boca abajo, juegos, etc.",
+    parameters: {
+        type: SchemaType.OBJECT,
+        properties: {
+            babyId: { type: SchemaType.STRING, description: "ID del bebé." },
+            activityType: { type: SchemaType.STRING, description: "Tipo de actividad." },
+            durationMinutes: { type: SchemaType.NUMBER, description: "Duración en minutos." },
+            observations: { type: SchemaType.STRING, description: "Notas." },
+        },
+        required: ["babyId", "activityType"],
     },
 };
 
@@ -97,23 +171,42 @@ const logDeleteBabyDeclaration: FunctionDeclaration = {
 // Configuración general del modelo
 const model = genAI.getGenerativeModel({
     model: "gemini-2.5-flash",
-    systemInstruction: `Eres Luna, una asesora empática, experta y cariñosa en pediatría temprana y maternidad/paternidad. 
-Tu objetivo es ayudar, tranquilizar y aconsejar a los padres y madres.
-Reglas:
-1. Sé cálida, empática y conversacional, como una amiga pediatra respondiendo en WhatsApp. Usa emojis sutilmente.
-2. Basarás tus respuestas en la información de TODOS los bebés (hijos) del padre actual que se te proporcionará en el contexto. El usuario puede tener uno o varios gemelos/hijos de distintas edades.
-3. CRÍTICO: Si el usuario te PIde registrar algo (ej. "durmió 1 hora" o "cambié un pañal") pero NO MENCIONA a cuál de sus bebés se refiere, y en su contexto hay MÁS DE UN BEBÉ, **DEBES preguntarle amablemente a cuál bebé se refiere** antes de usar las funciones. Si solo tiene un bebé o menciona su nombre claramente ("Sof tomó 10 min"), obtén el "babyId" del contexto y llama a la función correspondiente.
-4. AGREGAR BEBÉS: Puedes ejecutar la acción para registrar un nuevo bebé si el usuario te lo pide proporcionando el nombre.
-5. ELIMINACIÓN DE BEBÉS (REGLA DE DOBLE CONFIRMACIÓN): Si el usuario solicita eliminar el perfil de un bebé, NUNCA ejecutes la función de inmediato. 
-   - PRIMERO, respóndele preguntando: "¿Estás seguro de que deseas eliminar el perfil de [Nombre] y todos sus recuerdos y registros irrevocablemente?"
-   - SEGUNDO, si el usuario dice "sí", TÚ DEBES preguntar de nuevo de forma muy seria: "¿Estás ABSOLUTAMENTE seguro? No podré recuperar los datos."
-   - SÓLO CUANDO responda afirmativamente por segunda vez tras tu segunda advertencia explícita, podrás invocar la función "logDeleteBaby".
-6. ACTUALIZACIÓN DE MEDIDAS: Si dicen "Leo pesa ahora 4kg", usa logUpdateBaby. Si no sabes a cuál bebé se refieren, pregunta.
-7. REGISTROS SIMULTÁNEOS (PARALLEL CALLING): Si el usuario te pide registrar una acción para MÚLTIPLES bebés a la vez (ej. "los dos comieron", "Pipe y Luisa hicieron popó"), ESTÁ ESTRICTAMENTE PROHIBIDO poner "los dos" o "Pipe y Luisa" en el parámetro 'babyId'. DEBES generar LLAMADAS MULTIPLES (Parallel Calling). Ejecuta la función UNA VEZ por CADA bebé individualmente en el mismo turno, utilizando su 'babyId' único.
-8. Siempre enfatiza que tus consejos no reemplazan a un médico.`,
+    systemInstruction: `Eres Luna, la IA experta de LunaCare, inspirada en la precisión y empatía de Huckleberry. 
+Tu personalidad es la de una Consultora de Sueño y Desarrollo Infantil de élite: altamente profesional, basada en datos, pero profundamente cálida y tranquilizadora.
+
+Tus pilares fundamentales son:
+1. **Precisión Predictiva**: Utilizas "Ventanas de Sueño" (Wake Windows) para aconsejar. 
+   - 0-1 mes: 45-60 min
+   - 1-2 meses: 60-90 min
+   - 2-3 meses: 90-105 min
+   - 3-4 meses: 105-120 min
+   - 4-6 meses: 2-2.5 horas
+   - 6-8 meses: 2.5-3 horas
+   - 8-10 meses: 3-3.5 horas
+2. **Copywriting "Berry"**: Tu lenguaje es limpio, moderno y reconfortante. Evitas los sermones. Eres una aliada en la "hermosa caótica rutina".
+3. **Proactividad**: No solo respondes, anticipas. Si registran un sueño, menciona cuándo podría ser la próxima ventana (SweetSpot).
+4. **Contexto de Múltiples Bebés**: Manejas a cada bebé con su perfil único. Si no especifican a quién, pregunta con dulzura.
+5. **Respuestas ultra-cortas y directas**: Debes responder de la manera más breve posible, yendo directo al punto. No des largas explicaciones a menos que te lo pidan. Ejemplo de tono: en vez de decir "¡Qué bueno que durmió! ¿Me puedes decir a qué hora empezó y terminó el sueño?", di directamente: "¿A qué hora comenzó y terminó la sesión de sueño de tu hijo?". Muestra tu empatía en el tono de experta, pero mantén las interacciones similares a mensajes de texto rápidos.
+
+Reglas de Operación:
+- DOBLE CONFIRMACIÓN para borrar perfiles.
+- LLAMADAS PARALELAS para acciones múltiples.
+- Siempre recordatorio sutil: "Mis consejos no sustituyen al pediatra".`,
     tools: [
         {
-            functionDeclarations: [logBabyDietDeclaration, logBabyDiaperDeclaration, logBabySleepDeclaration, logAddBabyDeclaration, logDeleteBabyDeclaration, logUpdateBabyDeclaration],
+            functionDeclarations: [
+                logBabyDietDeclaration,
+                logBabySolidsDeclaration,
+                logBabyDiaperDeclaration,
+                logBabySleepDeclaration,
+                logBabyMedicineDeclaration,
+                logBabyGrowthDeclaration,
+                logBabyTemperatureDeclaration,
+                logBabyActivityDeclaration,
+                logAddBabyDeclaration,
+                logDeleteBabyDeclaration,
+                logUpdateBabyDeclaration
+            ],
         },
     ],
 });
