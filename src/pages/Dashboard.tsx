@@ -219,7 +219,8 @@ Bebé: ${baby.name}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '14px' }}>
                     {babies.map((baby, i) => {
                         const isHovered = hoveredBaby === baby.id;
-                        const isBoy = baby.gender?.toLowerCase() === 'niño';
+                        const genderStr = baby.gender?.toLowerCase() || '';
+                        const isBoy = ['niño', 'nino', 'masculino', 'm', 'boy', 'male'].includes(genderStr);
                         const babyColor = isBoy ? '#3b82f6' : 'var(--color-primary-dark)';
                         const babyGrad = isBoy
                             ? 'linear-gradient(135deg, #93c5fd, #3b82f6)'
@@ -256,7 +257,7 @@ Bebé: ${baby.name}
                                         transition: 'transform 0.3s ease',
                                         transform: isHovered ? 'rotate(-10deg) scale(1.1)' : 'rotate(0deg) scale(1)',
                                     }}>
-                                        {baby.gender?.toLowerCase() === 'niño' ? '👦' : '👧'}
+                                        {isBoy ? '👦' : '👧'}
                                     </div>
                                     <div style={{ flex: 1 }}>
                                         <div style={{ fontWeight: 800, fontSize: '1.15rem', color: 'var(--color-text)' }}>{baby.name}</div>
