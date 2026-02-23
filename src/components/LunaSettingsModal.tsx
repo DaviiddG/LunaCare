@@ -20,7 +20,6 @@ export function LunaSettingsModal({ isOpen, onClose, onSave }: LunaSettingsModal
         voice: (localStorage.getItem('luna_voice') as any) || 'soprano',
         icon: localStorage.getItem('luna_icon') || '/luna-avatar.png'
     });
-
     const handleSave = () => {
         localStorage.setItem('luna_profile', settings.profile);
         localStorage.setItem('luna_frequency', settings.frequency);
@@ -28,6 +27,9 @@ export function LunaSettingsModal({ isOpen, onClose, onSave }: LunaSettingsModal
 
         // If it's the default icon, we could potentially switch it here, 
         // but let's just trigger the save for now.
+
+        // Dispatch event so the Dashboard (and other listeners) can update immediately
+        window.dispatchEvent(new CustomEvent('luna-settings-updated'));
 
         onSave(settings);
     };
