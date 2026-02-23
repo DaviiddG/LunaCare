@@ -80,16 +80,16 @@ export function Dashboard() {
                 };
             }
             setBabyStats(stats);
-            // Autogenerate an insight for the first baby
-            generateInsight(babyProfiles[0], stats[babyProfiles[0].id]);
+            // Autogenerate an insight for all babies
+            generateInsight(babyProfiles, stats);
         } else {
             setShowModal(true);
         }
         setIsLoading(false);
     };
 
-    const generateInsight = async (baby: any, stats: any) => {
-        const cacheKey = `luna_insight_${baby.id}`;
+    const generateInsight = async (babyProfiles: any[], stats: any) => {
+        const cacheKey = `luna_insight_all_${babyProfiles.map(b => b.id).join('_')}`;
         const cached = localStorage.getItem(cacheKey);
         if (cached) {
             try {
@@ -107,13 +107,15 @@ export function Dashboard() {
         setInsightLoading(true);
         try {
             const { geminiHelpers } = await import('../lib/gemini');
-            const dataContext = `
+
+            const dataContext = babyProfiles.map(baby => `
 Bebé: ${baby.name}
-Última comida: ${stats.latestDiet ? timeAgo(stats.latestDiet.created_at) + " de " + stats.latestDiet.type : "ninguna"}
-Último pañal: ${stats.latestDiaper ? timeAgo(stats.latestDiaper.created_at) + " (" + stats.latestDiaper.status + ")" : "ninguno"}
-Último sueño: ${stats.latestSleep ? timeAgo(stats.latestSleep.created_at) + " duración: " + stats.latestSleep.duration : "ninguno"}
-            `.trim();
-            const prompt = `Basado en esta info actual del bebé, dale un solo consejo o recomendación súper proactiva (MÁXIMO 2 líneas cortas) a ${isMother ? 'su mamá' : isFather ? 'su papá' : 'sus padres'}. Ej: "Asegúrate de preparar el siguiente biberón porque hace 3 horas que comió".\n${dataContext}`;
+Última comida: ${stats[baby.id]?.latestDiet ? timeAgo(stats[baby.id].latestDiet.created_at) + " de " + stats[baby.id].latestDiet.type : "ninguna"}
+Último pañal: ${stats[baby.id]?.latestDiaper ? timeAgo(stats[baby.id].latestDiaper.created_at) + " (" + stats[baby.id].latestDiaper.status + ")" : "ninguno"}
+Último sueño: ${stats[baby.id]?.latestSleep ? timeAgo(stats[baby.id].latestSleep.created_at) + " duración: " + stats[baby.id].latestSleep.duration : "ninguno"}
+`).join('\n').trim();
+
+            const prompt = `Basado en esta info actual de los bebés, dale un solo consejo o recomendación súper proactiva GENERAL (MÁXIMO 2 líneas cortas) a ${isMother ? 'su mamá' : isFather ? 'su papá' : 'sus padres'}. Habla en general de todos los bebés o enfócate en el que más lo necesite ahora mismo según sus tiempos. Ej: "Asegúrate de preparar el siguiente biberón de Pipe porque hace 3 horas que comió, mientras Luisa sigue durmiendo".\n${dataContext}`;
 
             const chatModel = [{ role: 'user' as 'user', parts: [{ text: prompt }] }];
             const res = await geminiHelpers.sendMessageWithContext(prompt, chatModel, dataContext);

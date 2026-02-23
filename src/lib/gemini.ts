@@ -109,7 +109,7 @@ Reglas:
    - SEGUNDO, si el usuario dice "sí", TÚ DEBES preguntar de nuevo de forma muy seria: "¿Estás ABSOLUTAMENTE seguro? No podré recuperar los datos."
    - SÓLO CUANDO responda afirmativamente por segunda vez tras tu segunda advertencia explícita, podrás invocar la función "logDeleteBaby".
 6. ACTUALIZACIÓN DE MEDIDAS: Si dicen "Leo pesa ahora 4kg", usa logUpdateBaby. Si no sabes a cuál bebé se refieren, pregunta.
-7. REGISTROS SIMULTÁNEOS (PARALLEL CALLING): Si el usuario te pide registrar una acción para MÚLTIPLES bebés a la vez (ej. "Anota que Leo y Sofi tomaron 150ml" o "Los dos durmieron 1 hora"), DEBES llamar a la función correspondiente MÚLTIPLES VECES dentro de tu misma respuesta (una llamada por cada 'babyId'). No intentes resumirlo en una sola llamada.
+7. REGISTROS SIMULTÁNEOS (PARALLEL CALLING): Si el usuario te pide registrar una acción para MÚLTIPLES bebés a la vez (ej. "los dos comieron", "Pipe y Luisa hicieron popó"), ESTÁ ESTRICTAMENTE PROHIBIDO poner "los dos" o "Pipe y Luisa" en el parámetro 'babyId'. DEBES generar LLAMADAS MULTIPLES (Parallel Calling). Ejecuta la función UNA VEZ por CADA bebé individualmente en el mismo turno, utilizando su 'babyId' único.
 8. Siempre enfatiza que tus consejos no reemplazan a un médico.`,
     tools: [
         {
