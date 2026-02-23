@@ -90,11 +90,11 @@ export function Dashboard() {
 
     const generateInsight = async (babyProfiles: any[], stats: any) => {
         const cacheKey = `luna_insight_all_${babyProfiles.map(b => b.id).join('_')}`;
-        const cached = localStorage.getItem(cacheKey);
+        const cached = sessionStorage.getItem(cacheKey);
         if (cached) {
             try {
                 const parsed = JSON.parse(cached);
-                // Check if less than 4 hours old
+                // Check if less than 4 hours old within this session
                 if (Date.now() - parsed.timestamp < 4 * 60 * 60 * 1000) {
                     setInsightText(parsed.text);
                     return;
@@ -121,7 +121,7 @@ Bebé: ${baby.name}
             const res = await geminiHelpers.sendMessageWithContext(prompt, chatModel, dataContext);
             if (res.text) {
                 setInsightText(res.text);
-                localStorage.setItem(cacheKey, JSON.stringify({
+                sessionStorage.setItem(cacheKey, JSON.stringify({
                     text: res.text,
                     timestamp: Date.now()
                 }));
