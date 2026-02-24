@@ -262,7 +262,7 @@ Bebé: ${currentBaby.name}
                     <BentoGrid>
                         <BentoCard
                             name="Sueño"
-                            description={`Durmió hace alrededor de ${timeAgo(stats?.base.last_sleep_end)}`}
+                            description={stats?.latestSleep ? `Durmió hace ${timeAgo(stats?.latestSleep.created_at)}` : `${currentBaby?.name || 'Bebé'} está durmiendo`}
                             icon="nights_stay"
                             color="#7DD3FC"
                             className="col-span-2"
@@ -277,7 +277,7 @@ Bebé: ${currentBaby.name}
 
                         <BentoCard
                             name="Lactancia"
-                            description={stats?.derived.time_since_breast_feed > 180 ? 'Sugerido pronto' : `Hace ${timeAgo(stats?.base.last_breast_feed)}`}
+                            description="Sugerido pronto"
                             icon="face_retouching_natural"
                             color="#FC8B63"
                             className="col-span-1"
@@ -287,7 +287,7 @@ Bebé: ${currentBaby.name}
 
                         <BentoCard
                             name="Biberón"
-                            description={stats?.base.last_bottle_feed ? `Hace ${timeAgo(stats?.base.last_bottle_feed)}` : 'No registrado'}
+                            description={stats?.latestDiet ? `Hace ${timeAgo(stats?.latestDiet.created_at)}` : 'No registrado'}
                             icon="baby_bottle"
                             color="#FE8BBB"
                             className="col-span-1"
@@ -297,7 +297,7 @@ Bebé: ${currentBaby.name}
 
                         <BentoCard
                             name="Sólidos"
-                            description={stats?.base.last_solids_feed ? `Hace ${timeAgo(stats?.base.last_solids_feed)}` : 'No registrado'}
+                            description={stats?.latestSolids ? (stats?.latestSolids.foods?.[0] || `Hace ${timeAgo(stats?.latestSolids.created_at)}`) : "No registrado"}
                             icon="restaurant"
                             color="#C8487A"
                             className="col-span-1"
@@ -307,7 +307,7 @@ Bebé: ${currentBaby.name}
 
                         <BentoCard
                             name="Pañal"
-                            description={stats?.base.last_diaper_change ? `Limpio hace ${timeAgo(stats?.base.last_diaper_change)}` : 'No registrado'}
+                            description={stats?.latestDiaper ? `Limpio hace ${timeAgo(stats?.latestDiaper.created_at)}` : 'No registrado'}
                             icon="wash"
                             color="#FBCB43"
                             className="col-span-1"
