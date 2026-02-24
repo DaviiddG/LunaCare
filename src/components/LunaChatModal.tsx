@@ -28,8 +28,11 @@ export function LunaChatModal({ isOpen, onClose }: LunaChatModalProps) {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [lunaIconUrl, setLunaIconUrl] = useState(localStorage.getItem('luna_icon') || '/luna-avatar.png');
     const [lunaProfile, setLunaProfile] = useState(localStorage.getItem('luna_profile') || 'serena');
+    const [selectedImage, setSelectedImage] = useState<{ file: File, base64: string, preview: string } | null>(null);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const recognitionRef = useRef<any>(null);
 
     // Fetch conversation when modal opens or baby changes
     useEffect(() => {
@@ -64,19 +67,60 @@ export function LunaChatModal({ isOpen, onClose }: LunaChatModalProps) {
             alert('El reconocimiento de voz no está soportado en este navegador.');
             return;
         }
-        if (isListening) return;
+
+        if (isListening) {
+            if (recognitionRef.current) {
+                recognitionRef.current.stop();
+            }
+            setIsListening(false);
+            return;
+        }
 
         const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
+        recognitionRef.current = recognition;
+
         recognition.lang = 'es-ES';
-        recognition.interimResults = false;
+        recognition.interimResults = true;
+
+        // Save current input to append to it
+        const currentInput = input;
+
         recognition.onstart = () => setIsListening(true);
         recognition.onresult = (event: any) => {
-            const transcript = event.results[0][0].transcript;
-            setInput(prev => prev + (prev ? ' ' : '') + transcript);
+            let finalTranscript = '';
+            let interimTranscript = '';
+
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    finalTranscript += event.results[i][0].transcript;
+                } else {
+                    interimTranscript += event.results[i][0].transcript;
+                }
+            }
+
+            setInput(currentInput + (currentInput ? ' ' : '') + finalTranscript + interimTranscript);
         };
         recognition.onend = () => setIsListening(false);
         recognition.start();
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const base64String = reader.result as string;
+            // Extract just the base64 part, removing the data URL prefix
+            const base64Data = base64String.split(',')[1];
+            setSelectedImage({
+                file,
+                base64: base64Data,
+                preview: base64String
+            });
+        };
+        reader.readAsDataURL(file);
     };
 
     const SUGGESTIONS_POOL = [
@@ -95,9 +139,13 @@ export function LunaChatModal({ isOpen, onClose }: LunaChatModalProps) {
     const handleSend = async (e: React.FormEvent, manualText?: string) => {
         e.preventDefault();
         const userText = manualText || input.trim();
-        if (!userText || !user || !selectedBaby || isLoading) return;
+        const currentImage = selectedImage; // Store current image reference
+
+        if (!userText && !currentImage) return; // Allow sending if image but no text
+        if (!user || !selectedBaby || isLoading) return;
 
         if (!manualText) setInput('');
+        setSelectedImage(null); // Clear early for better UX
 
         const tempId = Date.now().toString();
         const newMessage: Message = {
@@ -111,12 +159,14 @@ export function LunaChatModal({ isOpen, onClose }: LunaChatModalProps) {
         setIsLoading(true);
         setSuggestions(getRandomSuggestions());
 
+        const contentToStore = userText || "Envió una imagen.";
+
         try {
             await dbHelpers.insertAiMessage({
                 user_id: user.id,
                 baby_id: selectedBaby.id,
                 role: 'user',
-                content: userText
+                content: contentToStore
             });
 
             const chatHistory = messages.map(msg => ({
@@ -139,8 +189,18 @@ TIP_TITLE: [Escribe aquí el título del tip]
 TIP_CONTENT: [Escribe aquí el contenido del tip]
 `;
 
+            let imageParts: any[] = [];
+            if (currentImage) {
+                imageParts.push({
+                    inlineData: {
+                        data: currentImage.base64,
+                        mimeType: currentImage.file.type
+                    }
+                });
+            }
+
             const { geminiHelpers } = await import('../lib/gemini');
-            const result = await geminiHelpers.sendMessageWithContext(userText, chatHistory, context);
+            const result = await geminiHelpers.sendMessageWithContext(userText || "Analiza esta imagen.", chatHistory, context, imageParts.length > 0 ? imageParts : undefined);
 
             let didAction = false;
             if (result.actions && result.actions.length > 0) {
@@ -330,7 +390,23 @@ TIP_CONTENT: [Escribe aquí el contenido del tip]
             </main>
 
             {/* Bottom Actions & Input */}
-            <footer className="p-4 pb-8 space-y-4 bg-background-light dark:bg-[#0a110c] border-t border-[#8c2bee]/10">
+            <footer className="p-4 pb-8 space-y-4 bg-background-light dark:bg-[#0a110c] border-t border-[#8c2bee]/10 relative">
+
+                {/* Image Preview */}
+                {selectedImage && (
+                    <div className="absolute bottom-[100%] left-4 mb-2 bg-white dark:bg-[#16251b] p-2 rounded-xl border border-primary/20 shadow-lg animate-fade-in z-10 flex flex-col gap-2">
+                        <div className="relative">
+                            <img src={selectedImage.preview} alt="Upload preview" className="h-24 w-24 object-cover rounded-lg" />
+                            <button
+                                onClick={() => setSelectedImage(null)}
+                                className="absolute -top-2 -right-2 size-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-md transition-colors"
+                            >
+                                <span className="material-symbols-outlined text-[14px]">close</span>
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {/* Action Chips */}
                 <div className="flex gap-2 overflow-x-auto hide-scrollbar py-1">
                     {suggestions.map(chip => (
@@ -346,7 +422,18 @@ TIP_CONTENT: [Escribe aquí el contenido del tip]
 
                 {/* Input Bar */}
                 <form onSubmit={(e) => handleSend(e)} className="flex items-center gap-2 bg-white dark:bg-[#16251b] border-2 border-[#8c2bee]/20 dark:border-[#8c2bee]/30 rounded-full px-2 py-2 shadow-sm focus-within:border-[#8c2bee] transition-all">
-                    <button type="button" className="p-2 text-slate-500 hover:text-primary transition-colors">
+                    <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        ref={fileInputRef}
+                        onChange={handleFileChange}
+                    />
+                    <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className={`p-2 transition-colors ${selectedImage ? 'text-primary' : 'text-slate-500 hover:text-primary'}`}
+                    >
                         <span className="material-symbols-outlined">photo_camera</span>
                     </button>
                     <input
@@ -366,7 +453,7 @@ TIP_CONTENT: [Escribe aquí el contenido del tip]
                     </button>
                     <button
                         type="submit"
-                        disabled={!input.trim() || isLoading}
+                        disabled={(!input.trim() && !selectedImage) || isLoading}
                         className="size-10 bg-[#8c2bee] text-white rounded-full flex items-center justify-center hover:bg-[#7b24d6] active:scale-95 transition-all disabled:opacity-50"
                     >
                         <span className="material-symbols-outlined font-bold">send</span>

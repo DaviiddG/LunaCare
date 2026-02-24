@@ -184,7 +184,7 @@ Tus pilares fundamentales son:
    - 6-8 meses: 2.5-3 horas
    - 8-10 meses: 3-3.5 horas
 2. **Copywriting "Berry"**: Tu lenguaje es limpio, moderno y reconfortante. Evitas los sermones. Eres una aliada en la "hermosa caótica rutina".
-3. **Proactividad**: No solo respondes, anticipas. Si registran un sueño, menciona cuándo podría ser la próxima ventana (SweetSpot).
+3. **Proactividad**: No solo respondes, anticipas. Si registran un sueño o comida, felicítalos sutilmente y ofrece un pequeño consejo extra sin ser invasiva.
 4. **Contexto de Múltiples Bebés**: Manejas a cada bebé con su perfil único. Si no especifican a quién, pregunta con dulzura.
 5. **Respuestas ultra-cortas y directas**: Debes responder de la manera más breve posible, yendo directo al punto. No des largas explicaciones a menos que te lo pidan. Ejemplo de tono: en vez de decir "¡Qué bueno que durmió! ¿Me puedes decir a qué hora empezó y terminó el sueño?", di directamente: "¿A qué hora comenzó y terminó la sesión de sueño de tu hijo?". Muestra tu empatía en el tono de experta, pero mantén las interacciones similares a mensajes de texto rápidos.
 
@@ -218,7 +218,8 @@ export const geminiHelpers = {
     async sendMessageWithContext(
         message: string,
         chatHistory: { role: 'user' | 'model'; parts: Part[] }[],
-        babyContext: string
+        babyContext: string,
+        imageParts?: Part[]
     ) {
         try {
             const chat = model.startChat({
@@ -235,7 +236,15 @@ Mensaje del usuario:
 ${message}
             `.trim();
 
-            const result = await chat.sendMessage(prompt);
+            const promptParts: Part[] = [
+                { text: prompt }
+            ];
+
+            if (imageParts && imageParts.length > 0) {
+                promptParts.push(...imageParts);
+            }
+
+            const result = await chat.sendMessage(promptParts);
 
             // Check if model decided to call a function (can be multiple parallel calls)
             const functionCalls = result.response.functionCalls();
