@@ -10,7 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { LunaChatModal } from '../components/LunaChatModal';
 import { AuroraText } from '../components/ui/aurora-text';
 import { ShimmerButton } from '../components/ui/shimmer-button';
-import { ShinyButton } from '../components/ui/shiny-button';
+import { MagicCard } from '../components/ui/magic-card';
 
 function timeAgo(dateStr: string) {
     if (!dateStr) return '';
@@ -332,13 +332,18 @@ Bebé: ${currentBaby.name}
 
 function ActivityTile({ title, subtitle, icon, color, full, onClick, ai, history, plus, arrow }: any) {
     return (
-        <ShinyButton
-            className={`!p-0 border-none ${full ? 'col-span-2' : 'col-span-1'} w-full text-left`}
+        <MagicCard
+            className={`cursor-pointer border-none ${full ? 'col-span-2' : 'col-span-1'} w-full text-left rounded-xl active:scale-[0.98] transition-transform card-shadow`}
             onClick={onClick}
+            bgColor={color}
+            gradientColor={color === '#FBCB43' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.2)'}
+            gradientFrom="rgba(255,255,255,0.5)"
+            gradientTo="rgba(255,255,255,0)"
+            gradientSize={250}
         >
             <div
-                className={`group relative overflow-hidden p-4 rounded-xl text-left card-shadow w-full h-full`}
-                style={{ backgroundColor: color, color: color === '#FBCB43' ? '#1e293b' : 'white' }}
+                className={`group relative overflow-hidden p-4 rounded-xl text-left w-full h-full`}
+                style={{ color: color === '#FBCB43' ? '#1e293b' : 'white' }}
             >
                 <div className={`flex ${full ? 'justify-between items-center' : 'flex-col h-full'} relative z-10 w-full`}>
                     <div className={full ? 'flex items-center space-x-3 w-full' : 'w-full'}>
@@ -365,7 +370,7 @@ function ActivityTile({ title, subtitle, icon, color, full, onClick, ai, history
                     </div>
                 )}
             </div>
-        </ShinyButton>
+        </MagicCard>
     );
 }
 
