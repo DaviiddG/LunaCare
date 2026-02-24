@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { LunaChatModal } from '../components/LunaChatModal';
 import { AuroraText } from '../components/ui/aurora-text';
 import { ShimmerButton } from '../components/ui/shimmer-button';
+import { ShinyButton } from '../components/ui/shiny-button';
 
 function timeAgo(dateStr: string) {
     if (!dateStr) return '';
@@ -331,18 +332,16 @@ Bebé: ${currentBaby.name}
 
 function ActivityTile({ title, subtitle, icon, color, full, onClick, ai, history, plus, arrow }: any) {
     return (
-        <button
-            className={`${full ? 'col-span-2' : ''} group relative overflow-hidden p-4 rounded-xl text-left transition-transform active:scale-[0.98] card-shadow`}
-            style={{ backgroundColor: color, color: color === '#FBCB43' ? '#1e293b' : 'white' }}
+        <ShinyButton
+            className={`!p-0 border-none ${full ? 'col-span-2' : 'col-span-1'} w-full text-left`}
             onClick={onClick}
         >
-            <div className={`flex ${full ? 'justify-between items-center' : 'flex-col h-full'} relative z-10`}>
-                <div className={full ? 'flex items-center space-x-3' : ''}>
-                    {full && title === 'Historial' ? (
-                        <div className="bg-white/20 p-2.5 rounded-full">
-                            <span className="material-symbols-rounded text-2xl opacity-90">{icon}</span>
-                        </div>
-                    ) : (
+            <div
+                className={`group relative overflow-hidden p-4 rounded-xl text-left card-shadow w-full h-full`}
+                style={{ backgroundColor: color, color: color === '#FBCB43' ? '#1e293b' : 'white' }}
+            >
+                <div className={`flex ${full ? 'justify-between items-center' : 'flex-col h-full'} relative z-10 w-full`}>
+                    <div className={full ? 'flex items-center space-x-3 w-full' : 'w-full'}>
                         <div className={full ? '' : 'flex justify-between items-start mb-3'}>
                             <span className={`material-symbols-rounded ${full ? 'text-3xl' : 'text-2xl'} opacity-90 ${full ? 'mb-1' : ''}`}>{icon}</span>
                             {!full && (ai || history || plus) && (
@@ -351,22 +350,22 @@ function ActivityTile({ title, subtitle, icon, color, full, onClick, ai, history
                                 </div>
                             )}
                         </div>
-                    )}
-                    <div className="min-w-0">
-                        <h3 className={`${full ? 'text-base' : 'text-sm'} font-bold leading-tight`}>{title}</h3>
-                        <p className="text-xs opacity-80 mt-0.5 line-clamp-1">{subtitle}</p>
+                        <div className="min-w-0 text-left flex-1">
+                            <h3 className={`${full ? 'text-base' : 'text-sm'} font-bold leading-tight`}>{title}</h3>
+                            <p className="text-xs opacity-80 mt-0.5 line-clamp-1">{subtitle}</p>
+                        </div>
                     </div>
+
+                    {full && tileAiBadge(title, ai, arrow)}
                 </div>
 
-                {full && tileAiBadge(title, ai, arrow)}
+                {title === 'Sueño' && (
+                    <div className="absolute -right-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform">
+                        <span className="material-symbols-rounded text-[80px]">dark_mode</span>
+                    </div>
+                )}
             </div>
-
-            {title === 'Sueño' && (
-                <div className="absolute -right-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform">
-                    <span className="material-symbols-rounded text-[80px]">dark_mode</span>
-                </div>
-            )}
-        </button>
+        </ShinyButton>
     );
 }
 
