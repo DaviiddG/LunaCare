@@ -19,6 +19,16 @@ export function ReportsPage() {
     const [insightText, setInsightText] = useState('Analizando datos de esta semana...');
     const [unreadCount, setUnreadCount] = useState(0);
     const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+    const [lunaIcon, setLunaIcon] = useState(localStorage.getItem('luna_icon') || '/luna-avatar.png');
+
+    useEffect(() => {
+        const handleSettingsUpdate = () => {
+            setLunaIcon(localStorage.getItem('luna_icon') || '/luna-avatar.png');
+        };
+
+        window.addEventListener('luna-settings-updated', handleSettingsUpdate);
+        return () => window.removeEventListener('luna-settings-updated', handleSettingsUpdate);
+    }, []);
 
     useEffect(() => {
         if (selectedBaby && user) {
@@ -150,8 +160,8 @@ export function ReportsPage() {
                 <AnimatedList delay={250}>
                     <div className="bg-gradient-to-br from-indigo-500 to-[#8c2bee] p-5 rounded-xl text-white shadow-lg relative overflow-hidden w-full">
                         <div className="relative z-10 flex items-start space-x-4">
-                            <div className="w-12 h-12 rounded-full border-2 border-white/50 overflow-hidden flex-shrink-0">
-                                <img alt="Luna AI Avatar" className="w-full h-full object-cover" src="/luna-avatar.png" />
+                            <div className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-600 overflow-hidden flex-shrink-0 bg-white">
+                                <img alt="Luna AI Avatar" className="w-full h-full object-cover" src={lunaIcon} />
                             </div>
                             <div>
                                 <div className="flex items-center space-x-1 mb-1">

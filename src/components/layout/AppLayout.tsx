@@ -11,6 +11,15 @@ export function AppLayout() {
     const { user } = useAuth();
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
     const [isLunaOpen, setIsLunaOpen] = useState(false);
+    const [lunaIcon, setLunaIcon] = useState(localStorage.getItem('luna_icon') || '/luna-avatar.png');
+
+    useEffect(() => {
+        const handleSettingsUpdate = () => {
+            setLunaIcon(localStorage.getItem('luna_icon') || '/luna-avatar.png');
+        };
+        window.addEventListener('luna-settings-updated', handleSettingsUpdate);
+        return () => window.removeEventListener('luna-settings-updated', handleSettingsUpdate);
+    }, []);
 
     useEffect(() => {
         if (theme === 'dark') {
@@ -97,9 +106,11 @@ export function AppLayout() {
                             <DockIcon>
                                 <button
                                     onClick={() => setIsLunaOpen(true)}
-                                    className={`flex items-center justify-center w-full h-full transition-all rounded-full ${isLunaOpen ? 'text-primary bg-primary/10' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                                    className={`flex items-center justify-center w-full h-full transition-all rounded-full overflow-hidden ${isLunaOpen ? 'ring-2 ring-primary ring-offset-2 ring-offset-white dark:ring-offset-slate-900' : 'hover:scale-110 active:scale-95'}`}
                                 >
-                                    <span className="material-symbols-rounded text-2xl">auto_awesome</span>
+                                    <div className="w-[30px] h-[30px] rounded-full border border-slate-200 dark:border-slate-700 overflow-hidden shadow-md">
+                                        <img src={lunaIcon} alt="Luna AI" className="w-full h-full object-cover" />
+                                    </div>
                                 </button>
                             </DockIcon>
 

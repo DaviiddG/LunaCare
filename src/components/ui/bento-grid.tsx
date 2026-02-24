@@ -25,6 +25,7 @@ export interface BentoCardProps extends ComponentPropsWithoutRef<"button"> {
     history?: boolean
     plus?: boolean
     arrow?: boolean
+    lunaIcon?: string
 }
 
 const BentoGrid = ({ children, className, ...props }: BentoGridProps) => {
@@ -53,6 +54,7 @@ const BentoCard = ({
     history,
     plus,
     arrow,
+    lunaIcon,
     ...props
 }: BentoCardProps) => (
     <button
@@ -69,12 +71,16 @@ const BentoCard = ({
     >
         <div className="absolute inset-0 z-0 pointer-events-none">{background}</div>
         <div className="p-4 z-10 w-full h-full flex flex-col justify-start">
-            <div className="pointer-events-none flex transform-gpu flex-col gap-[2px] transition-all duration-300 mb-2 group-hover:-translate-y-4">
+            <div className="pointer-events-none flex transform-gpu flex-col gap-[2px] transition-all duration-300 mb-2 group-hover:-translate-y-[6px]">
                 <div className="flex justify-between items-start mb-1">
                     <span className="material-symbols-rounded text-[26px] opacity-90 origin-left transform-gpu transition-all duration-300 ease-in-out group-hover:scale-90">{icon}</span>
                     {(!className?.includes("col-span-2") && (ai || history || plus)) && (
-                        <div className="bg-white/20 p-1 rounded-full backdrop-blur-md opacity-100 transition-opacity duration-300 group-hover:opacity-0">
-                            <span className="material-symbols-rounded text-xs">{ai ? 'auto_awesome' : (history ? 'history' : 'add')}</span>
+                        <div className="bg-white/20 p-1 rounded-full backdrop-blur-md opacity-100 transition-opacity duration-300 group-hover:opacity-0 flex items-center justify-center">
+                            {ai && lunaIcon ? (
+                                <img src={lunaIcon} className="w-3.5 h-3.5 rounded-full object-cover" alt="Luna" />
+                            ) : (
+                                <span className="material-symbols-rounded text-xs">{ai ? 'auto_awesome' : (history ? 'history' : 'add')}</span>
+                            )}
                         </div>
                     )}
                 </div>
@@ -98,8 +104,10 @@ const BentoCard = ({
 
         {/* Big card badges */}
         {className?.includes("col-span-2") && (ai || arrow) && name !== 'Historial' && (
-            <div className="absolute top-4 right-4 bg-white/20 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 backdrop-blur-md opacity-100 transition-opacity duration-300 group-hover:opacity-0 z-10">
-                <span className="material-symbols-rounded text-xs">{ai ? 'auto_awesome' : (arrow ? 'arrow_forward_ios' : '')}</span>
+            <div className="absolute top-4 right-4 bg-white/20 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 backdrop-blur-md opacity-100 transition-opacity duration-300 group-hover:opacity-0 z-10">
+                {ai ? (
+                    lunaIcon ? <img src={lunaIcon} className="w-3.5 h-3.5 rounded-full object-cover" alt="Luna" /> : <span className="material-symbols-rounded text-[14px]">auto_awesome</span>
+                ) : arrow ? <span className="material-symbols-rounded text-xs">arrow_forward_ios</span> : null}
                 {ai ? 'Luna AI' : ''}
             </div>
         )}

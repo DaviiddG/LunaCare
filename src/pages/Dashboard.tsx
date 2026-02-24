@@ -128,6 +128,7 @@ Bebé: ${currentBaby.name}
                 const base64 = reader.result as string;
                 localStorage.setItem('luna_icon', base64);
                 setLunaIcon(base64);
+                window.dispatchEvent(new Event('luna-settings-updated'));
             };
             reader.readAsDataURL(file);
         }
@@ -267,6 +268,7 @@ Bebé: ${currentBaby.name}
                             color="#7ACDF1"
                             className="col-span-2"
                             ai={true}
+                            lunaIcon={lunaIcon}
                             onClick={() => navigate('/sleep')}
                             background={
                                 <div className="absolute -right-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform duration-500">
@@ -282,6 +284,7 @@ Bebé: ${currentBaby.name}
                             color="#FF9D76"
                             className="col-span-1"
                             ai={true}
+                            lunaIcon={lunaIcon}
                             onClick={() => navigate('/diet')}
                         />
 
@@ -302,6 +305,7 @@ Bebé: ${currentBaby.name}
                             color="#D45079"
                             className="col-span-1"
                             ai={true}
+                            lunaIcon={lunaIcon}
                             onClick={() => navigate('/solids')}
                         />
 
