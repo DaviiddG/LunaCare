@@ -59,7 +59,7 @@ const BentoCard = ({
         key={name}
         onClick={onClick}
         className={cn(
-            "group relative flex flex-col justify-between overflow-hidden rounded-xl h-[120px] text-left active:scale-[0.98] transition-all",
+            "group relative flex flex-col justify-between overflow-hidden rounded-xl h-[135px] text-left active:scale-[0.98] transition-all",
             "[box-shadow:0_0_0_1px_rgba(0,0,0,.03),0_2px_4px_rgba(0,0,0,.05),0_12px_24px_rgba(0,0,0,.05)]",
             "transform-gpu dark:[box-shadow:0_-20px_80px_-20px_#ffffff1f_inset] dark:[border:1px_solid_rgba(255,255,255,.1)]",
             className
@@ -69,19 +69,19 @@ const BentoCard = ({
     >
         <div className="absolute inset-0 z-0 pointer-events-none">{background}</div>
         <div className="p-4 z-10 w-full h-full flex flex-col justify-start">
-            <div className="pointer-events-none flex transform-gpu flex-col gap-1 transition-all duration-300 group-hover:-translate-y-2">
-                <div className="flex justify-between items-start mb-2">
-                    <span className="material-symbols-rounded text-[28px] opacity-90 origin-left transform-gpu transition-all duration-300 ease-in-out group-hover:scale-95">{icon}</span>
+            <div className="pointer-events-none flex transform-gpu flex-col gap-[2px] transition-all duration-300 mb-2 group-hover:-translate-y-4">
+                <div className="flex justify-between items-start mb-1">
+                    <span className="material-symbols-rounded text-[26px] opacity-90 origin-left transform-gpu transition-all duration-300 ease-in-out group-hover:scale-90">{icon}</span>
                     {(!className?.includes("col-span-2") && (ai || history || plus)) && (
-                        <div className="bg-white/20 p-1.5 rounded-full backdrop-blur-md opacity-100 transition-opacity duration-300 group-hover:opacity-0">
+                        <div className="bg-white/20 p-1 rounded-full backdrop-blur-md opacity-100 transition-opacity duration-300 group-hover:opacity-0">
                             <span className="material-symbols-rounded text-xs">{ai ? 'auto_awesome' : (history ? 'history' : 'add')}</span>
                         </div>
                     )}
                 </div>
-                <h3 className="text-base font-bold leading-tight">
+                <h3 className="text-base font-bold leading-tight line-clamp-1">
                     {name}
                 </h3>
-                <p className="max-w-lg text-xs opacity-80 line-clamp-1">{description}</p>
+                <p className="max-w-lg text-[11px] opacity-80 leading-tight line-clamp-2">{description}</p>
             </div>
 
             <div

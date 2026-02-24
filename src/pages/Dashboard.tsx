@@ -263,8 +263,8 @@ Bebé: ${currentBaby.name}
                         <BentoCard
                             name="Sueño"
                             description={stats?.latestSleep ? `Durmió hace ${timeAgo(stats?.latestSleep.created_at)}` : `${currentBaby?.name || 'Bebé'} está durmiendo`}
-                            icon="nights_stay"
-                            color="#7DD3FC"
+                            icon="bedtime"
+                            color="#7ACDF1"
                             className="col-span-2"
                             ai={true}
                             onClick={() => navigate('/sleep')}
@@ -278,18 +278,18 @@ Bebé: ${currentBaby.name}
                         <BentoCard
                             name="Lactancia"
                             description="Sugerido pronto"
-                            icon="face_retouching_natural"
-                            color="#FC8B63"
+                            icon="child_care"
+                            color="#FF9D76"
                             className="col-span-1"
                             ai={true}
-                            onClick={() => navigate('/nursing')}
+                            onClick={() => navigate('/diet')}
                         />
 
                         <BentoCard
                             name="Biberón"
                             description={stats?.latestDiet ? `Hace ${timeAgo(stats?.latestDiet.created_at)}` : 'No registrado'}
-                            icon="baby_bottle"
-                            color="#FE8BBB"
+                            icon="baby_changing_station"
+                            color="#FF8C69"
                             className="col-span-1"
                             history={true}
                             onClick={() => navigate('/bottle')}
@@ -299,7 +299,7 @@ Bebé: ${currentBaby.name}
                             name="Sólidos"
                             description={stats?.latestSolids ? (stats?.latestSolids.foods?.[0] || `Hace ${timeAgo(stats?.latestSolids.created_at)}`) : "No registrado"}
                             icon="restaurant"
-                            color="#C8487A"
+                            color="#D45079"
                             className="col-span-1"
                             ai={true}
                             onClick={() => navigate('/solids')}
@@ -308,18 +308,18 @@ Bebé: ${currentBaby.name}
                         <BentoCard
                             name="Pañal"
                             description={stats?.latestDiaper ? `Limpio hace ${timeAgo(stats?.latestDiaper.created_at)}` : 'No registrado'}
-                            icon="wash"
+                            icon="soap"
                             color="#FBCB43"
                             className="col-span-1"
                             plus={true}
-                            onClick={() => navigate('/diaper')}
+                            onClick={() => navigate('/diapers')}
                         />
 
                         <BentoCard
                             name="Historial"
                             description="Últimos eventos"
                             icon="history"
-                            color="#9E7AFF"
+                            color="#A592FF"
                             className="col-span-2"
                             onClick={() => navigate('/history')}
                         />
