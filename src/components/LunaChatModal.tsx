@@ -137,6 +137,7 @@ OTRA INSTRUCCIÓN CRÍTICA: NUNCA uses sintaxis de markdown para formatear tu te
 CONSEJOS DINÁMICOS: Si decides dar un consejo relevante o tip, hazlo SIEMPRE al final de tu respuesta usando EXACTAMENTE la siguiente estructura (en líneas separadas y sin asteriscos ni markdown extra):
 TIP_TITLE: [Escribe aquí el título del tip]
 TIP_CONTENT: [Escribe aquí el contenido del tip]
+TIP_URL: [Coloca una URL válida y real hacia una página de salud infantil confiable o recurso oficial sobre este tema]
 `;
 
             const { geminiHelpers } = await import('../lib/gemini');
@@ -281,14 +282,21 @@ TIP_CONTENT: [Escribe aquí el contenido del tip]
                     let displayText = msg.content;
                     let tipTitle = null;
                     let tipContent = null;
+                    let tipUrl = null;
 
                     if (isLuna && displayText.includes('TIP_TITLE:') && displayText.includes('TIP_CONTENT:')) {
                         const titleMatch = displayText.match(/TIP_TITLE:\s*(.+)/);
-                        const contentMatch = displayText.match(/TIP_CONTENT:\s*([\s\S]+)/);
+                        // Make content matcher stop at TIP_URL if it exists, otherwise go to the end
+                        let contentRegex = /TIP_CONTENT:\s*([\s\S]*?)(?=TIP_URL:|$)/;
+                        const contentMatch = displayText.match(contentRegex);
+                        const urlMatch = displayText.match(/TIP_URL:\s*(http.+)/);
+
                         if (titleMatch && contentMatch) {
                             tipTitle = titleMatch[1].trim();
                             tipContent = contentMatch[1].trim();
-                            // Remove tip from display text
+                            if (urlMatch) tipUrl = urlMatch[1].trim();
+
+                            // Remove tip block from display text
                             displayText = displayText.replace(/TIP_TITLE:[\s\S]*/, '').trim();
                         }
                     }
@@ -307,7 +315,7 @@ TIP_CONTENT: [Escribe aquí el contenido del tip]
                                     }`}>
                                     {displayText}
                                     {tipTitle && tipContent && (
-                                        <RichTipCard title={tipTitle} content={tipContent} />
+                                        <RichTipCard title={tipTitle} content={tipContent} url={tipUrl} />
                                     )}
                                 </div>
                                 <span className={`text-[10px] text-slate-500 ${isLuna ? 'ml-1' : 'mr-1'}`}>
@@ -375,7 +383,7 @@ TIP_CONTENT: [Escribe aquí el contenido del tip]
     );
 }
 
-function RichTipCard({ title, content }: { title: string, content: string }) {
+function RichTipCard({ title, content, url }: { title: string, content: string, url: string | null }) {
     return (
         <div className="bg-[#16251b] border border-primary/20 rounded-2xl overflow-hidden shadow-xl max-w-sm mt-4 animate-fade-in">
             <div className="h-32 w-full bg-cover bg-center relative" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuAKp0d8jBm26y7VELDtHoftH0B9n86hcRA273hdl1oijF0cv--z2Ty_ijmCzjMj8GsMNS2XQxbVH7-KIV0W9xu7klpHuXcgSiAwI2faQsD8MuDgA1Ix7X6c19MpMAv2OZp8GmQ_cGDMdXZMey-jwLoBxJt4pyhmpr1kbDx0iEgSxj3rgz9E0AVXWmEzlJBHvtgP_DRgqRXnOqoGmiynGOcLj7cegBMYboWjc9yLsnfjcXCYW5pyxcQHKSnHpjTMyEDjyAXyp3GwW_w')" }}>
@@ -389,9 +397,20 @@ function RichTipCard({ title, content }: { title: string, content: string }) {
                 <p className="text-slate-300 text-sm mb-4">
                     {content}
                 </p>
-                <button className="w-full py-2 bg-primary text-[#0a110c] font-bold text-sm rounded-lg hover:opacity-90 transition-opacity">
-                    Saber más
-                </button>
+                {url ? (
+                    <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full py-2 bg-primary text-[#0a110c] font-bold text-sm rounded-lg hover:opacity-90 transition-opacity flex justify-center items-center"
+                    >
+                        Saber más
+                    </a>
+                ) : (
+                    <button className="w-full py-2 bg-primary text-[#0a110c] font-bold text-sm rounded-lg hover:opacity-90 transition-opacity">
+                        Saber más (Sin enlace)
+                    </button>
+                )}
             </div>
         </div>
     );
