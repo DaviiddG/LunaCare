@@ -10,7 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { LunaChatModal } from '../components/LunaChatModal';
 import { AuroraText } from '../components/ui/aurora-text';
 import { ShimmerButton } from '../components/ui/shimmer-button';
-import { MagicCard } from '../components/ui/magic-card';
+import { BentoGrid, BentoCard } from '../components/ui/bento-grid';
 
 function timeAgo(dateStr: string) {
     if (!dateStr) return '';
@@ -257,61 +257,74 @@ Bebé: ${currentBaby.name}
                     </div>
                 </div>
 
-                {/* Activity Grid */}
-                <div className="grid grid-cols-2 gap-4">
-                    <ActivityTile
-                        title="Sueño"
-                        subtitle={stats.latestSleep ? `Durmió ${timeAgo(stats.latestSleep.created_at)}` : `${currentBaby.name} está durmiendo`}
-                        icon="bedtime"
-                        color="#7ACDF1"
-                        full
-                        onClick={() => navigate('/sleep')}
-                        ai
-                    />
-                    <ActivityTile
-                        title="Lactancia"
-                        subtitle="Sugerido pronto"
-                        icon="child_care"
-                        color="#FF9D76"
-                        onClick={() => navigate('/diet')}
-                        ai
-                    />
-                    <ActivityTile
-                        title="Biberón"
-                        subtitle={stats.latestDiet ? timeAgo(stats.latestDiet.created_at) : "No registrado"}
-                        icon="baby_changing_station"
-                        color="#FF8C69"
-                        onClick={() => navigate('/bottle')}
-                        history
-                    />
-                    <ActivityTile
-                        title="Sólidos"
-                        subtitle={stats.latestSolids ? stats.latestSolids.foods?.[0] || 'Sólidos' : "Puré registrado"}
-                        icon="restaurant"
-                        color="#D45079"
-                        onClick={() => navigate('/solids')}
-                        ai
-                    />
-                    <ActivityTile
-                        title="Pañal"
-                        subtitle={stats.latestDiaper ? `Limpio ${timeAgo(stats.latestDiaper.created_at)}` : "Limpio hace poco"}
-                        icon="soap"
-                        color="#FBCB43"
-                        onClick={() => navigate('/diapers')}
-                        plus
-                    />
-                    <ActivityTile
-                        title="Historial"
-                        subtitle="Últimos eventos"
-                        icon="history"
-                        color="#A592FF"
-                        full
-                        onClick={() => navigate('/history')}
-                        arrow
-                    />
-                </div>
+                {/* Actividades principales */}
+                <section className="px-4 mt-6">
+                    <BentoGrid>
+                        <BentoCard
+                            name="Sueño"
+                            description={`Durmió hace alrededor de ${timeAgo(stats?.base.last_sleep_end)}`}
+                            icon="nights_stay"
+                            color="#7DD3FC"
+                            className="col-span-2"
+                            ai={true}
+                            onClick={() => navigate('/sleep')}
+                            background={
+                                <div className="absolute -right-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform duration-500">
+                                    <span className="material-symbols-rounded text-[80px]">dark_mode</span>
+                                </div>
+                            }
+                        />
 
+                        <BentoCard
+                            name="Lactancia"
+                            description={stats?.derived.time_since_breast_feed > 180 ? 'Sugerido pronto' : `Hace ${timeAgo(stats?.base.last_breast_feed)}`}
+                            icon="face_retouching_natural"
+                            color="#FC8B63"
+                            className="col-span-1"
+                            ai={true}
+                            onClick={() => navigate('/nursing')}
+                        />
 
+                        <BentoCard
+                            name="Biberón"
+                            description={stats?.base.last_bottle_feed ? `Hace ${timeAgo(stats?.base.last_bottle_feed)}` : 'No registrado'}
+                            icon="baby_bottle"
+                            color="#FE8BBB"
+                            className="col-span-1"
+                            history={true}
+                            onClick={() => navigate('/bottle')}
+                        />
+
+                        <BentoCard
+                            name="Sólidos"
+                            description={stats?.base.last_solids_feed ? `Hace ${timeAgo(stats?.base.last_solids_feed)}` : 'No registrado'}
+                            icon="restaurant"
+                            color="#C8487A"
+                            className="col-span-1"
+                            ai={true}
+                            onClick={() => navigate('/solids')}
+                        />
+
+                        <BentoCard
+                            name="Pañal"
+                            description={stats?.base.last_diaper_change ? `Limpio hace ${timeAgo(stats?.base.last_diaper_change)}` : 'No registrado'}
+                            icon="wash"
+                            color="#FBCB43"
+                            className="col-span-1"
+                            plus={true}
+                            onClick={() => navigate('/diaper')}
+                        />
+
+                        <BentoCard
+                            name="Historial"
+                            description="Últimos eventos"
+                            icon="history"
+                            color="#9E7AFF"
+                            className="col-span-2"
+                            onClick={() => navigate('/history')}
+                        />
+                    </BentoGrid>
+                </section>
             </main>
 
             <NotificationSidebar
@@ -328,63 +341,4 @@ Bebé: ${currentBaby.name}
             )}
         </div>
     );
-}
-
-function ActivityTile({ title, subtitle, icon, color, full, onClick, ai, history, plus, arrow }: any) {
-    return (
-        <MagicCard
-            className={`cursor-pointer border-none ${full ? 'col-span-2' : 'col-span-1'} w-full text-left rounded-xl active:scale-[0.98] transition-transform card-shadow`}
-            onClick={onClick}
-            bgColor={color}
-            gradientColor={color === '#FBCB43' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.2)'}
-            gradientFrom="rgba(255,255,255,0.5)"
-            gradientTo="rgba(255,255,255,0)"
-            gradientSize={250}
-        >
-            <div
-                className={`group relative overflow-hidden p-4 rounded-xl text-left w-full h-full`}
-                style={{ color: color === '#FBCB43' ? '#1e293b' : 'white' }}
-            >
-                <div className={`flex ${full ? 'justify-between items-center' : 'flex-col h-full'} relative z-10 w-full`}>
-                    <div className={full ? 'flex items-center space-x-3 w-full' : 'w-full'}>
-                        <div className={full ? '' : 'flex justify-between items-start mb-3'}>
-                            <span className={`material-symbols-rounded ${full ? 'text-3xl' : 'text-2xl'} opacity-90 ${full ? 'mb-1' : ''}`}>{icon}</span>
-                            {!full && (ai || history || plus) && (
-                                <div className="bg-white/20 p-1.5 rounded-full backdrop-blur-md">
-                                    <span className="material-symbols-rounded text-xs">{ai ? 'auto_awesome' : (history ? 'history' : 'add')}</span>
-                                </div>
-                            )}
-                        </div>
-                        <div className="min-w-0 text-left flex-1">
-                            <h3 className={`${full ? 'text-base' : 'text-sm'} font-bold leading-tight`}>{title}</h3>
-                            <p className="text-xs opacity-80 mt-0.5 line-clamp-1">{subtitle}</p>
-                        </div>
-                    </div>
-
-                    {full && tileAiBadge(title, ai, arrow)}
-                </div>
-
-                {title === 'Sueño' && (
-                    <div className="absolute -right-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform">
-                        <span className="material-symbols-rounded text-[80px]">dark_mode</span>
-                    </div>
-                )}
-            </div>
-        </MagicCard>
-    );
-}
-
-function tileAiBadge(title: string, ai: boolean, arrow: boolean) {
-    if (title === 'Sueño' && ai) {
-        return (
-            <div className="bg-white/20 p-2 rounded-lg backdrop-blur-md border border-white/30 flex items-center space-x-1">
-                <span className="material-symbols-rounded text-sm">auto_awesome</span>
-                <span className="text-[10px] font-bold">Luna AI</span>
-            </div>
-        );
-    }
-    if (arrow) {
-        return <span className="material-symbols-rounded opacity-40">chevron_right</span>;
-    }
-    return null;
 }
