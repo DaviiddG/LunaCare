@@ -124,10 +124,18 @@ Bebé: ${currentBaby.name}
         const file = e.target.files?.[0];
         if (file) {
             const reader = new FileReader();
-            reader.onloadend = () => {
+            reader.onloadend = async () => {
                 const base64 = reader.result as string;
                 localStorage.setItem('luna_icon', base64);
                 setLunaIcon(base64);
+
+                // Sync to database
+                if (user) {
+                    await dbHelpers.updateUserSettings(user.id, {
+                        luna_icon: base64
+                    });
+                }
+
                 window.dispatchEvent(new Event('luna-settings-updated'));
             };
             reader.readAsDataURL(file);

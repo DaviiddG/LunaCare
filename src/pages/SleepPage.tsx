@@ -40,6 +40,13 @@ export function SleepPage() {
     const [startTime, setStartTime] = useState<Date | null>(null);
     const [loading, setLoading] = useState(false);
     const [insightText, setInsightText] = useState('Analizando registros de sueño...');
+    const [lunaIcon, setLunaIcon] = useState(localStorage.getItem('luna_icon') || '/luna-avatar.png');
+
+    useEffect(() => {
+        const handleSync = () => setLunaIcon(localStorage.getItem('luna_icon') || '/luna-avatar.png');
+        window.addEventListener('luna-settings-updated', handleSync);
+        return () => window.removeEventListener('luna-settings-updated', handleSync);
+    }, []);
 
     // Manual entry
     const [manualStart, setManualStart] = useState('');
@@ -180,8 +187,8 @@ export function SleepPage() {
             <div className="px-4 pt-2 pb-2">
                 <div className="flex flex-col items-stretch rounded-2xl shadow-sm bg-white dark:bg-slate-800 border border-[#3994ef]/10 overflow-hidden">
                     <div className="flex items-center gap-4 p-4">
-                        <div className="size-12 shrink-0 rounded-full bg-[#3994ef]/10 flex items-center justify-center border-2 border-[#3994ef]/20 overflow-hidden">
-                            <span className="material-symbols-outlined text-[#3994ef] text-2xl">smart_toy</span>
+                        <div className="size-12 shrink-0 rounded-full border-2 border-[#3994ef]/20 overflow-hidden shadow-sm">
+                            <img src={lunaIcon} alt="Luna AI" className="w-full h-full object-cover" />
                         </div>
                         <div className="flex flex-col gap-1">
                             <p className="text-[#3994ef] text-xs font-bold uppercase tracking-wider">Luna AI</p>

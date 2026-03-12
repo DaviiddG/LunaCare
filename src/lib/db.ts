@@ -187,9 +187,21 @@ export const dbHelpers = {
             .from('user_settings').select('*').eq('user_id', userId).maybeSingle();
         return { data, error };
     },
-    async updateUserSettings(userId: string, layout: string[]) {
+    async updateUserSettings(userId: string, settings: {
+        dashboard_layout?: string[];
+        luna_icon?: string;
+        luna_profile?: string;
+        luna_frequency?: string;
+        luna_voice?: string;
+    }) {
         const { data, error } = await supabase
-            .from('user_settings').upsert({ user_id: userId, dashboard_layout: layout, updated_at: new Date().toISOString() }).select();
+            .from('user_settings')
+            .upsert({
+                user_id: userId,
+                ...settings,
+                updated_at: new Date().toISOString()
+            })
+            .select();
         return { data, error };
     },
 

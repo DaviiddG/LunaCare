@@ -73,6 +73,13 @@ export function HistoryPage() {
     const [events, setEvents] = useState<TimelineEvent[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [summary, setSummary] = useState('Cargando actividad de hoy...');
+    const [lunaIcon, setLunaIcon] = useState(localStorage.getItem('luna_icon') || '/luna-avatar.png');
+
+    useEffect(() => {
+        const handleSync = () => setLunaIcon(localStorage.getItem('luna_icon') || '/luna-avatar.png');
+        window.addEventListener('luna-settings-updated', handleSync);
+        return () => window.removeEventListener('luna-settings-updated', handleSync);
+    }, []);
 
     useEffect(() => {
         if (selectedBaby && user) {
@@ -136,18 +143,20 @@ export function HistoryPage() {
                 });
             });
 
-            // Diet (lactancia)
+            // Diet (lactancia / biberón)
             newest(dietRes.data).slice(0, 20).forEach((log: any) => {
-                const cfg = TYPE_CONFIG.diet;
+                const isBottle = log.type?.startsWith('bottle_');
+                const cfg = isBottle ? TYPE_CONFIG.bottle : TYPE_CONFIG.diet;
                 const detail = [
-                    log.duration ? `${log.duration} min` : null,
+                    log.amount ? `${log.amount} ml` : (log.duration ? `${log.duration} min` : null),
                     log.side ? (log.side === 'left' ? 'Izquierdo' : log.side === 'right' ? 'Derecho' : 'Ambos') : null,
                 ].filter(Boolean).join(' • ');
+
                 allEvents.push({
                     id: `diet-${log.id}`,
-                    type: 'diet',
-                    title: cfg.title,
-                    subtitle: detail || 'Toma registrada',
+                    type: isBottle ? 'bottle' : 'diet',
+                    title: isBottle ? (log.type === 'bottle_formula' ? 'Biberón (Fórmula)' : 'Biberón (Materna)') : cfg.title,
+                    subtitle: detail || (isBottle ? 'Biberón registrado' : 'Toma registrada'),
                     time: new Date(log.created_at),
                     dotColor: cfg.dotColor,
                     iconColor: cfg.iconColor,
@@ -265,9 +274,9 @@ export function HistoryPage() {
             <main className="pt-32 px-5">
                 {/* Luna AI Summary */}
                 <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-slate-800 dark:to-indigo-950 p-5 mb-6 border border-white dark:border-white/10 shadow-sm">
-                    <div className="flex items-center space-x-3 mb-2">
-                        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                            <span className="material-symbols-rounded text-white text-sm">auto_awesome</span>
+                    <div className="flex items-center space-x-3 mb-3">
+                        <div className="w-10 h-10 rounded-full border-2 border-white dark:border-slate-700 overflow-hidden shadow-sm">
+                            <img src={lunaIcon} alt="Luna AI" className="w-full h-full object-cover" />
                         </div>
                         <span className="text-xs font-bold text-primary uppercase tracking-wider">Resumen de hoy</span>
                     </div>

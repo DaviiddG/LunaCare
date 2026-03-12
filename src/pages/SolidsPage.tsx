@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, Clock, Check } from 'lucide-react';
 import { dbHelpers } from '../lib/db';
@@ -36,6 +36,13 @@ export function SolidsPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedFoods, setSelectedFoods] = useState<string[]>([]);
     const [isSaving, setIsSaving] = useState(false);
+    const [lunaIcon, setLunaIcon] = useState(localStorage.getItem('luna_icon') || '/luna-avatar.png');
+
+    useEffect(() => {
+        const handleSync = () => setLunaIcon(localStorage.getItem('luna_icon') || '/luna-avatar.png');
+        window.addEventListener('luna-settings-updated', handleSync);
+        return () => window.removeEventListener('luna-settings-updated', handleSync);
+    }, []);
 
     const filteredFoods = FOODS.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
@@ -92,6 +99,27 @@ export function SolidsPage() {
 
             {/* Scrollable Content */}
             <div style={{ flex: 1, overflowY: 'auto', padding: '20px', paddingBottom: '100px' }}>
+
+                {/* Luna AI Card */}
+                <div style={{
+                    background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+                    borderRadius: '20px', padding: '16px', marginBottom: '24px',
+                    display: 'flex', alignItems: 'center', gap: '16px',
+                    border: '1px solid rgba(56, 189, 248, 0.2)'
+                }}>
+                    <div style={{ position: 'relative', flexShrink: 0 }}>
+                        <img src={lunaIcon} alt="Luna AI" style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid white' }} />
+                        <div style={{ position: 'absolute', bottom: -2, right: -2, background: 'white', borderRadius: '50%', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <span className="material-symbols-rounded" style={{ fontSize: '10px', color: '#38bdf8' }}>auto_awesome</span>
+                        </div>
+                    </div>
+                    <div>
+                        <p style={{ margin: 0, fontSize: '10px', fontWeight: 800, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '1px' }}>Luna AI</p>
+                        <p style={{ margin: 0, fontSize: '13px', color: '#334155', fontWeight: 600 }}>
+                            {selectedBaby?.name ? `¡Hora de probar nuevos sabores con ${selectedBaby.name}! ✨` : '¡Hora de probar nuevos sabores! ✨'}
+                        </p>
+                    </div>
+                </div>
 
                 {/* Search Bar */}
                 <div style={{ position: 'relative', marginBottom: '24px' }}>

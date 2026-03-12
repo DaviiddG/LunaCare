@@ -267,33 +267,45 @@ export function ReportsPage() {
                             </div>
                             <span className="material-symbols-outlined text-yellow-400 text-2xl">soap</span>
                         </div>
-                        <div className="h-24 relative mb-6 overflow-x-auto">
-                            <svg className="w-full h-full overflow-visible min-w-[300px]" viewBox="0 0 100 40" preserveAspectRatio="none">
-                                {diaperData.length > 0 && (
-                                    <>
-                                        <path
-                                            d={`M${diaperData.map((d, i) => `${(i / (diaperData.length - 1)) * 100},${40 - Math.min((d.count / 10) * 40, 40)}`).join(' L')}`}
-                                            fill="none" stroke="#facc15" strokeLinecap="round" strokeWidth="2.5"
-                                            className="transition-all duration-1000"
-                                        />
-                                        {diaperData.map((d, i) => {
-                                            const x = (i / (diaperData.length - 1)) * 100;
-                                            const y = 40 - Math.min((d.count / 10) * 40, 40);
-                                            const isToday = isSameDay(d.day, new Date());
-                                            return (
-                                                <circle key={i} cx={x} cy={y} fill={isToday ? "#8c2bee" : "#facc15"} r={isToday ? "2.5" : "1.5"} className="transition-all duration-1000" />
-                                            )
-                                        })}
-                                    </>
-                                )}
-                            </svg>
-                            <div className="flex justify-between mt-2 px-1 min-w-[300px]">
-                                {diaperData.map((d, i) => (
-                                    <span key={i} className={`text-[9px] font-bold ${isSameDay(d.day, new Date()) ? 'text-[#8c2bee]' : 'text-slate-400'}`}>
-                                        {format(d.day, period === 'Semana' ? 'EE' : 'dd', { locale: es }).substring(0, 2)}
-                                    </span>
-                                ))}
-                            </div>
+                        <div className="flex items-end justify-between h-32 px-2 mb-6 gap-2 overflow-x-auto min-w-full">
+                            {(() => {
+                                const maxCount = Math.max(...diaperData.map(d => d.count), 1);
+                                return diaperData.map((d, i) => {
+                                    const heightPercentage = (d.count / maxCount) * 100;
+                                    const isToday = isSameDay(d.day, new Date());
+                                    const label = format(d.day, period === 'Semana' ? 'EE' : 'dd', { locale: es }).substring(0, 2);
+
+                                    return (
+                                        <div key={i} className="flex flex-col items-center flex-1 min-w-[30px] group">
+                                            <div className="relative w-full h-24 flex items-end justify-center mb-2">
+                                                {/* Bar Value Tooltip-like label */}
+                                                <span className={`absolute -top-5 text-[10px] font-bold transition-opacity duration-300 ${d.count > 0 ? 'opacity-100' : 'opacity-0'} ${isToday ? 'text-[#8c2bee]' : 'text-slate-400'}`}>
+                                                    {d.count}
+                                                </span>
+
+                                                {/* The Bar */}
+                                                <div
+                                                    className={`w-4 sm:w-5 rounded-t-full transition-all duration-700 ease-out relative overflow-hidden ${isToday ? 'shadow-[0_0_12px_rgba(140,43,238,0.3)]' : ''}`}
+                                                    style={{
+                                                        height: `${Math.max(heightPercentage, 5)}%`,
+                                                        background: isToday
+                                                            ? 'linear-gradient(to top, #8c2bee, #a855f7)'
+                                                            : 'linear-gradient(to top, #facc15, #fbbf24)'
+                                                    }}
+                                                >
+                                                    {/* Glass effect shine */}
+                                                    <div className="absolute inset-0 bg-white/20 w-1/2 h-full"></div>
+                                                </div>
+                                            </div>
+
+                                            {/* X-Axis Label */}
+                                            <span className={`text-[9px] font-bold uppercase tracking-tighter ${isToday ? 'text-[#8c2bee]' : 'text-slate-400'}`}>
+                                                {label}
+                                            </span>
+                                        </div>
+                                    );
+                                });
+                            })()}
                         </div>
 
                         <button className="w-full py-3 text-sm font-bold text-[#8c2bee] bg-[#8c2bee]/5 rounded-xl active:bg-[#8c2bee]/10 transition-colors">

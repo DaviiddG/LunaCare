@@ -88,15 +88,13 @@ export const NeonGradientCard: React.FC<NeonGradientCardProps> = ({
                     zIndex: -1,
                 }}
             />
-            {/* Solid white inner card */}
             <div
                 style={{
-                    backgroundColor: '#ffffff',
                     borderRadius: `${borderRadius - borderSize}px`,
                     position: 'relative',
                     zIndex: 0,
                 }}
-                className={cn("size-full min-h-[inherit] break-words", innerClassName)}
+                className={cn("size-full min-h-[inherit] break-words bg-white dark:bg-[#1e1e1e]", innerClassName)}
             >
                 {children}
             </div>

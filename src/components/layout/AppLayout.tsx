@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { LunaChatModal } from '../LunaChatModal';
 import { AnimatedThemeToggler } from '../AnimatedThemeToggler';
 import { Dock, DockIcon } from '../ui/dock';
+import { dbHelpers } from '../../lib/db';
 
 export function AppLayout() {
     const navigate = useNavigate();
@@ -12,6 +13,29 @@ export function AppLayout() {
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
     const [isLunaOpen, setIsLunaOpen] = useState(false);
     const [lunaIcon, setLunaIcon] = useState(localStorage.getItem('luna_icon') || '/luna-avatar.png');
+
+    useEffect(() => {
+        if (user) {
+            fetchUserSettings();
+        }
+    }, [user]);
+
+    const fetchUserSettings = async () => {
+        if (!user) return;
+        const { data } = await dbHelpers.getUserSettings(user.id);
+        if (data) {
+            if (data.luna_icon) {
+                setLunaIcon(data.luna_icon);
+                localStorage.setItem('luna_icon', data.luna_icon);
+            }
+            if (data.luna_profile) localStorage.setItem('luna_profile', data.luna_profile);
+            if (data.luna_frequency) localStorage.setItem('luna_frequency', data.luna_frequency);
+            if (data.luna_voice) localStorage.setItem('luna_voice', data.luna_voice);
+
+            // Dispatch event for other components that might be using these values
+            window.dispatchEvent(new CustomEvent('luna-settings-updated'));
+        }
+    };
 
     useEffect(() => {
         const handleSettingsUpdate = () => {

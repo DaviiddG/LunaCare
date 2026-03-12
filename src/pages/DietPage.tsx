@@ -21,6 +21,13 @@ export function DietPage() {
 
     // Insight from AI
     const [insightText, setInsightText] = useState('Analizando rutinas de lactancia...');
+    const [lunaIcon, setLunaIcon] = useState(localStorage.getItem('luna_icon') || '/luna-avatar.png');
+
+    useEffect(() => {
+        const handleSync = () => setLunaIcon(localStorage.getItem('luna_icon') || '/luna-avatar.png');
+        window.addEventListener('luna-settings-updated', handleSync);
+        return () => window.removeEventListener('luna-settings-updated', handleSync);
+    }, []);
 
     // Timer Logic
     useEffect(() => {
@@ -134,7 +141,7 @@ export function DietPage() {
                 <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-indigo-50 to-purple-100 dark:from-slate-800 dark:to-indigo-950 p-5 mb-8 border border-white/50 dark:border-white/10 shadow-sm">
                     <div className="flex items-start space-x-4 relative z-10">
                         <div className="relative flex-shrink-0">
-                            <img alt="Luna AI Avatar" className="w-12 h-12 rounded-full border-2 border-white dark:border-slate-700 object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBzp9ULmCSR-715iwzlJptbBIBpXKq50y-nSGTvw48EB1wAoxmZ876NSg9R0tVxdcMowmLHfu8WtoBBK7pyOg-FQIOcOLPpf2E21KVoZ9DH1zn9HPAWysFZENQBBPrcO2iPjxggME_fAuGsyWRVf7OcXV3HnvAkQH-b_PYcGdG3rKiG5_ilp6DqxISYIBCcSKVRrBDicw1kR-PaA1CEOk6ONjhxKdy275OeXOU12pRgB8EGcmoiZPyk5lSYpB7G3TBzYcXZzBIrvmY" />
+                            <img alt="Luna AI Avatar" className="w-12 h-12 rounded-full border-2 border-white dark:border-slate-700 object-cover" src={lunaIcon} />
                             <div className="absolute -bottom-1 -right-1 bg-white dark:bg-slate-800 p-0.5 rounded-full shadow-sm">
                                 <span className="material-symbols-rounded text-primary text-xs">auto_awesome</span>
                             </div>

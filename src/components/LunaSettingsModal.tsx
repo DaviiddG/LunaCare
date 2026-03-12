@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { dbHelpers } from '../lib/db';
+import { useAuth } from '../contexts/AuthContext';
 
 interface LunaSettings {
     profile: 'serena' | 'activa';
@@ -20,13 +22,24 @@ export function LunaSettingsModal({ isOpen, onClose, onSave }: LunaSettingsModal
         voice: (localStorage.getItem('luna_voice') as any) || 'soprano',
         icon: localStorage.getItem('luna_icon') || '/luna-avatar.png'
     });
-    const handleSave = () => {
+    const { user } = useAuth();
+
+    const handleSave = async () => {
+        // Save to localStorage for immediate availability/legacy sync
         localStorage.setItem('luna_profile', settings.profile);
         localStorage.setItem('luna_frequency', settings.frequency);
         localStorage.setItem('luna_voice', settings.voice);
+        localStorage.setItem('luna_icon', settings.icon);
 
-        // If it's the default icon, we could potentially switch it here, 
-        // but let's just trigger the save for now.
+        // Save to database for cross-device sync
+        if (user) {
+            await dbHelpers.updateUserSettings(user.id, {
+                luna_profile: settings.profile,
+                luna_frequency: settings.frequency,
+                luna_voice: settings.voice,
+                luna_icon: settings.icon
+            });
+        }
 
         // Dispatch event so the Dashboard (and other listeners) can update immediately
         window.dispatchEvent(new CustomEvent('luna-settings-updated'));
@@ -86,8 +99,8 @@ export function LunaSettingsModal({ isOpen, onClose, onSave }: LunaSettingsModal
                     <div className="relative mb-6 group">
                         <div className="w-36 h-36 rounded-full bg-gradient-to-tr from-[#8c2bee]/40 to-indigo-400/30 flex items-center justify-center border-4 border-white dark:border-slate-800 relative overflow-hidden shadow-2xl transition-transform duration-500 group-hover:scale-105">
                             <img
-                                src={settings.profile === 'serena' ? 'https://images.unsplash.com/photo-1544174845-612665042217?q=80&w=400&auto=format&fit=crop' : 'https://images.unsplash.com/photo-1542385151-efd9000785a0?q=80&w=400&auto=format&fit=crop'}
-                                className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-overlay"
+                                src={settings.profile === 'serena' ? 'https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=400&auto=format&fit=crop' : 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=400&auto=format&fit=crop'}
+                                className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-soft-light"
                                 alt="Fondo"
                             />
                             <img
@@ -124,8 +137,12 @@ export function LunaSettingsModal({ isOpen, onClose, onSave }: LunaSettingsModal
                                 onClick={() => setSettings({ ...settings, profile: 'serena' })}
                                 className={`relative cursor-pointer overflow-hidden rounded-3xl border-2 transition-all ${settings.profile === 'serena' ? 'border-[#8c2bee] ring-4 ring-[#8c2bee]/10' : 'border-transparent bg-slate-100 dark:bg-slate-800/40'}`}
                             >
-                                <div className="h-28 bg-gradient-to-r from-indigo-900/60 to-slate-900/60 relative">
-                                    <img src="https://images.unsplash.com/photo-1544174845-612665042217?q=80&w=400&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover opacity-40" />
+                                <div className="h-28 bg-gradient-to-r from-indigo-950 to-slate-900 relative">
+                                    <img
+                                        src="https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=800&auto=format&fit=crop"
+                                        className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-overlay"
+                                        alt="Noche"
+                                    />
                                     <div className="absolute top-4 left-4 flex items-center gap-3">
                                         <div className="w-10 h-10 rounded-full border-2 border-[#8c2bee]/50 bg-indigo-500/20 flex items-center justify-center">
                                             <span className="material-symbols-outlined text-[#8c2bee]">dark_mode</span>
@@ -151,8 +168,12 @@ export function LunaSettingsModal({ isOpen, onClose, onSave }: LunaSettingsModal
                                 onClick={() => setSettings({ ...settings, profile: 'activa' })}
                                 className={`relative cursor-pointer overflow-hidden rounded-3xl border-2 transition-all ${settings.profile === 'activa' ? 'border-[#8c2bee] ring-4 ring-[#8c2bee]/10' : 'border-transparent bg-slate-100 dark:bg-slate-800/40'}`}
                             >
-                                <div className="h-28 bg-gradient-to-r from-amber-400/20 to-sky-400/20 relative">
-                                    <img src="https://images.unsplash.com/photo-1542385151-efd9000785a0?q=80&w=400&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover opacity-30" />
+                                <div className="h-28 bg-gradient-to-r from-sky-400 to-amber-200 relative">
+                                    <img
+                                        src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=800&auto=format&fit=crop"
+                                        className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-overlay"
+                                        alt="Día"
+                                    />
                                     <div className="absolute top-4 left-4 flex items-center gap-3">
                                         <div className="w-10 h-10 rounded-full border-2 border-amber-500/50 bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400">
                                             <span className="material-symbols-outlined">light_mode</span>
