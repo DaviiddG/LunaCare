@@ -32,7 +32,7 @@ const BentoGrid = ({ children, className, ...props }: BentoGridProps) => {
     return (
         <div
             className={cn(
-                "grid w-full grid-cols-2 gap-4",
+                "grid w-full grid-cols-2 md:grid-cols-4 gap-4",
                 className
             )}
             {...props}
@@ -61,41 +61,37 @@ const BentoCard = ({
         key={name}
         onClick={onClick}
         className={cn(
-            "group relative flex flex-col justify-between overflow-hidden rounded-xl h-[135px] text-left active:scale-[0.98] transition-all",
+            "group relative flex flex-col justify-between overflow-hidden rounded-[2.5rem] h-[160px] text-left active:scale-[0.98] transition-all duration-500",
             "[box-shadow:0_0_0_1px_rgba(0,0,0,.03),0_2px_4px_rgba(0,0,0,.05),0_12px_24px_rgba(0,0,0,.05)]",
-            "transform-gpu dark:[box-shadow:0_-20px_80px_-20px_#ffffff1f_inset] dark:[border:1px_solid_rgba(255,255,255,.1)]",
+            "transform-gpu dark:[box-shadow:0_-20px_80px_-20px_#ffffff1f_inset] border-2",
             className
         )}
-        style={{ backgroundColor: color, color: color === '#FBCB43' ? '#1e293b' : 'white' }}
+        style={{ 
+            borderColor: `${color}44`,
+            color: color === '#FBCB43' ? '#eab308' : color
+        }}
         {...props}
     >
-        <div className="absolute inset-0 z-0 pointer-events-none">{background}</div>
-        <div className="p-4 z-10 w-full h-full flex flex-col justify-start">
-            <div className="pointer-events-none flex transform-gpu flex-col gap-[2px] transition-all duration-300 mb-2 group-hover:-translate-y-[6px]">
-                <div className="flex justify-between items-start mb-1">
-                    <span className="material-symbols-rounded text-[26px] opacity-90 origin-left transform-gpu transition-all duration-300 ease-in-out group-hover:scale-90">{icon}</span>
-                    {(!className?.includes("col-span-2") && (ai || history || plus)) && (
-                        <div className="bg-white/20 p-1 rounded-full backdrop-blur-md opacity-100 transition-opacity duration-300 group-hover:opacity-0 flex items-center justify-center">
-                            {ai && lunaIcon ? (
-                                <img src={lunaIcon} className="w-3.5 h-3.5 rounded-full object-cover" alt="Luna" />
-                            ) : (
-                                <span className="material-symbols-rounded text-xs">{ai ? 'auto_awesome' : (history ? 'history' : 'add')}</span>
-                            )}
-                        </div>
-                    )}
+        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">{background}</div>
+        <div className="p-6 z-10 w-full h-full flex flex-col justify-between overflow-hidden">
+            <div className="pointer-events-none flex transform-gpu flex-col gap-1.5 transition-all duration-500">
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-white/40 dark:bg-white/5 border border-white/40 dark:border-white/10 shadow-sm backdrop-blur-md transition-all duration-500 group-hover:scale-50 group-hover:opacity-0 mb-3">
+                    <span className="material-symbols-rounded text-[24px] transform-gpu transition-all duration-300 ease-in-out" style={{ color: color }}>{icon}</span>
                 </div>
-                <h3 className="text-base font-bold leading-tight line-clamp-1">
-                    {name}
-                </h3>
-                <p className="max-w-lg text-[11px] opacity-80 leading-tight line-clamp-2">{description}</p>
+                <div className="transition-all duration-500 group-hover:-translate-y-[62px]">
+                    <h3 className="text-base font-black uppercase tracking-[0.1em] leading-none mb-1 text-slate-800 dark:text-white transition-all duration-500 group-hover:text-lg">
+                        {name}
+                    </h3>
+                    <p className="text-[11px] font-bold opacity-60 dark:opacity-40 leading-tight line-clamp-2 text-slate-600 dark:text-slate-300 group-hover:opacity-100 transition-opacity uppercase tracking-tighter">{description}</p>
+                </div>
             </div>
 
             <div
                 className={cn(
-                    "pointer-events-none absolute bottom-3 left-4 flex w-full translate-y-10 transform-gpu flex-row items-center opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100"
+                    "pointer-events-none absolute bottom-6 left-0 flex w-full translate-y-4 transform-gpu flex-row items-center justify-start px-6 opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100"
                 )}
             >
-                <div className="text-xs font-bold leading-none flex items-center gap-1 bg-black/10 dark:bg-white/20 px-3 py-1.5 rounded-[8px] backdrop-blur-md">
+                <div className="text-[10px] font-black uppercase tracking-widest leading-none flex items-center gap-2 bg-black/5 dark:bg-white/10 px-4 py-2 rounded-xl backdrop-blur-md border border-white/20">
                     <span>Registrar</span>
                     <span className="material-symbols-rounded text-[14px]">arrow_forward</span>
                 </div>
@@ -113,8 +109,8 @@ const BentoCard = ({
         )}
 
         {name === 'Historial' && (
-            <div className="absolute top-1/2 -translate-y-1/2 right-4 text-white opacity-100 transition-opacity duration-300 group-hover:opacity-0 z-10">
-                <span className="material-symbols-rounded text-xl opacity-90">arrow_forward_ios</span>
+            <div className="absolute top-1/2 -translate-y-1/2 right-6 text-white opacity-100 transition-opacity duration-300 group-hover:opacity-0 z-10 flex flex-col items-center">
+                <span className="material-symbols-rounded text-2xl opacity-40">arrow_forward_ios</span>
             </div>
         )}
 

@@ -87,28 +87,18 @@
 
 /* Custom animations from HTML code */
 @keyframes ping-slow {
-  0% {
-    transform: scale(1);
-    opacity: 1;
-  }
-
-  75%,
-  100% {
-    transform: scale(2);
-    opacity: 0;
-  }
+  0% { transform: scale(1); opacity: 1; }
+  75%, 100% { transform: scale(2); opacity: 0; }
 }
 
 .animate-ping-slow {
   animation: ping-slow 2s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
 
-/* Specific background and layout adjustments */
 .main-content {
   @apply pt-28 px-5 pb-32;
 }
 
-/* Dark mode overrides for background colors */
 .dark .bg-background-light {
   @apply bg-[#121212];
 }
@@ -120,17 +110,9 @@
 }
 
 @keyframes shine {
-  0% {
-    background-position: 0% 0%;
-  }
-
-  50% {
-    background-position: 100% 100%;
-  }
-
-  to {
-    background-position: 0% 0%;
-  }
+  0% { background-position: 0% 0%; }
+  50% { background-position: 100% 100%; }
+  to { background-position: 0% 0%; }
 }
 
 .animate-shine {
@@ -138,13 +120,8 @@
 }
 
 @keyframes background-position-spin {
-  0% {
-    background-position: top center;
-  }
-
-  100% {
-    background-position: bottom center;
-  }
+  0% { background-position: top center; }
+  100% { background-position: bottom center; }
 }
 
 .animate-background-position-spin {
@@ -152,30 +129,11 @@
 }
 
 @keyframes aurora {
-  0% {
-    background-position: 0% 50%;
-    transform: rotate(-5deg) scale(0.9);
-  }
-
-  25% {
-    background-position: 50% 100%;
-    transform: rotate(5deg) scale(1.1);
-  }
-
-  50% {
-    background-position: 100% 50%;
-    transform: rotate(-3deg) scale(0.95);
-  }
-
-  75% {
-    background-position: 50% 0%;
-    transform: rotate(3deg) scale(1.05);
-  }
-
-  100% {
-    background-position: 0% 50%;
-    transform: rotate(-5deg) scale(0.9);
-  }
+  0% { background-position: 0% 50%; transform: rotate(-5deg) scale(0.9); }
+  25% { background-position: 50% 100%; transform: rotate(5deg) scale(1.1); }
+  50% { background-position: 100% 50%; transform: rotate(-3deg) scale(0.95); }
+  75% { background-position: 50% 0%; transform: rotate(3deg) scale(1.05); }
+  100% { background-position: 0% 50%; transform: rotate(-5deg) scale(0.9); }
 }
 
 .animate-aurora {
@@ -195,27 +153,37 @@
 }
 
 @keyframes shimmer-slide {
-  to {
-    transform: translate(calc(100cqw - 100%), 0);
-  }
+  to { transform: translate(calc(100cqw - 100%), 0); }
 }
 
 @keyframes spin-around {
-  0% {
-    transform: translateZ(0) rotate(0);
-  }
+  0% { transform: translateZ(0) rotate(0); }
+  15%, 35% { transform: translateZ(0) rotate(90deg); }
+  65%, 85% { transform: translateZ(0) rotate(270deg); }
+  100% { transform: translateZ(0) rotate(360deg); }
+}
 
-  15%,
-  35% {
-    transform: translateZ(0) rotate(90deg);
-  }
+.glass-morphism {
+  @apply bg-white/60 dark:bg-[#1A1A1A]/60 backdrop-blur-2xl border border-white/40 dark:border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.08)] dark:shadow-[0_20px_70px_rgba(0,0,0,0.5)];
+}
 
-  65%,
-  85% {
-    transform: translateZ(0) rotate(270deg);
-  }
+.bg-noise {
+  position: relative;
+  isolation: isolate;
+}
 
-  100% {
-    transform: translateZ(0) rotate(360deg);
-  }
+.bg-noise::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.02;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 150px 150px;
+}
+
+.dark .bg-noise::after {
+  opacity: 0.04;
 }
