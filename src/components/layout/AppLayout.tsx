@@ -1,7 +1,8 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
+import { useCallback } from 'react';
 import { LunaChatModal } from '../LunaChatModal';
 import { AnimatedThemeToggler } from '../AnimatedThemeToggler';
 import { Dock, DockIcon } from '../ui/dock';
@@ -14,13 +15,7 @@ export function AppLayout() {
     const [isLunaOpen, setIsLunaOpen] = useState(false);
     const [lunaIcon, setLunaIcon] = useState(localStorage.getItem('luna_icon') || '/luna-avatar.png');
 
-    useEffect(() => {
-        if (user) {
-            fetchUserSettings();
-        }
-    }, [user]);
-
-    const fetchUserSettings = async () => {
+    const fetchUserSettings = useCallback(async () => {
         if (!user) return;
         const { data } = await dbHelpers.getUserSettings(user.id);
         if (data) {
@@ -35,7 +30,13 @@ export function AppLayout() {
             // Dispatch event for other components that might be using these values
             window.dispatchEvent(new CustomEvent('luna-settings-updated'));
         }
-    };
+    }, [user]);
+
+    useEffect(() => {
+        if (user) {
+            fetchUserSettings();
+        }
+    }, [user, fetchUserSettings]);
 
     useEffect(() => {
         const handleSettingsUpdate = () => {

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { dbHelpers } from '../lib/db';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 
 interface LunaSettings {
     profile: 'serena' | 'activa';

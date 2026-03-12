@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { dbHelpers } from '../lib/db';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
+import { useCallback } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -24,7 +25,7 @@ export function NotificationSidebar({ isOpen, onClose, onUnreadChange }: Notific
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [loading, setLoading] = useState(false);
 
-    const fetchNotifications = async () => {
+    const fetchNotifications = useCallback(async () => {
         if (!user) return;
         setLoading(true);
         const { data } = await dbHelpers.getNotifications(user.id);
@@ -34,13 +35,13 @@ export function NotificationSidebar({ isOpen, onClose, onUnreadChange }: Notific
             onUnreadChange?.(unreadCount);
         }
         setLoading(false);
-    };
+    }, [user, onUnreadChange]);
 
     useEffect(() => {
         if (isOpen && user) {
             fetchNotifications();
         }
-    }, [isOpen, user]);
+    }, [isOpen, user, fetchNotifications]);
 
     const markAsRead = async (id: string) => {
         await dbHelpers.markNotificationAsRead(id);
