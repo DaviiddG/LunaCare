@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { dbHelpers } from '../lib/db';
 import { useAuth } from '../hooks/useAuth';
 
@@ -23,6 +23,18 @@ export function LunaSettingsModal({ isOpen, onClose, onSave }: LunaSettingsModal
         icon: localStorage.getItem('luna_icon') || '/luna-avatar.png'
     });
     const { user } = useAuth();
+
+    // Sincronizar estado cuando el modal se abre por si los ajustes cambiaron externamente (ej: fetch de DB)
+    useEffect(() => {
+        if (isOpen) {
+            setSettings({
+                profile: (localStorage.getItem('luna_profile') as any) || 'serena',
+                frequency: (localStorage.getItem('luna_frequency') as any) || 'balanced',
+                voice: (localStorage.getItem('luna_voice') as any) || 'soprano',
+                icon: localStorage.getItem('luna_icon') || '/luna-avatar.png'
+            });
+        }
+    }, [isOpen]);
 
     const handleSave = async () => {
         // Save to localStorage for immediate availability/legacy sync

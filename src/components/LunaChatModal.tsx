@@ -137,6 +137,18 @@ export function LunaChatModal({ isOpen, onClose }: LunaChatModalProps) {
         recognition.start();
     };
 
+    const handleClearChat = async () => {
+        if (!selectedBaby || !window.confirm('¿Estás seguro de que quieres limpiar la conversación?')) return;
+        
+        const { error } = await dbHelpers.deleteAiConversations(selectedBaby.id);
+        if (!error) {
+            setMessages([]);
+        } else {
+            console.error('Error al limpiar el chat:', error);
+            alert('No se pudo limpiar el chat. Intenta de nuevo.');
+        }
+    };
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -329,12 +341,21 @@ TIP_CONTENT: [Escribe aquí el contenido del tip]
                         Luna {lunaProfile === 'serena' ? 'Noche Serena' : 'Día Activo'}
                     </h1>
                 </div>
-                <button
-                    onClick={() => setIsSettingsOpen(true)}
-                    className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-primary/10 transition-colors"
-                >
-                    <span className="material-symbols-outlined text-primary">more_vert</span>
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={handleClearChat}
+                        className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-red-500/10 transition-colors text-red-500"
+                        title="Limpiar conversación"
+                    >
+                        <span className="material-symbols-outlined">delete_sweep</span>
+                    </button>
+                    <button
+                        onClick={() => setIsSettingsOpen(true)}
+                        className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-primary/10 transition-colors"
+                    >
+                        <span className="material-symbols-outlined text-primary">more_vert</span>
+                    </button>
+                </div>
             </header>
 
             {/* Settings Modal */}

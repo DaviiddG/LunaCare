@@ -138,7 +138,7 @@ Bebé: ${currentBaby.name}
                     });
                 }
 
-                window.dispatchEvent(new Event('luna-settings-updated'));
+                window.dispatchEvent(new CustomEvent('luna-settings-updated'));
             };
             reader.readAsDataURL(file);
         }
