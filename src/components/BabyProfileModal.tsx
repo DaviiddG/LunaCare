@@ -32,8 +32,9 @@ export function BabyProfileModal({ onSave }: BabyProfileModalProps) {
                 height: height ? parseFloat(height) : null,
                 gender,
             });
-        } catch (err: any) {
-            setErrorMsg(err?.message || 'Error al guardar. Intenta de nuevo.');
+        } catch (err: unknown) {
+            const error = err as Error;
+            setErrorMsg(error?.message || 'Error al guardar. Intenta de nuevo.');
         } finally {
             setSaving(false);
         }

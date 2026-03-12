@@ -1,7 +1,8 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { dbHelpers } from '../lib/db';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { useBabies } from '../hooks/useBabies';
+import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export function DiapersPage() {
@@ -26,18 +27,7 @@ export function DiapersPage() {
         return () => window.removeEventListener('luna-settings-updated', handleSync);
     }, []);
 
-    useEffect(() => {
-        if (selectedBaby) {
-            fetchInsight(selectedBaby.id);
-            // Reset form when baby changes
-            setDiaperType(null);
-            setConsistency(null);
-            setColor(null);
-            setNotes('');
-        }
-    }, [selectedBaby]);
-
-    const fetchInsight = async (babyId: string) => {
+    const fetchInsight = useCallback(async (babyId: string) => {
         setInsightText('Analizando pañales hoy...');
         const { data } = await dbHelpers.getDiapers(babyId);
         if (data) {
@@ -48,7 +38,18 @@ export function DiapersPage() {
             const res = await geminiHelpers.sendMessageWithContext(prompt, [{ role: 'user' as const, parts: [{ text: prompt }] }], context);
             if (res.text) setInsightText(res.text);
         }
-    }
+    }, []);
+
+    useEffect(() => {
+        if (selectedBaby) {
+            fetchInsight(selectedBaby.id);
+            // Reset form when baby changes
+            setDiaperType(null);
+            setConsistency(null);
+            setColor(null);
+            setNotes('');
+        }
+    }, [selectedBaby, fetchInsight]);
 
     const handleSave = async () => {
         if (!user || !selectedBaby || !diaperType) return;

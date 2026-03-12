@@ -1,6 +1,7 @@
-﻿import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { dbHelpers } from '../lib/db';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
+import { useCallback } from 'react';
 import { useBabies } from '../hooks/useBabies';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -21,7 +22,8 @@ function useTimer(startTime: Date | null) {
             update();
             intervalRef.current = setInterval(update, 1000);
         } else {
-            setElapsed('00:00:00');
+            // Avoid setting state synchronously in effect body
+            setElapsed(prev => prev === '00:00:00' ? prev : '00:00:00');
             if (intervalRef.current) clearInterval(intervalRef.current);
         }
         return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
@@ -57,23 +59,7 @@ export function SleepPage() {
 
     const elapsed = useTimer(startTime);
 
-    useEffect(() => {
-        // Always reset timer state first when baby changes
-        setIsSleeping(false);
-        setStartTime(null);
-
-        if (selectedBaby) {
-            // Check if THIS baby specifically has an active sleep session
-            const savedStart = localStorage.getItem(`sleep_start_${selectedBaby.id}`);
-            if (savedStart) {
-                setStartTime(new Date(savedStart));
-                setIsSleeping(true);
-            }
-            fetchInsight();
-        }
-    }, [selectedBaby?.id]);
-
-    const fetchInsight = async () => {
+    const fetchInsight = useCallback(async () => {
         if (!selectedBaby) return;
         setInsightText('Analizando registros de sueño...');
         const { data } = await dbHelpers.getSleepLogs(selectedBaby.id);
@@ -96,7 +82,23 @@ export function SleepPage() {
         } else {
             setInsightText('Registra el primer sueño de hoy y Luna te dará consejos personalizados.');
         }
-    };
+    }, [selectedBaby]);
+
+    useEffect(() => {
+        // Always reset timer state first when baby changes
+        setIsSleeping(false);
+        setStartTime(null);
+
+        if (selectedBaby) {
+            // Check if THIS baby specifically has an active sleep session
+            const savedStart = localStorage.getItem(`sleep_start_${selectedBaby.id}`);
+            if (savedStart) {
+                setStartTime(new Date(savedStart));
+                setIsSleeping(true);
+            }
+            fetchInsight();
+        }
+    }, [selectedBaby, fetchInsight]);
 
     const handleToggleSleep = async () => {
         if (!user || !selectedBaby) return;

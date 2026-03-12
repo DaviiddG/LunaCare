@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { useBabies } from '../hooks/useBabies';
+import { useCallback } from 'react';
 import { dbHelpers } from '../lib/db';
 import { AnimatedList } from '../components/ui/animated-list';
 import { NotificationSidebar } from '../components/NotificationSidebar';
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, format, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { motion, AnimatePresence } from 'motion/react';
 
 export function ReportsPage() {
     const { user } = useAuth();
@@ -30,13 +32,18 @@ export function ReportsPage() {
         return () => window.removeEventListener('luna-settings-updated', handleSettingsUpdate);
     }, []);
 
-    useEffect(() => {
-        if (selectedBaby && user) {
-            fetchStats();
-        }
-    }, [period, selectedBaby, user]);
+    const generateInsight = useCallback(async (sleepLog: any[]) => {
+        const { geminiHelpers } = await import('../lib/gemini');
+        const totalHours = sleepLog.reduce((acc, curr) => acc + curr.hours, 0);
+        const avg = totalHours / (sleepLog.filter(s => s.hours > 0).length || 1);
 
-    const fetchStats = async () => {
+        const context = `El bebé durmió un promedio de ${avg.toFixed(1)} horas diarias esta semana.`;
+        const prompt = `Escribe un comentario súper corto y amigable (máximo 1 línea) resumiendo cómo durmió según este promedio: ${avg.toFixed(1)}h. NO USES NEGRITAS, ASTERISCOS NI MARKDOWN.`;
+        const res = await geminiHelpers.sendMessageWithContext(prompt, [], context);
+        if (res.text) setInsightText(res.text.replace(/\*/g, ''));
+    }, []);
+
+    const fetchStats = useCallback(async () => {
         setIsLoading(true);
         if (!selectedBaby) return;
         const babyId = selectedBaby.id;
@@ -106,18 +113,13 @@ export function ReportsPage() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [selectedBaby, period, generateInsight]);
 
-    const generateInsight = async (sleepLog: any[]) => {
-        const { geminiHelpers } = await import('../lib/gemini');
-        const totalHours = sleepLog.reduce((acc, curr) => acc + curr.hours, 0);
-        const avg = totalHours / (sleepLog.filter(s => s.hours > 0).length || 1);
-
-        const context = `El bebé durmió un promedio de ${avg.toFixed(1)} horas diarias esta semana.`;
-        const prompt = `Escribe un comentario súper corto y amigable (máximo 1 línea) resumiendo cómo durmió según este promedio: ${avg.toFixed(1)}h. NO USES NEGRITAS, ASTERISCOS NI MARKDOWN.`;
-        const res = await geminiHelpers.sendMessageWithContext(prompt, [], context);
-        if (res.text) setInsightText(res.text.replace(/\*/g, ''));
-    };
+    useEffect(() => {
+        if (selectedBaby && user) {
+            fetchStats();
+        }
+    }, [selectedBaby, user, fetchStats]);
 
     return (
         <div className="bg-[#fbfaff] dark:bg-[#191022] text-slate-900 dark:text-slate-100 min-h-screen pb-24 font-['Plus_Jakarta_Sans',sans-serif]">
@@ -182,134 +184,258 @@ export function ReportsPage() {
                         </div>
                     </div>
 
-                    <section className="bg-white dark:bg-slate-800 p-5 rounded-xl ios-shadow border border-slate-50 dark:border-slate-700 w-full" style={{ boxShadow: '0 4px 20px -2px rgba(0, 0, 0, 0.05)' }}>
-                        <div className="flex justify-between items-center mb-6">
+                    <section className="relative group overflow-hidden glass-morphism bg-noise p-6 rounded-[2rem] w-full">
+                        {/* Background glow effects */}
+                        <div className="absolute -top-10 -right-10 w-40 h-40 bg-sky-500/10 blur-[50px] pointer-events-none"></div>
+                        <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-indigo-500/10 blur-[40px] pointer-events-none"></div>
+                        
+                        <div className="flex justify-between items-center mb-8 relative z-10">
                             <div>
-                                <h3 className="font-bold text-slate-800 dark:text-white">Resumen de Sueño</h3>
-                                <p className="text-xs text-slate-500">Horas dormidas por día</p>
+                                <h3 className="text-lg font-extrabold tracking-tight text-slate-800 dark:text-white uppercase">Calidad del Sueño</h3>
+                                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{period === 'Semana' ? 'Vista Semanal' : 'Vista Mensual'}</p>
                             </div>
-                            <span className="material-symbols-outlined text-sky-400 text-2xl">bedtime</span>
-                        </div>
-                        <div className={`flex items-end justify-between h-32 px-2 mb-4 overflow-x-auto gap-2`}>
-                            {sleepData.map((d, i) => {
-                                const heightPercentage = Math.min((d.hours / 18) * 100, 100);
-                                const label = format(d.day, period === 'Semana' ? 'EEEEE' : 'dd', { locale: es }).substring(0, 1).toUpperCase();
-                                const isToday = isSameDay(d.day, new Date());
-                                return (
-                                    <div key={i} className="flex flex-col items-center space-y-2 flex-shrink-0 min-w-[16px]">
-                                        <div className="w-3 bg-sky-400/30 dark:bg-sky-400/20 rounded-t-full h-24 relative overflow-hidden">
-                                            <div className="absolute bottom-0 w-full bg-sky-400 rounded-t-full transition-all duration-1000" style={{ height: `${heightPercentage}%` }}></div>
-                                        </div>
-                                        <span className={`text-[10px] font-bold ${isToday ? 'text-[#8c2bee]' : 'text-slate-400'}`}>{label}</span>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                        <button className="w-full py-3 text-sm font-bold text-[#8c2bee] bg-[#8c2bee]/5 rounded-xl active:bg-[#8c2bee]/10 transition-colors">
-                            Ver detalles
-                        </button>
-                    </section>
-
-                    <section className="bg-white dark:bg-slate-800 p-5 rounded-xl ios-shadow border border-slate-50 dark:border-slate-700 w-full" style={{ boxShadow: '0 4px 20px -2px rgba(0, 0, 0, 0.05)' }}>
-                        <div className="flex justify-between items-center mb-6">
-                            <div>
-                                <h3 className="font-bold text-slate-800 dark:text-white">Distribución de Alimentación</h3>
-                                <p className="text-xs text-slate-500">Fuentes de nutrición</p>
-                            </div>
-                            <span className="material-symbols-outlined text-orange-300 text-2xl">restaurant</span>
-                        </div>
-                        <div className="flex items-center justify-around mb-6">
-                            <div className="relative w-28 h-28">
-                                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                                    <circle className="stroke-slate-100 dark:stroke-slate-700" cx="18" cy="18" fill="none" r="16" strokeWidth="4"></circle>
-
-                                    {feedingData.total > 0 && (
-                                        <>
-                                            <circle className="stroke-orange-300 transition-all duration-1000" cx="18" cy="18" fill="none" r="16" strokeDasharray={`${(feedingData.breastmilk / feedingData.total) * 100}, 100`} strokeWidth="4"></circle>
-                                            <circle className="stroke-pink-400 transition-all duration-1000" cx="18" cy="18" fill="none" r="16" strokeDasharray={`${(feedingData.formula / feedingData.total) * 100}, 100`} strokeDashoffset={`-${(feedingData.breastmilk / feedingData.total) * 100}`} strokeWidth="4"></circle>
-                                            <circle className="stroke-emerald-300 transition-all duration-1000" cx="18" cy="18" fill="none" r="16" strokeDasharray={`${(feedingData.solid / feedingData.total) * 100}, 100`} strokeDashoffset={`-${((feedingData.breastmilk + feedingData.formula) / feedingData.total) * 100}`} strokeWidth="4"></circle>
-                                        </>
-                                    )}
-                                </svg>
-
-                                <div className="absolute inset-0 flex items-center justify-center flex-col">
-                                    <span className="text-xs font-bold text-slate-400">Total</span>
-                                    <span className="text-sm font-bold text-slate-700 dark:text-white">{feedingData.total > 0 ? feedingData.total + ' un.' : '0'}</span>
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <div className="flex items-center space-x-2">
-                                    <div className="w-3 h-3 rounded-full bg-orange-300"></div>
-                                    <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">Materna {feedingData.total > 0 ? Math.round((feedingData.breastmilk / feedingData.total) * 100) : 0}%</span>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <div className="w-3 h-3 rounded-full bg-pink-400"></div>
-                                    <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">Fórmula {feedingData.total > 0 ? Math.round((feedingData.formula / feedingData.total) * 100) : 0}%</span>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <div className="w-3 h-3 rounded-full bg-emerald-300"></div>
-                                    <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">Sólidos {feedingData.total > 0 ? Math.round((feedingData.solid / feedingData.total) * 100) : 0}%</span>
-                                </div>
+                            <div className="w-12 h-12 rounded-2xl bg-sky-100 dark:bg-sky-500/10 flex items-center justify-center shadow-inner">
+                                <span className="material-symbols-outlined text-sky-500 dark:text-sky-400 text-2xl font-bold">nights_stay</span>
                             </div>
                         </div>
 
-                        <button className="w-full py-3 text-sm font-bold text-[#8c2bee] bg-[#8c2bee]/5 rounded-xl active:bg-[#8c2bee]/10 transition-colors">
-                            Ver detalles
-                        </button>
-                    </section>
-
-                    <section className="bg-white dark:bg-slate-800 p-5 rounded-xl ios-shadow border border-slate-50 dark:border-slate-700 w-full" style={{ boxShadow: '0 4px 20px -2px rgba(0, 0, 0, 0.05)' }}>
-                        <div className="flex justify-between items-center mb-6">
-                            <div>
-                                <h3 className="font-bold text-slate-800 dark:text-white">Frecuencia de Pañales</h3>
-                                <p className="text-xs text-slate-500">Cambios diarios registrados</p>
+                        <div className="relative h-48 flex items-end justify-between px-2 mb-6 gap-3 group/chart">
+                            {/* Horizontal grid lines for context */}
+                            <div className="absolute inset-0 flex flex-col justify-between py-1 opacity-10 pointer-events-none">
+                                {[...Array(4)].map((_, i) => (
+                                    <div key={i} className="w-full h-[1px] bg-slate-400 dark:bg-white"></div>
+                                ))}
                             </div>
-                            <span className="material-symbols-outlined text-yellow-400 text-2xl">soap</span>
-                        </div>
-                        <div className="flex items-end justify-between h-32 px-2 mb-6 gap-2 overflow-x-auto min-w-full">
-                            {(() => {
-                                const maxCount = Math.max(...diaperData.map(d => d.count), 1);
-                                return diaperData.map((d, i) => {
-                                    const heightPercentage = (d.count / maxCount) * 100;
-                                    const isToday = isSameDay(d.day, new Date());
+
+                            <AnimatePresence mode="popLayout">
+                                {sleepData.map((d, i) => {
+                                    const maxPossibleHours = 14; // Baby standard
+                                    const heightPercentage = Math.min((d.hours / maxPossibleHours) * 100, 100);
                                     const label = format(d.day, period === 'Semana' ? 'EE' : 'dd', { locale: es }).substring(0, 2);
-
+                                    const isToday = isSameDay(d.day, new Date());
+                                    
                                     return (
-                                        <div key={i} className="flex flex-col items-center flex-1 min-w-[30px] group">
-                                            <div className="relative w-full h-24 flex items-end justify-center mb-2">
-                                                {/* Bar Value Tooltip-like label */}
-                                                <span className={`absolute -top-5 text-[10px] font-bold transition-opacity duration-300 ${d.count > 0 ? 'opacity-100' : 'opacity-0'} ${isToday ? 'text-[#8c2bee]' : 'text-slate-400'}`}>
-                                                    {d.count}
-                                                </span>
-
-                                                {/* The Bar */}
-                                                <div
-                                                    className={`w-4 sm:w-5 rounded-t-full transition-all duration-700 ease-out relative overflow-hidden ${isToday ? 'shadow-[0_0_12px_rgba(140,43,238,0.3)]' : ''}`}
-                                                    style={{
-                                                        height: `${Math.max(heightPercentage, 5)}%`,
-                                                        background: isToday
-                                                            ? 'linear-gradient(to top, #8c2bee, #a855f7)'
-                                                            : 'linear-gradient(to top, #facc15, #fbbf24)'
-                                                    }}
+                                        <div key={d.day.toISOString()} className="flex flex-col items-center flex-1 h-full z-10">
+                                            <div className="relative w-full h-full flex items-end justify-center group/bar">
+                                                {/* Tooltip on hover */}
+                                                <motion.div 
+                                                    initial={{ opacity: 0, y: 10 }}
+                                                    whileHover={{ opacity: 1, y: -5 }}
+                                                    className="absolute -top-10 bg-slate-800 dark:bg-white text-white dark:text-slate-900 text-[10px] font-black px-2 py-1 rounded-lg pointer-events-none shadow-xl z-30"
                                                 >
-                                                    {/* Glass effect shine */}
-                                                    <div className="absolute inset-0 bg-white/20 w-1/2 h-full"></div>
-                                                </div>
-                                            </div>
+                                                    {d.hours.toFixed(1)}h
+                                                </motion.div>
 
-                                            {/* X-Axis Label */}
-                                            <span className={`text-[9px] font-bold uppercase tracking-tighter ${isToday ? 'text-[#8c2bee]' : 'text-slate-400'}`}>
+                                                {/* The Bar with Glow */}
+                                                <motion.div
+                                                    initial={{ height: 0, opacity: 0 }}
+                                                    animate={{ height: `${Math.max(heightPercentage, 8)}%`, opacity: 1 }}
+                                                    transition={{ 
+                                                        type: "spring",
+                                                        damping: 15,
+                                                        stiffness: 100,
+                                                        delay: i * 0.05 
+                                                    }}
+                                                    className={`w-full max-w-[12px] rounded-full relative overflow-hidden transition-all duration-300 pointer-events-auto ${
+                                                        isToday 
+                                                        ? 'bg-gradient-to-t from-sky-600 to-indigo-400 shadow-[0_0_20px_rgba(56,189,248,0.5)] scale-110' 
+                                                        : 'bg-slate-200 dark:bg-white/10 hover:bg-sky-400/50'
+                                                    }`}
+                                                >
+                                                    {/* Animated shine effect on bars */}
+                                                    <motion.div 
+                                                        animate={{ y: [0, 200] }}
+                                                        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                                                        className="absolute top-[-100%] left-0 w-full h-1/2 bg-gradient-to-b from-transparent via-white/20 to-transparent"
+                                                    />
+                                                </motion.div>
+                                            </div>
+                                            <span className={`mt-4 text-[9px] font-black uppercase tracking-tighter transition-colors duration-300 ${isToday ? 'text-sky-500' : 'text-slate-400 dark:text-slate-600'}`}>
                                                 {label}
                                             </span>
                                         </div>
-                                    );
-                                });
-                            })()}
+                                    )
+                                })}
+                            </AnimatePresence>
                         </div>
 
-                        <button className="w-full py-3 text-sm font-bold text-[#8c2bee] bg-[#8c2bee]/5 rounded-xl active:bg-[#8c2bee]/10 transition-colors">
-                            Ver detalles
+                        <button className="group/btn w-full py-4 relative overflow-hidden rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5 transition-all active:scale-95">
+                            <div className="absolute inset-0 bg-gradient-to-r from-sky-500/0 via-sky-500/10 to-sky-500/0 translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-1000"></div>
+                            <span className="relative z-10 text-xs font-black uppercase tracking-[0.2em] text-slate-600 dark:text-slate-300 group-hover/btn:text-sky-500 transition-colors">
+                                Analítica Detallada
+                            </span>
+                        </button>
+                    </section>
+                    <section className="relative group overflow-hidden glass-morphism bg-noise p-6 rounded-[2rem] w-full">
+                        <div className="absolute -top-10 -right-10 w-40 h-40 bg-orange-500/10 blur-[50px] pointer-events-none"></div>
+                        
+                        <div className="flex justify-between items-center mb-8 relative z-10">
+                            <div>
+                                <h3 className="text-lg font-extrabold tracking-tight text-slate-800 dark:text-white uppercase">Nutrición Luna</h3>
+                                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Fuentes de Alimentación</p>
+                            </div>
+                            <div className="w-12 h-12 rounded-2xl bg-orange-100 dark:bg-orange-500/10 flex items-center justify-center shadow-inner">
+                                <span className="material-symbols-outlined text-orange-500 dark:text-orange-400 text-2xl font-bold">restaurant</span>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-8 mb-8">
+                            <div className="relative w-36 h-36 flex-shrink-0">
+                                <svg className="w-full h-full transform -rotate-90 filter drop-shadow-[0_0_8px_rgba(0,0,0,0.1)]" viewBox="0 0 36 36">
+                                    <circle className="stroke-slate-100 dark:stroke-white/5" cx="18" cy="18" fill="none" r="16" strokeWidth="3.5"></circle>
+                                    {feedingData.total > 0 && (
+                                        <>
+                                            <motion.circle 
+                                                initial={{ strokeDasharray: "0, 100" }}
+                                                animate={{ strokeDasharray: `${(feedingData.breastmilk / feedingData.total) * 100}, 100` }}
+                                                transition={{ duration: 1.5, ease: "easeOut" }}
+                                                className="stroke-orange-400" cx="18" cy="18" fill="none" r="16" strokeWidth="3.5" strokeLinecap="round"
+                                            ></motion.circle>
+                                            <motion.circle 
+                                                initial={{ strokeDasharray: "0, 100", strokeDashoffset: 0 }}
+                                                animate={{ 
+                                                    strokeDasharray: `${(feedingData.formula / feedingData.total) * 100}, 100`,
+                                                    strokeDashoffset: `-${(feedingData.breastmilk / feedingData.total) * 100}`
+                                                }}
+                                                transition={{ duration: 1.5, ease: "easeOut", delay: 0.2 }}
+                                                className="stroke-pink-500" cx="18" cy="18" fill="none" r="16" strokeWidth="3.5" strokeLinecap="round"
+                                            ></motion.circle>
+                                            <motion.circle 
+                                                initial={{ strokeDasharray: "0, 100", strokeDashoffset: 0 }}
+                                                animate={{ 
+                                                    strokeDasharray: `${(feedingData.solid / feedingData.total) * 100}, 100`,
+                                                    strokeDashoffset: `-${((feedingData.breastmilk + feedingData.formula) / feedingData.total) * 100}`
+                                                }}
+                                                transition={{ duration: 1.5, ease: "easeOut", delay: 0.4 }}
+                                                className="stroke-emerald-400" cx="18" cy="18" fill="none" r="16" strokeWidth="3.5" strokeLinecap="round"
+                                            ></motion.circle>
+                                        </>
+                                    )}
+                                </svg>
+                                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                    <motion.span 
+                                        initial={{ opacity: 0, scale: 0.5 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        className="text-[10px] font-black uppercase text-slate-400 tracking-tighter"
+                                    >Total</motion.span>
+                                    <motion.span 
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        className="text-xl font-black text-slate-800 dark:text-white"
+                                    >{feedingData.total}</motion.span>
+                                </div>
+                            </div>
+
+                            <div className="flex-1 space-y-4 w-full">
+                                {[
+                                    { label: 'Materna', value: feedingData.breastmilk, color: 'bg-orange-400', textColor: 'text-orange-500' },
+                                    { label: 'Fórmula', value: feedingData.formula, color: 'bg-pink-500', textColor: 'text-pink-500' },
+                                    { label: 'Sólidos', value: feedingData.solid, color: 'bg-emerald-400', textColor: 'text-emerald-500' }
+                                ].map((item, idx) => {
+                                    const perc = feedingData.total > 0 ? Math.round((item.value / feedingData.total) * 100) : 0;
+                                    return (
+                                        <motion.div 
+                                            key={item.label}
+                                            initial={{ x: 20, opacity: 0 }}
+                                            animate={{ x: 0, opacity: 1 }}
+                                            transition={{ delay: 0.6 + (idx * 0.1) }}
+                                            className="flex items-center justify-between group/legend"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-2 h-2 rounded-full ${item.color} shadow-[0_0_8px_rgba(0,0,0,0.1)] group-hover/legend:scale-150 transition-transform`}></div>
+                                                <span className="text-xs font-black uppercase tracking-widest text-slate-600 dark:text-slate-400">{item.label}</span>
+                                            </div>
+                                            <span className={`text-xs font-black ${item.textColor}`}>{perc}%</span>
+                                        </motion.div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        <button className="group/btn w-full py-4 relative overflow-hidden rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5 transition-all active:scale-95">
+                            <div className="absolute inset-0 bg-gradient-to-r from-orange-500/0 via-orange-500/10 to-orange-500/0 translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-1000"></div>
+                            <span className="relative z-10 text-xs font-black uppercase tracking-[0.2em] text-slate-600 dark:text-slate-300 group-hover/btn:text-orange-500 transition-colors">
+                                Registro de Dieta
+                            </span>
+                        </button>
+                    </section>
+                    <section className="relative group overflow-hidden glass-morphism bg-noise p-6 rounded-[2rem] w-full">
+                        <div className="absolute -top-10 -right-10 w-40 h-40 bg-yellow-500/10 blur-[50px] pointer-events-none"></div>
+                        
+                        <div className="flex justify-between items-center mb-8 relative z-10">
+                            <div>
+                                <h3 className="text-lg font-extrabold tracking-tight text-slate-800 dark:text-white uppercase">Higiene y Confort</h3>
+                                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Frecuencia de Pañales</p>
+                            </div>
+                            <div className="w-12 h-12 rounded-2xl bg-yellow-100 dark:bg-yellow-500/10 flex items-center justify-center shadow-inner">
+                                <span className="material-symbols-outlined text-yellow-500 dark:text-yellow-400 text-2xl font-bold">soap</span>
+                            </div>
+                        </div>
+
+                        <div className="relative h-40 flex items-end justify-between px-2 mb-8 gap-3">
+                             <div className="absolute inset-x-0 bottom-8 h-[1px] bg-slate-200 dark:bg-white/10 opacity-50"></div>
+                             
+                             <AnimatePresence mode="popLayout">
+                                {(() => {
+                                    const maxCount = Math.max(...diaperData.map(d => d.count), 1);
+                                    return diaperData.map((d, i) => {
+                                        const heightPercentage = (d.count / maxCount) * 100;
+                                        const isToday = isSameDay(d.day, new Date());
+                                        const label = format(d.day, period === 'Semana' ? 'EE' : 'dd', { locale: es }).substring(0, 2);
+
+                                        return (
+                                            <div key={d.day.toISOString()} className="flex flex-col items-center flex-1 h-full z-10">
+                                                <div className="relative w-full h-full flex items-end justify-center group/diaper">
+                                                    {d.count > 0 && (
+                                                        <motion.div 
+                                                            initial={{ scale: 0, opacity: 0 }}
+                                                            animate={{ scale: 1, opacity: 1 }}
+                                                            transition={{ delay: 0.8 + (i * 0.05) }}
+                                                            className="absolute -top-8 bg-yellow-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-lg z-20"
+                                                        >
+                                                            {d.count}
+                                                        </motion.div>
+                                                    )}
+
+                                                    <motion.div
+                                                        initial={{ height: 0, opacity: 0 }}
+                                                        animate={{ height: `${Math.max(heightPercentage, 10)}%`, opacity: 1 }}
+                                                        transition={{ 
+                                                            type: "spring",
+                                                            damping: 15,
+                                                            stiffness: 100,
+                                                            delay: 0.4 + (i * 0.05) 
+                                                        }}
+                                                        className={`w-full max-w-[14px] rounded-full relative ${
+                                                            isToday 
+                                                            ? 'bg-gradient-to-t from-yellow-600 to-yellow-300 shadow-[0_0_15px_rgba(234,179,8,0.4)]' 
+                                                            : 'bg-slate-100 dark:bg-white/5 hover:bg-yellow-400/30 transition-colors'
+                                                        }`}
+                                                    >
+                                                        {isToday && (
+                                                            <motion.div 
+                                                                animate={{ opacity: [0.3, 0.6, 0.3] }}
+                                                                transition={{ duration: 2, repeat: Infinity }}
+                                                                className="absolute inset-0 bg-white/30 rounded-full"
+                                                            />
+                                                        )}
+                                                    </motion.div>
+                                                </div>
+                                                <span className={`mt-4 text-[9px] font-black uppercase tracking-tighter ${isToday ? 'text-yellow-600' : 'text-slate-400 dark:text-slate-600'}`}>
+                                                    {label}
+                                                </span>
+                                            </div>
+                                        );
+                                    });
+                                })()}
+                             </AnimatePresence>
+                        </div>
+
+                        <button className="group/btn w-full py-4 relative overflow-hidden rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5 transition-all active:scale-95">
+                            <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/0 via-yellow-500/10 to-yellow-500/0 translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-1000"></div>
+                            <span className="relative z-10 text-xs font-black uppercase tracking-[0.2em] text-slate-600 dark:text-slate-300 group-hover/btn:text-yellow-600 transition-colors">
+                                Registro de Higiene
+                            </span>
                         </button>
                     </section>
                 </AnimatedList>

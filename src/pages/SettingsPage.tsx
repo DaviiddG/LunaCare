@@ -1,7 +1,9 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { dbHelpers } from '../lib/db';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
+import { useCallback } from 'react';
+import type { Baby } from '../contexts/BabiesContext';
 import { useNavigate } from 'react-router-dom';
 import { AnimatedThemeToggler } from '../components/AnimatedThemeToggler';
 
@@ -32,18 +34,11 @@ export function SettingsPage() {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [babyToDelete, setBabyToDelete] = useState<BabyForm | null>(null);
 
-    useEffect(() => {
-        if (user) {
-            setProfileName(user.user_metadata?.full_name || 'Padre/Madre');
-            fetchBabies();
-        }
-    }, [user]);
-
-    const fetchBabies = async () => {
+    const fetchBabies = useCallback(async () => {
         setIsLoading(true);
         const { data } = await dbHelpers.getAllBabyProfiles(user!.id);
         if (data) {
-            setBabies(data.map((b: any) => ({
+            setBabies(data.map((b: Baby) => ({
                 id: b.id,
                 name: b.name || '',
                 birth_date: b.birth_date || '',
@@ -59,7 +54,14 @@ export function SettingsPage() {
             })));
         }
         setIsLoading(false);
-    };
+    }, [user]);
+
+    useEffect(() => {
+        if (user) {
+            setProfileName(user.user_metadata?.full_name || 'Padre/Madre');
+            fetchBabies();
+        }
+    }, [user, fetchBabies]);
 
     const toggleExpand = (id: string) => {
         setBabies(prev => prev.map(b => b.id === id ? { ...b, expanded: !b.expanded } : b));

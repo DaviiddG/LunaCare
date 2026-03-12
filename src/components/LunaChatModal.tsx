@@ -1,7 +1,37 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { dbHelpers } from '../lib/db';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { useBabies } from '../hooks/useBabies';
+
+// Speech Recognition Types
+interface SpeechRecognitionEvent extends Event {
+    resultIndex: number;
+    results: {
+        length: number;
+        [key: number]: {
+            isFinal: boolean;
+            [key: number]: {
+                transcript: string;
+            };
+        };
+    };
+}
+
+interface SpeechRecognition extends EventTarget {
+    lang: string;
+    interimResults: boolean;
+    onstart: () => void;
+    onresult: (event: SpeechRecognitionEvent) => void;
+    onend: () => void;
+    start: () => void;
+    stop: () => void;
+}
+
+interface WindowWithSpeech extends Window {
+    SpeechRecognition?: new () => SpeechRecognition;
+    webkitSpeechRecognition?: new () => SpeechRecognition;
+}
+
 import { LunaSettingsModal } from './LunaSettingsModal';
 
 interface Message {
@@ -34,24 +64,24 @@ export function LunaChatModal({ isOpen, onClose }: LunaChatModalProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const recognitionRef = useRef<any>(null);
 
-    // Fetch conversation when modal opens or baby changes
-    useEffect(() => {
-        if (isOpen && selectedBaby) {
-            fetchConversation();
-        }
-    }, [isOpen, selectedBaby]);
-
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages, isLoading]);
-
-    const fetchConversation = async () => {
+    const fetchConversation = useCallback(async () => {
         if (!selectedBaby) return;
         const { data } = await dbHelpers.getAiConversations(selectedBaby.id, 50);
         if (data) {
             setMessages(data as Message[]);
         }
-    };
+    }, [selectedBaby]);
+
+    // Fetch conversation when modal opens or baby changes
+    useEffect(() => {
+        if (isOpen && selectedBaby) {
+            fetchConversation();
+        }
+    }, [isOpen, selectedBaby, fetchConversation]);
+
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages, isLoading]);
 
     useEffect(() => {
         const handleSettingsUpdate = () => {
@@ -63,22 +93,24 @@ export function LunaChatModal({ isOpen, onClose }: LunaChatModalProps) {
     }, []);
 
     const toggleListen = () => {
-        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        const WindowAny = window as unknown as WindowWithSpeech;
+        const SpeechRecognition = WindowAny.SpeechRecognition || WindowAny.webkitSpeechRecognition;
+        
+        if (!SpeechRecognition) {
             alert('El reconocimiento de voz no está soportado en este navegador.');
             return;
         }
 
         if (isListening) {
             if (recognitionRef.current) {
-                recognitionRef.current.stop();
+                (recognitionRef.current as any).stop();
             }
             setIsListening(false);
             return;
         }
 
-        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
-        recognitionRef.current = recognition;
+        recognitionRef.current = recognition as unknown as any; // Still using any for the ref to avoid deep type clashes with current UI expectations but typed the instance
 
         recognition.lang = 'es-ES';
         recognition.interimResults = true;
@@ -87,7 +119,7 @@ export function LunaChatModal({ isOpen, onClose }: LunaChatModalProps) {
         const currentInput = input;
 
         recognition.onstart = () => setIsListening(true);
-        recognition.onresult = (event: any) => {
+        recognition.onresult = (event: SpeechRecognitionEvent) => {
             let finalTranscript = '';
             let interimTranscript = '';
 
@@ -174,14 +206,13 @@ export function LunaChatModal({ isOpen, onClose }: LunaChatModalProps) {
                 parts: [{ text: msg.content }]
             }));
 
-            const profile = localStorage.getItem('luna_profile') || 'serena';
-            const frequency = localStorage.getItem('luna_frequency') || 'balanced';
+
 
             let context = `Eres Luna, una asistente de LunaCare.
 Responde de forma muy natural, empática y conversacional en ESPAÑOL, como si fueras una pediatra o una amiga con experiencia.
-Bebé actual (en contexto del chat): ${selectedBaby.name}.
-PERSONALIDAD ACTUAL: ${profile === 'serena' ? 'Eres Luna Noche Serena. Tu tono es extremadamente dulce, calmado y empático. Buscas transmitir tranquilidad.' : 'Eres Luna Día Activo. Tu tono es energético, directo y motivador. Buscas ser eficiente y clara.'}
-FRECUENCIA DE CONSEJOS: ${frequency === 'frequent' ? 'Aprovecha cada oportunidad para dar consejos útiles.' : frequency === 'occasional' ? 'Solo da consejos si el usuario los pide explícitamente.' : 'Da consejos de forma equilibrada cuando sea realmente relevante.'}
+Bebé actual (en contexto del chat): \${selectedBaby.name}.
+PERSONALIDAD ACTUAL: \${profile === 'serena' ? 'Eres Luna Noche Serena. Tu tono es extremadamente dulce, calmado y empático. Buscas transmitir tranquilidad.' : 'Eres Luna Día Activo. Tu tono es energético, directo y motivador. Buscas ser eficiente y clara.'}
+FRECUENCIA DE CONSEJOS: \${frequency === 'frequent' ? 'Aprovecha cada oportunidad para dar consejos útiles.' : frequency === 'occasional' ? 'Solo da consejos si el usuario los pide explícitamente.' : 'Da consejos de forma equilibrada cuando sea realmente relevante.'}
 INSTRUCCIÓN CRÍTICA: Tienes funciones disponibles. Si el usuario te pide explícitamente agregar o registrar a un hijo nuevo, LLAMA A LA FUNCIÓN logAddBaby pasando todos los datos (nombre, fecha de nacimiento o calcularla según lo que te digan p.ej 'nació antier', peso en kg, altura en cm). ¡No le digas al usuario que no puedes hacerlo, USA LA FUNCIÓN! Si te piden agregar un bebé nuevo pero no te dicen nombre, peso o altura, pregúntales amablemente esos datos primero.
 OTRA INSTRUCCIÓN CRÍTICA: NUNCA uses sintaxis de markdown para formatear tu texto (no uses asteriscos ** para negritas ni itálicas). Habla en párrafos normales, claros y fluidos. No parezcas un bot, sé muy humana.
 CONSEJOS DINÁMICOS: Si decides dar un consejo relevante o tip, hazlo SIEMPRE al final de tu respuesta usando EXACTAMENTE la siguiente estructura (en líneas separadas y sin asteriscos ni markdown extra):
@@ -189,7 +220,7 @@ TIP_TITLE: [Escribe aquí el título del tip]
 TIP_CONTENT: [Escribe aquí el contenido del tip]
 `;
 
-            let imageParts: any[] = [];
+            let imageParts: { inlineData: { data: string, mimeType: string } }[] = [];
             if (currentImage) {
                 imageParts.push({
                     inlineData: {
@@ -206,41 +237,41 @@ TIP_CONTENT: [Escribe aquí el contenido del tip]
             if (result.actions && result.actions.length > 0) {
                 for (const action of result.actions) {
                     try {
-                        const args = action.args as any;
+                        const args = action.args as Record<string, any>;
                         if (action.name === 'logAddBaby') {
                             await dbHelpers.upsertBabyProfile({
                                 user_id: user.id,
-                                name: args.name,
-                                gender: args.gender || 'Bebé',
-                                birth_date: args.birthDate || new Date().toISOString().split('T')[0],
-                                weight: args.weight || 0,
-                                height: args.height || 0
+                                name: args.name as string,
+                                gender: (args.gender as string) || 'Bebé',
+                                birth_date: (args.birthDate as string) || new Date().toISOString().split('T')[0],
+                                weight: (args.weight as number) || 0,
+                                height: (args.height as number) || 0
                             });
                             didAction = true;
                         } else if (action.name === 'logBabySleep') {
                             await dbHelpers.insertSleepLog({
                                 user_id: user.id,
                                 baby_id: selectedBaby.id,
-                                start_time: new Date(Date.now() - (args.durationMinutes * 60000)).toISOString(),
+                                start_time: new Date(Date.now() - ((args.durationMinutes as number) * 60000)).toISOString(),
                                 end_time: new Date().toISOString(),
-                                duration: args.durationMinutes.toString()
+                                duration: (args.durationMinutes as number).toString()
                             });
                             didAction = true;
                         } else if (action.name === 'logBabyDiaper') {
                             await dbHelpers.insertDiaper({
                                 user_id: user.id,
                                 baby_id: selectedBaby.id,
-                                status: args.status,
-                                observations: args.observations || ''
+                                status: args.status as string,
+                                observations: (args.observations as string) || ''
                             });
                             didAction = true;
                         } else if (action.name === 'logBabyDiet') {
                             await dbHelpers.insertDiet({
                                 user_id: user.id,
                                 baby_id: selectedBaby.id,
-                                type: args.type,
-                                amount: args.amount,
-                                observations: args.observations || ''
+                                type: args.type as string,
+                                amount: (args.amount as number) || 0,
+                                observations: (args.observations as string) || ''
                             });
                             didAction = true;
                         }
@@ -284,9 +315,6 @@ TIP_CONTENT: [Escribe aquí el contenido del tip]
     };
 
     if (!isOpen) return null;
-
-    // Icono base de Luna (personalizable desde la configuración)
-    // const lunaIconUrl = localStorage.getItem('luna_icon') || '/luna-avatar.png'; // Moved to state
 
     return (
         <div className="fixed inset-0 z-[100] bg-background-light dark:bg-[#0a110c] text-slate-900 dark:text-slate-100 flex flex-col animate-fade-in font-chat">
@@ -356,14 +384,14 @@ TIP_CONTENT: [Escribe aquí el contenido del tip]
                     }
 
                     return (
-                        <div key={msg.id} className={`flex items-start gap-3 ${isLuna ? 'max-w-[85%]' : 'justify-end ml-auto max-w-[85%]'}`}>
+                        <div key={msg.id} className={`flex items-start gap-3 \${isLuna ? 'max-w-[85%]' : 'justify-end ml-auto max-w-[85%]'}`}>
                             {isLuna && (
                                 <div className="size-8 rounded-full bg-slate-200 dark:bg-slate-800 shrink-0 mt-1 overflow-hidden">
                                     <img className="w-full h-full object-cover" src={lunaIconUrl} alt="Luna" />
                                 </div>
                             )}
-                            <div className={`space-y-1 ${isLuna ? '' : 'flex flex-col items-end'}`}>
-                                <div className={`p-4 rounded-xl message-shadow text-sm leading-relaxed ${isLuna
+                            <div className={`space-y-1 \${isLuna ? '' : 'flex flex-col items-end'}`}>
+                                <div className={`p-4 rounded-xl message-shadow text-sm leading-relaxed \${isLuna
                                     ? 'bg-white dark:bg-[#1a251b] text-slate-800 dark:text-slate-100 rounded-tl-none border border-[#8c2bee]/10'
                                     : 'bg-[#8c2bee]/20 dark:bg-primary/20 text-slate-900 dark:text-slate-100 rounded-tr-none'
                                     }`}>
@@ -372,7 +400,7 @@ TIP_CONTENT: [Escribe aquí el contenido del tip]
                                         <RichTipCard title={tipTitle} content={tipContent} />
                                     )}
                                 </div>
-                                <span className={`text-[10px] text-slate-500 ${isLuna ? 'ml-1' : 'mr-1'}`}>
+                                <span className={`text-[10px] text-slate-500 \${isLuna ? 'ml-1' : 'mr-1'}`}>
                                     {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                             </div>
@@ -432,7 +460,7 @@ TIP_CONTENT: [Escribe aquí el contenido del tip]
                     <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className={`p-2 transition-colors ${selectedImage ? 'text-primary' : 'text-slate-500 hover:text-primary'}`}
+                        className={`p-2 transition-colors \${selectedImage ? 'text-primary' : 'text-slate-500 hover:text-primary'}`}
                     >
                         <span className="material-symbols-outlined">photo_camera</span>
                     </button>
@@ -447,7 +475,7 @@ TIP_CONTENT: [Escribe aquí el contenido del tip]
                     <button
                         type="button"
                         onClick={toggleListen}
-                        className={`p-2 transition-colors ${isListening ? 'text-red-500 animate-pulse' : 'text-slate-500 hover:text-primary'}`}
+                        className={`p-2 transition-colors \${isListening ? 'text-red-500 animate-pulse' : 'text-slate-500 hover:text-primary'}`}
                     >
                         <span className="material-symbols-outlined">{isListening ? 'graphic_eq' : 'mic'}</span>
                     </button>

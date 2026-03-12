@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { dbHelpers } from '../lib/db';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { useBabies } from '../hooks/useBabies';
+import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export function BottlePage() {
@@ -25,24 +26,13 @@ export function BottlePage() {
         return () => window.removeEventListener('luna-settings-updated', handleSync);
     }, []);
 
-    useEffect(() => {
-        if (selectedBaby) {
-            fetchInsight(selectedBaby.id);
-            // Reset form when baby changes
-            setAmount(120);
-            setContentType('formula');
-            setTemperature('Ambiente');
-            setNotes('');
-        }
-    }, [selectedBaby]);
-
-    const fetchInsight = async (babyId: string) => {
+    const fetchInsight = useCallback(async (babyId: string) => {
         setInsightText('Analizando registros de biberón...');
         const { data } = await dbHelpers.getDiets(babyId);
         if (data) {
             const todayBottles = data.filter((d: any) =>
                 (d.type === 'bottle_formula' || d.type === 'bottle_breastmilk') &&
-                new Date(d.created_at).toDateString() === new Date().toDateString()
+                new Date(d.created_at || "").toDateString() === new Date().toDateString()
             );
 
             const totalMl = todayBottles.reduce((acc: number, curr: any) => acc + (curr.amount || 0), 0);
@@ -53,7 +43,18 @@ export function BottlePage() {
             const res = await geminiHelpers.sendMessageWithContext(prompt, [{ role: 'user' as const, parts: [{ text: prompt }] }], context);
             if (res.text) setInsightText(res.text);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        if (selectedBaby) {
+            fetchInsight(selectedBaby.id);
+            // Reset form when baby changes
+            setAmount(120);
+            setContentType('formula');
+            setTemperature('Ambiente');
+            setNotes('');
+        }
+    }, [selectedBaby, fetchInsight]);
 
     const handleSave = async () => {
         if (!user || !selectedBaby || amount <= 0) return;
