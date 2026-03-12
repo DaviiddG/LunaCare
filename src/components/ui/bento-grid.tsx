@@ -1,12 +1,7 @@
 "use client"
 
 import type { ComponentPropsWithoutRef, ReactNode } from "react"
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
-
-export function cn(...inputs: ClassValue[]) {
-    return twMerge(clsx(inputs))
-}
+import { cn } from "../../lib/utils"
 
 export interface BentoGridProps extends ComponentPropsWithoutRef<"div"> {
     children: ReactNode
@@ -22,8 +17,6 @@ export interface BentoCardProps extends ComponentPropsWithoutRef<"button"> {
     onClick?: () => void
     color: string
     ai?: boolean
-    history?: boolean
-    plus?: boolean
     arrow?: boolean
     lunaIcon?: string
 }
@@ -51,8 +44,6 @@ const BentoCard = ({
     onClick,
     color,
     ai,
-    history,
-    plus,
     arrow,
     lunaIcon,
     ...props

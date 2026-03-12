@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { motion } from 'motion/react';
 import { dbHelpers } from '../lib/db';
 import { useAuth } from '../contexts/AuthContext';
@@ -34,29 +34,32 @@ export function Dashboard() {
     const lunaFileInputRef = useRef<HTMLInputElement>(null);
     const navigate = useNavigate();
 
+    const generateInsight = useCallback(async (stats: Record<string, any>, currentBaby: { id: string, name: string }) => {
+        setInsightLoading(true);
+        setInsightText(null);
+        try {
+            if (!currentBaby) return;
 
+            const babyData = stats[currentBaby.id];
+            const dataContext = `
+Bebé: ${currentBaby.name}
+Última comida: ${babyData?.latestDiet ? timeAgo(babyData.latestDiet.created_at) : "ninguna"}
+Último sueño: ${babyData?.latestSleep ? timeAgo(babyData.latestSleep.created_at) : "ninguno"}
+Último pañal: ${babyData?.latestDiaper ? timeAgo(babyData.latestDiaper.created_at) : "ninguno"}
+`;
 
-    useEffect(() => {
-        if (user) fetchDashboardData();
-
-        const handleRefresh = () => {
-            if (user) fetchDashboardData();
-        };
-
-        window.addEventListener('luna-action-completed', handleRefresh);
-        return () => window.removeEventListener('luna-action-completed', handleRefresh);
-    }, [user]);
-
-    useEffect(() => {
-        const handleSettingsUpdate = () => {
-            setLunaIcon(localStorage.getItem('luna_icon') || '/luna-avatar.png');
-            setLunaProfile(localStorage.getItem('luna_profile') || 'serena');
-        };
-        window.addEventListener('luna-settings-updated', handleSettingsUpdate);
-        return () => window.removeEventListener('luna-settings-updated', handleSettingsUpdate);
+            const { geminiHelpers } = await import('../lib/gemini');
+            const prompt = `Eres Luna, experta en cuidado de bebés. Analiza a ${currentBaby.name} y da un consejo de 1 línea corto y útil. IMPORTANTE: El único bebé del que debes hablar es ${currentBaby.name}, NO inventes nombres.`;
+            const chatModel = [{ role: 'user' as const, parts: [{ text: prompt }] }];
+            const res = await geminiHelpers.sendMessageWithContext(prompt, chatModel, dataContext);
+            if (res.text) setInsightText(res.text);
+        } catch (e) {
+            console.error(e);
+        }
+        setInsightLoading(false);
     }, []);
 
-    const fetchDashboardData = async () => {
+    const fetchDashboardData = useCallback(async () => {
         setIsLoading(true);
         const { data: babyProfiles } = await dbHelpers.getAllBabyProfiles(user!.id);
 
@@ -86,32 +89,29 @@ export function Dashboard() {
             navigate('/add-baby');
         }
         setIsLoading(false);
-    };
+    }, [user, navigate, selectedBaby, generateInsight]);
 
-    const generateInsight = async (stats: any, currentBaby: any) => {
-        setInsightLoading(true);
-        setInsightText(null);
-        try {
-            if (!currentBaby) return;
+    useEffect(() => {
+        if (user) fetchDashboardData();
 
-            const babyData = stats[currentBaby.id];
-            const dataContext = `
-Bebé: ${currentBaby.name}
-Última comida: ${babyData?.latestDiet ? timeAgo(babyData.latestDiet.created_at) : "ninguna"}
-Último sueño: ${babyData?.latestSleep ? timeAgo(babyData.latestSleep.created_at) : "ninguno"}
-Último pañal: ${babyData?.latestDiaper ? timeAgo(babyData.latestDiaper.created_at) : "ninguno"}
-`;
+        const handleRefresh = () => {
+            if (user) fetchDashboardData();
+        };
 
-            const { geminiHelpers } = await import('../lib/gemini');
-            const prompt = `Eres Luna, experta en cuidado de bebés. Analiza a ${currentBaby.name} y da un consejo de 1 línea corto y útil. IMPORTANTE: El único bebé del que debes hablar es ${currentBaby.name}, NO inventes nombres.`;
-            const chatModel = [{ role: 'user' as const, parts: [{ text: prompt }] }];
-            const res = await geminiHelpers.sendMessageWithContext(prompt, chatModel, dataContext);
-            if (res.text) setInsightText(res.text);
-        } catch (e) {
-            console.error(e);
-        }
-        setInsightLoading(false);
-    };
+        window.addEventListener('luna-action-completed', handleRefresh);
+        return () => window.removeEventListener('luna-action-completed', handleRefresh);
+    }, [user, fetchDashboardData]);
+
+    useEffect(() => {
+        const handleSettingsUpdate = () => {
+            setLunaIcon(localStorage.getItem('luna_icon') || '/luna-avatar.png');
+            setLunaProfile(localStorage.getItem('luna_profile') || 'serena');
+        };
+        window.addEventListener('luna-settings-updated', handleSettingsUpdate);
+        return () => window.removeEventListener('luna-settings-updated', handleSettingsUpdate);
+    }, []);
+
+
 
 
 
