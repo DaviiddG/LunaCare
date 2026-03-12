@@ -69,11 +69,11 @@ const BentoCard = ({
                 <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-white/40 dark:bg-white/5 border border-white/40 dark:border-white/10 shadow-sm backdrop-blur-md transition-all duration-500 group-hover:scale-50 group-hover:opacity-0 mb-3">
                     <span className="material-symbols-rounded text-[24px] transform-gpu transition-all duration-300 ease-in-out" style={{ color: color }}>{icon}</span>
                 </div>
-                <div className="transition-all duration-500 group-hover:-translate-y-[62px]">
+                <div className="transition-all duration-500 group-hover:-translate-y-12">
                     <h3 className="text-base font-black uppercase tracking-[0.1em] leading-none mb-1 text-slate-800 dark:text-white transition-all duration-500 group-hover:text-lg">
                         {name}
                     </h3>
-                    <p className="text-[11px] font-bold opacity-60 dark:opacity-40 leading-tight line-clamp-2 text-slate-600 dark:text-slate-300 group-hover:opacity-100 transition-opacity uppercase tracking-tighter">{description}</p>
+                    <p className="text-[11px] font-bold opacity-60 dark:opacity-40 leading-tight line-clamp-1 text-slate-600 dark:text-slate-300 transition-opacity uppercase tracking-tighter">{description}</p>
                 </div>
             </div>
 
@@ -91,7 +91,7 @@ const BentoCard = ({
 
         {/* Big card badges */}
         {className?.includes("col-span-2") && (ai || arrow) && name !== 'Historial' && (
-            <div className="absolute top-4 right-4 bg-white/20 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 backdrop-blur-md opacity-100 transition-opacity duration-300 group-hover:opacity-0 z-10">
+            <div className="absolute top-4 right-4 bg-white/40 dark:bg-white/10 text-slate-800 dark:text-white text-[9px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 backdrop-blur-md z-10">
                 {ai ? (
                     lunaIcon ? <img src={lunaIcon} className="w-3.5 h-3.5 rounded-full object-cover" alt="Luna" /> : <span className="material-symbols-rounded text-[14px]">auto_awesome</span>
                 ) : arrow ? <span className="material-symbols-rounded text-xs">arrow_forward_ios</span> : null}

@@ -19,16 +19,28 @@ export function AppLayout() {
         if (!user) return;
         const { data } = await dbHelpers.getUserSettings(user.id);
         if (data) {
-            if (data.luna_icon) {
+            let changed = false;
+            if (data.luna_icon && data.luna_icon !== localStorage.getItem('luna_icon')) {
                 setLunaIcon(data.luna_icon);
                 localStorage.setItem('luna_icon', data.luna_icon);
+                changed = true;
             }
-            if (data.luna_profile) localStorage.setItem('luna_profile', data.luna_profile);
-            if (data.luna_frequency) localStorage.setItem('luna_frequency', data.luna_frequency);
-            if (data.luna_voice) localStorage.setItem('luna_voice', data.luna_voice);
+            if (data.luna_profile && data.luna_profile !== localStorage.getItem('luna_profile')) {
+                localStorage.setItem('luna_profile', data.luna_profile);
+                changed = true;
+            }
+            if (data.luna_frequency && data.luna_frequency !== localStorage.getItem('luna_frequency')) {
+                localStorage.setItem('luna_frequency', data.luna_frequency);
+                changed = true;
+            }
+            if (data.luna_voice && data.luna_voice !== localStorage.getItem('luna_voice')) {
+                localStorage.setItem('luna_voice', data.luna_voice);
+                changed = true;
+            }
 
-            // Dispatch event for other components that might be using these values
-            window.dispatchEvent(new CustomEvent('luna-settings-updated'));
+            if (changed) {
+                window.dispatchEvent(new CustomEvent('luna-settings-updated'));
+            }
         }
     }, [user]);
 
@@ -75,6 +87,14 @@ export function AppLayout() {
     const handleLogout = async () => {
         setTheme('light');
         localStorage.setItem('theme', 'light');
+        // Limpiar ajustes de Luna para que no se filtren a otro usuario en el mismo navegador
+        localStorage.removeItem('luna_icon');
+        localStorage.removeItem('luna_profile');
+        localStorage.removeItem('luna_frequency');
+        localStorage.removeItem('luna_voice');
+        
+        setLunaIcon('/luna-avatar.png'); // Reset local state icon
+        
         document.documentElement.classList.remove('dark');
         document.documentElement.removeAttribute('data-role');
         await supabase.auth.signOut();

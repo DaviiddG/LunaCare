@@ -18,13 +18,21 @@
     --color-border: #334155;
   }
 
+  html, body {
+    overflow-x: hidden;
+    position: relative;
+    width: 100%;
+  }
+
   body {
     font-family: "Quicksand", sans-serif;
     -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
     @apply bg-background-light dark:bg-[#121212] text-slate-800 dark:text-slate-100 min-h-screen;
     scrollbar-gutter: stable;
     touch-action: manipulation;
-    overflow-x: hidden;
   }
 }
 
@@ -165,6 +173,9 @@
 
 .glass-morphism {
   @apply bg-white/60 dark:bg-[#1A1A1A]/60 backdrop-blur-2xl border border-white/40 dark:border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.08)] dark:shadow-[0_20px_70px_rgba(0,0,0,0.5)];
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 .bg-noise {
