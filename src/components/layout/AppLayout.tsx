@@ -106,7 +106,7 @@ export function AppLayout() {
     return (
         <div className="bg-background-light dark:bg-[#121212] min-h-screen">
             {/* Header logic is now handled in pages or simplified here */}
-            {window.location.pathname !== '/' && window.location.pathname !== '/diapers' && window.location.pathname !== '/diet' && window.location.pathname !== '/reports' && window.location.pathname !== '/bottle' && window.location.pathname !== '/settings' && window.location.pathname !== '/solids' && window.location.pathname !== '/sleep' && (
+            {window.location.pathname !== '/' && window.location.pathname !== '/diapers' && window.location.pathname !== '/diet' && window.location.pathname !== '/reports' && window.location.pathname !== '/bottle' && window.location.pathname !== '/settings' && window.location.pathname !== '/solids' && window.location.pathname !== '/sleep' && window.location.pathname !== '/history' && (
                 <header className="fixed top-0 w-full z-50 bg-background-light/80 dark:bg-[#121212]/80 backdrop-blur-2xl px-6 pt-12 pb-2 border-b border-slate-100 dark:border-slate-800">
                     <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-3">
@@ -128,7 +128,7 @@ export function AppLayout() {
                 </header>
             )}
 
-            <main className={window.location.pathname === '/' || window.location.pathname === '/diapers' || window.location.pathname === '/diet' || window.location.pathname === '/reports' || window.location.pathname === '/bottle' || window.location.pathname === '/settings' || window.location.pathname === '/solids' || window.location.pathname === '/sleep' ? '' : 'pt-28'}>
+            <main className={window.location.pathname === '/' || window.location.pathname === '/diapers' || window.location.pathname === '/diet' || window.location.pathname === '/reports' || window.location.pathname === '/bottle' || window.location.pathname === '/settings' || window.location.pathname === '/solids' || window.location.pathname === '/sleep' || window.location.pathname === '/history' ? '' : 'pt-28'}>
                 <Outlet />
             </main>
 

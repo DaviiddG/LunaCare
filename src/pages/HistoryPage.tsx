@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -6,6 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useBabies } from '../hooks/useBabies';
 import { dbHelpers } from '../lib/db';
 import { motion } from 'motion/react';
+import { cn } from '../lib/utils';
 
 type EventType = 'sleep' | 'diet' | 'bottle' | 'diaper' | 'solids';
 
@@ -21,50 +22,63 @@ interface TimelineEvent {
     note?: string;
     noteColor?: string;
     noteBg?: string;
+    auraColor?: string;
 }
 
-const TYPE_CONFIG: Record<EventType, { title: string; icon: string; dotColor: string; iconColor: string; noteColor: string; noteBg: string }> = {
+const TYPE_CONFIG: Record<EventType, { title: string; icon: string; dotColor: string; iconColor: string; noteColor: string; noteBg: string; auraColor: string }> = {
     sleep: {
         title: 'Sueño',
         icon: 'bedtime',
-        dotColor: '#E0D7FF',
-        iconColor: 'text-primary',
-        noteColor: 'text-primary dark:text-primary',
+        dotColor: '#A5B4FC',
+        iconColor: 'text-indigo-500',
+        noteColor: 'text-indigo-600 dark:text-indigo-400',
         noteBg: 'bg-indigo-50 dark:bg-indigo-900/20',
+        auraColor: 'shadow-indigo-500/20'
     },
     diet: {
         title: 'Lactancia',
-        icon: 'child_care',
-        dotColor: '#FFD3B6',
+        icon: 'favorite',
+        dotColor: '#FDBA74',
         iconColor: 'text-orange-400',
         noteColor: 'text-orange-600 dark:text-orange-400',
         noteBg: 'bg-orange-50 dark:bg-orange-900/20',
+        auraColor: 'shadow-orange-500/20'
     },
     bottle: {
         title: 'Biberón',
-        icon: 'baby_changing_station',
-        dotColor: '#FFB7B2',
-        iconColor: 'text-rose-400',
-        noteColor: 'text-rose-600 dark:text-rose-400',
-        noteBg: 'bg-rose-50 dark:bg-rose-900/20',
+        icon: 'water_drop',
+        dotColor: '#93C5FD',
+        iconColor: 'text-blue-400',
+        noteColor: 'text-blue-600 dark:text-blue-400',
+        noteBg: 'bg-blue-50 dark:bg-blue-900/20',
+        auraColor: 'shadow-blue-500/20'
     },
     diaper: {
         title: 'Pañal',
         icon: 'soap',
-        dotColor: '#FFF9C4',
+        dotColor: '#FDE047',
         iconColor: 'text-yellow-500',
         noteColor: 'text-yellow-700 dark:text-yellow-500',
         noteBg: 'bg-yellow-50 dark:bg-yellow-900/20',
+        auraColor: 'shadow-yellow-500/20'
     },
     solids: {
         title: 'Sólidos',
-        icon: 'restaurant',
-        dotColor: '#A8E6CF',
+        icon: 'potted_plant',
+        dotColor: '#86EFAC',
         iconColor: 'text-green-500',
         noteColor: 'text-green-700 dark:text-green-500',
         noteBg: 'bg-green-50 dark:bg-green-900/20',
+        auraColor: 'shadow-green-500/20'
     },
 };
+
+const MeshBackground = () => (
+    <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none opacity-30 dark:opacity-10">
+        <div className="absolute top-[-20%] left-[-20%] w-[70%] h-[70%] bg-purple-400/20 blur-[150px] rounded-full" />
+        <div className="absolute bottom-[-20%] right-[-20%] w-[80%] h-[80%] bg-blue-400/20 blur-[160px] rounded-full animate-pulse" style={{ animationDelay: '2s' }} />
+    </div>
+);
 
 export function HistoryPage() {
     const { user } = useAuth();
@@ -72,7 +86,7 @@ export function HistoryPage() {
     const navigate = useNavigate();
     const [events, setEvents] = useState<TimelineEvent[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [summary, setSummary] = useState('Cargando actividad de hoy...');
+    const [summary, setSummary] = useState('Analizando actividad...');
     const [lunaIcon, setLunaIcon] = useState(localStorage.getItem('luna_icon') || '/luna-avatar.png');
 
     useEffect(() => {
@@ -81,13 +95,7 @@ export function HistoryPage() {
         return () => window.removeEventListener('luna-settings-updated', handleSync);
     }, []);
 
-    useEffect(() => {
-        if (selectedBaby && user) {
-            fetchHistory();
-        }
-    }, [selectedBaby, user]);
-
-    const fetchHistory = async () => {
+    const fetchHistory = useCallback(async () => {
         if (!selectedBaby) return;
         setIsLoading(true);
 
@@ -101,13 +109,11 @@ export function HistoryPage() {
 
             const allEvents: TimelineEvent[] = [];
 
-            // Helper: sort data newest-first (works for any timestamp field)
             const newest = (data: any[] | null, dateField = 'created_at') =>
                 [...(data || [])].sort(
                     (a, b) => new Date(b[dateField] || b.created_at).getTime() - new Date(a[dateField] || a.created_at).getTime()
                 );
 
-            // Helper: format minutes → "Xh Ym" or "Ym"
             const fmtMins = (mins: number) => {
                 const h = Math.floor(mins / 60);
                 const m = mins % 60;
@@ -119,7 +125,6 @@ export function HistoryPage() {
                 const cfg = TYPE_CONFIG.sleep;
                 let duration = '';
                 if (log.duration !== undefined && log.duration !== null) {
-                    // duration may be stored as number (minutes) or string
                     const mins = typeof log.duration === 'number' ? log.duration : parseFloat(log.duration);
                     duration = isNaN(mins) ? String(log.duration) : fmtMins(mins);
                 } else if (log.start_time && log.end_time) {
@@ -140,10 +145,11 @@ export function HistoryPage() {
                     note: log.notes || undefined,
                     noteColor: cfg.noteColor,
                     noteBg: cfg.noteBg,
+                    auraColor: cfg.auraColor
                 });
             });
 
-            // Diet (lactancia / biberón)
+            // Diet
             newest(dietRes.data).slice(0, 20).forEach((log: any) => {
                 const isBottle = log.type?.startsWith('bottle_');
                 const cfg = isBottle ? TYPE_CONFIG.bottle : TYPE_CONFIG.diet;
@@ -164,24 +170,26 @@ export function HistoryPage() {
                     note: log.notes || undefined,
                     noteColor: cfg.noteColor,
                     noteBg: cfg.noteBg,
+                    auraColor: cfg.auraColor
                 });
             });
 
             // Diapers
             newest(diaperRes.data).slice(0, 20).forEach((log: any) => {
                 const cfg = TYPE_CONFIG.diaper;
-                const typeLabel = log.type === 'wet' ? 'Pis' : log.type === 'dirty' ? 'Caca' : log.type === 'both' ? 'Pis y caca' : log.type || 'Cambio';
                 allEvents.push({
                     id: `diaper-${log.id}`,
                     type: 'diaper',
                     title: cfg.title,
-                    subtitle: `${typeLabel}${log.notes ? ` • ${log.notes}` : ''}`,
+                    subtitle: log.status || 'Cambio registrado',
                     time: new Date(log.created_at),
                     dotColor: cfg.dotColor,
                     iconColor: cfg.iconColor,
                     icon: cfg.icon,
+                    note: log.observations || undefined,
                     noteColor: cfg.noteColor,
                     noteBg: cfg.noteBg,
+                    auraColor: cfg.auraColor
                 });
             });
 
@@ -189,52 +197,50 @@ export function HistoryPage() {
             newest(solidsRes.data).slice(0, 20).forEach((log: any) => {
                 const cfg = TYPE_CONFIG.solids;
                 const foods = Array.isArray(log.foods) ? log.foods.join(', ') : log.foods || '';
-                const detail = [foods, log.amount ? `${log.amount} cucharadas` : null].filter(Boolean).join(' • ');
                 allEvents.push({
                     id: `solids-${log.id}`,
                     type: 'solids',
                     title: cfg.title,
-                    subtitle: detail || 'Sólidos registrados',
+                    subtitle: foods || 'Sólidos registrados',
                     time: new Date(log.created_at),
                     dotColor: cfg.dotColor,
                     iconColor: cfg.iconColor,
                     icon: cfg.icon,
-                    note: log.notes || undefined,
+                    note: log.observations || undefined,
                     noteColor: cfg.noteColor,
                     noteBg: cfg.noteBg,
+                    auraColor: cfg.auraColor
                 });
             });
 
-            // Global sort newest first, keep top 60
             allEvents.sort((a, b) => b.time.getTime() - a.time.getTime());
             setEvents(allEvents.slice(0, 60));
 
-
-            // Build AI summary
+            // Summary logic
             const today = new Date();
             const todayEvents = allEvents.filter(e => e.time.toDateString() === today.toDateString());
             const sleepCount = todayEvents.filter(e => e.type === 'sleep').length;
             const feedCount = todayEvents.filter(e => e.type === 'diet' || e.type === 'bottle').length;
-            const solidCount = todayEvents.filter(e => e.type === 'solids').length;
             const diaperCount = todayEvents.filter(e => e.type === 'diaper').length;
 
             if (todayEvents.length === 0) {
-                setSummary(`Aún no hay registros de hoy para ${selectedBaby.name}. ¡Empieza a registrar sus actividades!`);
+                setSummary(`Aún no hay actividad registrada hoy.`);
             } else {
-                const parts = [];
-                if (feedCount > 0) parts.push(`**${feedCount} toma${feedCount !== 1 ? 's' : ''}**`);
-                if (sleepCount > 0) parts.push(`**${sleepCount} siesta${sleepCount !== 1 ? 's' : ''}**`);
-                if (solidCount > 0) parts.push(`**${solidCount} comida${solidCount !== 1 ? 's' : ''} sólidas**`);
-                if (diaperCount > 0) parts.push(`**${diaperCount} pañal${diaperCount !== 1 ? 'es' : ''}**`);
-                setSummary(`Hoy ${selectedBaby.name} tuvo ${parts.join(', ')}.`);
+                setSummary(`Hoy llevamos ${feedCount} tomas, ${sleepCount} siestas y ${diaperCount} cambios.`);
             }
-        } catch (error) {
-            console.error('Error fetching history:', error);
+
+        } catch (e) {
             setSummary('No se pudo cargar el historial.');
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [selectedBaby]);
+
+    useEffect(() => {
+        if (selectedBaby && user) {
+            fetchHistory();
+        }
+    }, [selectedBaby, user, fetchHistory]);
 
     const groupedEvents = events.reduce<Record<string, TimelineEvent[]>>((acc, event) => {
         const key = format(event.time, 'EEEE, d MMMM', { locale: es });
@@ -243,140 +249,139 @@ export function HistoryPage() {
         return acc;
     }, {});
 
-    // Convert summary markdown bold to JSX
-    const renderSummary = (text: string) => {
-        const parts = text.split(/\*\*(.*?)\*\*/g);
-        return parts.map((part, i) =>
-            i % 2 === 1
-                ? <span key={i} className="font-bold text-primary">{part}</span>
-                : <span key={i}>{part}</span>
-        );
-    };
-
     return (
-        <div className="min-h-screen bg-[#FDFCFE] dark:bg-[#121212] pb-32">
-            {/* Header */}
-            <div className="fixed top-0 w-full z-50 bg-[#FDFCFE]/80 dark:bg-[#121212]/80 backdrop-blur-xl px-6 pt-12 pb-4">
-                <div className="flex justify-between items-center">
+        <div className="relative min-h-screen bg-[#F8FAFC] dark:bg-[#050811] pb-32 font-['Manrope',sans-serif] text-slate-900 dark:text-white selection:bg-blue-200/30 overflow-x-hidden">
+            <MeshBackground />
+
+            {/* Premium Header */}
+            <div className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-3xl border-b border-white/40 dark:border-white/5 py-4 px-6 md:px-10">
+                <div className="max-w-2xl mx-auto flex items-center justify-between">
                     <button
-                        onClick={() => navigate(-1)}
-                        className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm border border-slate-100 dark:border-slate-700 active:scale-95 transition-transform"
+                        onClick={() => navigate('/')}
+                        className="flex size-11 items-center justify-center rounded-2xl bg-white/40 dark:bg-white/5 border border-slate-200 dark:border-white/10 backdrop-blur-xl hover:bg-white/60 dark:hover:bg-white/10 active:scale-95 transition-all shadow-sm"
                     >
-                        <span className="material-symbols-rounded text-slate-600 dark:text-slate-300">chevron_left</span>
+                        <span className="material-symbols-rounded text-slate-700 dark:text-white/70">arrow_back_ios_new</span>
                     </button>
-                    <h1 className="text-lg font-bold text-slate-800 dark:text-white">
-                        {selectedBaby ? `Historial de ${selectedBaby.name}` : 'Historial'}
-                    </h1>
-                    <div className="w-10 h-10" />
+                    <div className="flex flex-col items-center">
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-500 mb-1">Momentos</span>
+                        <h2 className="text-xl font-black tracking-tight text-slate-900 dark:text-white uppercase transition-all duration-500">Historial</h2>
+                    </div>
+                    <div className="size-11" />
                 </div>
             </div>
 
-            <main className="pt-32 px-5">
-                {/* Luna AI Summary */}
-                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-slate-800 dark:to-indigo-950 p-5 mb-6 border border-white dark:border-white/10 shadow-sm">
-                    <div className="flex items-center space-x-3 mb-3">
-                        <div className="w-10 h-10 rounded-full border-2 border-white dark:border-slate-700 overflow-hidden shadow-sm">
-                            <img src={lunaIcon} alt="Luna AI" className="w-full h-full object-cover" />
+            <main className="relative z-10 max-w-2xl mx-auto px-5 pt-32">
+                {/* Crystal Summary Card */}
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="relative mb-12 group"
+                >
+                    <div className="absolute -inset-1 bg-gradient-to-r from-blue-400/20 via-purple-400/20 to-pink-400/20 rounded-[2.5rem] blur-2xl opacity-40 group-hover:opacity-60 transition-opacity" />
+                    <div className="relative p-7 rounded-[2.5rem] bg-white/60 dark:bg-white/[0.03] border border-white dark:border-white/10 backdrop-blur-3xl shadow-2xl shadow-slate-200/50 dark:shadow-none overflow-hidden">
+                        <div className="flex items-center gap-5">
+                            <div className="relative size-16 shrink-0 rounded-[1.2rem] border-2 border-white dark:border-white/10 overflow-hidden shadow-xl">
+                                <img src={lunaIcon} alt="Luna" className="w-full h-full object-cover" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+                            </div>
+                            <div className="flex flex-col gap-1.5">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-blue-500">Resumen del Día</span>
+                                <p className="text-base font-bold text-slate-800 dark:text-white/90 leading-tight">{summary}</p>
+                            </div>
                         </div>
-                        <span className="text-xs font-bold text-primary uppercase tracking-wider">Resumen de hoy</span>
                     </div>
-                    <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed">
-                        {isLoading ? 'Cargando actividad de hoy...' : renderSummary(summary)}
-                    </p>
-                </div>
+                </motion.div>
 
                 {isLoading ? (
                     <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-                        <span className="material-symbols-rounded text-4xl mb-3 animate-spin">progress_activity</span>
-                        <p className="text-sm">Cargando historial...</p>
-                    </div>
-                ) : events.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-                        <span className="material-symbols-rounded text-5xl mb-3">history</span>
-                        <p className="text-sm font-medium">Aún no hay actividades registradas</p>
-                        <p className="text-xs mt-1">Los registros aparecerán aquí</p>
+                        <div className="size-14 rounded-full border-4 border-slate-200 border-t-blue-500 animate-spin mb-4" />
+                        <p className="text-xs font-black uppercase tracking-widest">Sincronizando timeline...</p>
                     </div>
                 ) : (
-                    <div className="flex flex-col gap-0">
+                    <div className="space-y-12">
                         {Object.entries(groupedEvents).map(([dateLabel, dayEvents], groupIdx) => (
-                            <motion.div
-                                key={dateLabel}
-                                className="mb-6"
-                                initial={{ opacity: 0, y: 16 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.35, delay: groupIdx * 0.08 }}
-                            >
-                                {/* Date separator */}
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="h-px flex-1 bg-slate-100 dark:bg-slate-800" />
-                                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 capitalize">
-                                        {dateLabel}
-                                    </span>
-                                    <div className="h-px flex-1 bg-slate-100 dark:bg-slate-800" />
-                                </div>
+                            <div key={dateLabel} className="relative">
+                                {/* Date Ribbon */}
+                                <motion.div 
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: groupIdx * 0.1 }}
+                                    className="sticky top-24 z-20 flex items-center justify-center mb-8"
+                                >
+                                    <div className="px-6 py-2 rounded-full bg-slate-900/90 dark:bg-white/10 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-xl">
+                                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white whitespace-nowrap capitalize">
+                                            {dateLabel}
+                                        </span>
+                                    </div>
+                                </motion.div>
 
-                                {/* Timeline */}
-                                <div className="relative">
-                                    {/* Vertical line */}
-                                    <div
-                                        className="absolute dark:opacity-20"
-                                        style={{
-                                            left: '27px',
-                                            top: 0,
-                                            bottom: 0,
-                                            width: '2px',
-                                            background: 'linear-gradient(to bottom, transparent, #E2E8F0 10%, #E2E8F0 90%, transparent)',
-                                        }}
-                                    />
+                                <div className="space-y-6 relative ml-4 md:ml-10">
+                                    {/* Glowing Timeline Line */}
+                                    <div className="absolute left-[23px] top-4 bottom-4 w-1 bg-slate-200 dark:bg-white/5 rounded-full overflow-hidden">
+                                        <motion.div 
+                                            initial={{ height: 0 }}
+                                            animate={{ height: '100%' }}
+                                            transition={{ duration: 1.5, ease: "easeOut" }}
+                                            className="w-full bg-gradient-to-b from-blue-400 via-purple-400 to-pink-400 opacity-50 shadow-[0_0_15px_rgba(96,165,250,0.5)]"
+                                        />
+                                    </div>
+
                                     {dayEvents.map((event, eventIdx) => (
                                         <motion.div
                                             key={event.id}
-                                            className="relative flex items-start space-x-4 mb-5"
-                                            initial={{ opacity: 0, x: -12 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            transition={{ duration: 0.3, delay: groupIdx * 0.08 + eventIdx * 0.05 }}
+                                            initial={{ opacity: 0, y: 30 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: (groupIdx * 0.1) + (eventIdx * 0.05) }}
+                                            className="relative flex items-start gap-8"
                                         >
-                                            {/* Dot */}
-                                            <div className="relative z-10 w-14 flex-shrink-0 flex justify-center">
-                                                <div
-                                                    className="w-4 h-4 rounded-full border-4 border-white dark:border-slate-900 mt-6 shadow-sm"
-                                                    style={{ backgroundColor: event.dotColor }}
+                                            {/* Connector Node */}
+                                            <div className="relative z-10 size-12 shrink-0 rounded-[1.2rem] bg-white dark:bg-slate-900 border border-slate-100 dark:border-white/10 shadow-xl flex items-center justify-center translate-y-2 group transition-all">
+                                                <div 
+                                                    className={cn("absolute inset-2 rounded-lg opacity-20 blur-sm group-hover:blur-md transition-all", event.dotColor === '#A5B4FC' ? 'bg-indigo-400' : event.dotColor === '#FDBA74' ? 'bg-orange-400' : event.dotColor === '#93C5FD' ? 'bg-blue-400' : event.dotColor === '#FDE047' ? 'bg-yellow-400' : 'bg-green-400')}
                                                 />
+                                                <span className={cn("material-symbols-rounded text-2xl relative z-10", event.iconColor)}>
+                                                    {event.icon}
+                                                </span>
                                             </div>
 
-                                            {/* Card */}
-                                            <div className="flex-1 bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 active:scale-[0.98] transition-transform">
-                                                <div className="flex justify-between items-start mb-1">
-                                                    <div className="flex items-center space-x-2">
-                                                        <span className={`material-symbols-rounded ${event.iconColor}`}>
-                                                            {event.icon}
-                                                        </span>
-                                                        <h3 className="font-bold text-slate-800 dark:text-white">
+                                            {/* Premium Activity Card */}
+                                            <div className="flex-1 group pt-1 pb-1">
+                                                <div className={cn(
+                                                    "relative p-6 rounded-[2rem] bg-white/40 dark:bg-white/[0.02] border border-white dark:border-white/10 backdrop-blur-xl shadow-lg transition-all duration-500 overflow-hidden group-active:scale-[0.98]",
+                                                    "hover:shadow-2xl hover:-translate-y-1 dark:hover:bg-white/[0.04] shadow-slate-200/60 dark:shadow-none"
+                                                )}>
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <h3 className="text-base font-black tracking-tight text-slate-900 dark:text-white/90">
                                                             {event.title}
                                                         </h3>
-                                                    </div>
-                                                    <span className="text-[11px] font-medium text-slate-400">
-                                                        {format(event.time, 'hh:mm a')}
-                                                    </span>
-                                                </div>
-                                                <p className="text-sm text-slate-600 dark:text-slate-400">
-                                                    {event.subtitle}
-                                                </p>
-                                                {event.note && (
-                                                    <div className={`mt-3 flex items-start space-x-2 ${event.noteBg} p-2 rounded-xl`}>
-                                                        <span className={`material-symbols-rounded text-[16px] ${event.noteColor} mt-0.5`}>
-                                                            auto_awesome
+                                                        <span className="text-[10px] font-black tabular-nums text-slate-400 tracking-wider">
+                                                            {format(event.time, 'hh:mm a')}
                                                         </span>
-                                                        <p className={`text-[11px] ${event.noteColor} italic`}>
-                                                            {event.note}
-                                                        </p>
                                                     </div>
-                                                )}
+                                                    
+                                                    <p className="text-sm font-bold text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
+                                                        {event.subtitle}
+                                                    </p>
+
+                                                    {event.note && (
+                                                        <div className={cn("p-4 rounded-[1.5rem] border border-white/50 dark:border-white/5 shadow-inner", event.noteBg)}>
+                                                            <div className="flex gap-3">
+                                                                <span className={cn("material-symbols-rounded text-lg mt-0.5", event.noteColor)}>auto_awesome</span>
+                                                                <p className={cn("text-xs font-bold leading-relaxed italic", event.noteColor)}>
+                                                                    {event.note}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Glow Aura */}
+                                                    <div className={cn("absolute -right-10 -bottom-10 size-32 opacity-0 group-hover:opacity-20 blur-3xl transition-opacity rounded-full bg-gradient-to-br", event.iconColor.includes('indigo') ? 'from-indigo-400' : event.iconColor.includes('orange') ? 'from-orange-400' : event.iconColor.includes('blue') ? 'from-blue-400' : event.iconColor.includes('yellow') ? 'from-yellow-400' : 'from-green-400')} />
+                                                </div>
                                             </div>
                                         </motion.div>
                                     ))}
                                 </div>
-                            </motion.div>
+                            </div>
                         ))}
                     </div>
                 )}

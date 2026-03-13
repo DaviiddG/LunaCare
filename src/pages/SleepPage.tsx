@@ -5,6 +5,8 @@ import { useCallback } from 'react';
 import { useBabies } from '../hooks/useBabies';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
+import { motion, AnimatePresence } from 'motion/react';
+import { cn } from '../lib/utils';
 
 function useTimer(startTime: Date | null) {
     const [elapsed, setElapsed] = useState('00:00:00');
@@ -22,7 +24,6 @@ function useTimer(startTime: Date | null) {
             update();
             intervalRef.current = setInterval(update, 1000);
         } else {
-            // Avoid setting state synchronously in effect body
             setElapsed(prev => prev === '00:00:00' ? prev : '00:00:00');
             if (intervalRef.current) clearInterval(intervalRef.current);
         }
@@ -31,6 +32,14 @@ function useTimer(startTime: Date | null) {
 
     return elapsed;
 }
+
+const NebulaBackground = () => (
+    <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#3994ef]/10 dark:bg-[#3994ef]/20 blur-[120px] rounded-full animate-pulse" style={{ animationDuration: '8s' }} />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-[#9d8cf2]/10 dark:bg-[#9d8cf2]/15 blur-[150px] rounded-full animate-pulse" style={{ animationDuration: '12s' }} />
+        <div className="absolute top-[20%] right-[10%] w-[30%] h-[30%] bg-[#4f46e5]/5 dark:bg-[#4f46e5]/10 blur-[100px] rounded-full" />
+    </div>
+);
 
 export function SleepPage() {
     const { user } = useAuth();
@@ -50,7 +59,6 @@ export function SleepPage() {
         return () => window.removeEventListener('luna-settings-updated', handleSync);
     }, []);
 
-    // Manual entry
     const [manualStart, setManualStart] = useState('');
     const [manualEnd, setManualEnd] = useState('');
     const [notes, setNotes] = useState('');
@@ -85,12 +93,9 @@ export function SleepPage() {
     }, [selectedBaby]);
 
     useEffect(() => {
-        // Always reset timer state first when baby changes
         setIsSleeping(false);
         setStartTime(null);
-
         if (selectedBaby) {
-            // Check if THIS baby specifically has an active sleep session
             const savedStart = localStorage.getItem(`sleep_start_${selectedBaby.id}`);
             if (savedStart) {
                 setStartTime(new Date(savedStart));
@@ -102,7 +107,6 @@ export function SleepPage() {
 
     const handleToggleSleep = async () => {
         if (!user || !selectedBaby) return;
-
         if (!isSleeping) {
             const now = new Date();
             setStartTime(now);
@@ -140,7 +144,6 @@ export function SleepPage() {
     const handleManualSave = async () => {
         if (!user || !selectedBaby || !manualStart || !manualEnd) return;
         setManualLoading(true);
-
         const today = format(new Date(), 'yyyy-MM-dd');
         const startISO = `${today}T${manualStart}:00`;
         const endISO = `${today}T${manualEnd}:00`;
@@ -172,152 +175,230 @@ export function SleepPage() {
     };
 
     return (
-        <div className="bg-[#f6f7f8] dark:bg-[#101922] min-h-screen pb-28 font-['Manrope',sans-serif] text-slate-900 dark:text-slate-100">
+        <div className="relative bg-[#F8FAFC] dark:bg-[#050811] min-h-screen pb-28 font-['Manrope',sans-serif] text-slate-900 dark:text-white selection:bg-[#3994ef]/30">
+            <NebulaBackground />
 
-            {/* Top Bar */}
-            <div className="flex items-center p-4 pb-2 justify-between sticky top-0 bg-[#f6f7f8]/80 dark:bg-[#101922]/80 backdrop-blur-md z-10">
-                <button
-                    onClick={() => navigate('/')}
-                    className="flex size-10 shrink-0 items-center justify-center cursor-pointer rounded-full hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition-colors"
+            {/* Content Container */}
+            <div className="relative z-10 max-w-lg mx-auto px-4">
+                {/* Header */}
+                <motion.div 
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center py-6 justify-between transition-all"
                 >
-                    <span className="material-symbols-outlined text-slate-600 dark:text-slate-300">arrow_back_ios</span>
-                </button>
-                <h2 className="text-lg font-bold leading-tight tracking-tight flex-1 text-center pr-10">Registro de Sueño</h2>
-            </div>
+                    <button
+                        onClick={() => navigate('/')}
+                        className="flex size-11 items-center justify-center rounded-2xl bg-white/20 dark:bg-white/5 border border-slate-200 dark:border-white/10 backdrop-blur-xl hover:bg-white/40 dark:hover:bg-white/10 active:scale-95 transition-all shadow-sm"
+                    >
+                        <span className="material-symbols-rounded text-slate-600 dark:text-white/70">arrow_back_ios_new</span>
+                    </button>
+                    <div className="flex flex-col items-center">
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#3994ef] mb-1">Cuidado Infantil</span>
+                        <h2 className="text-xl font-black tracking-tight text-slate-900 dark:text-white">Registro de Sueño</h2>
+                    </div>
+                    <div className="size-11" /> {/* Spacer */}
+                </motion.div>
 
-            {/* Luna AI Insight Card */}
-            <div className="px-4 pt-2 pb-2">
-                <div className="flex flex-col items-stretch rounded-2xl shadow-sm bg-white dark:bg-slate-800 border border-[#3994ef]/10 overflow-hidden">
-                    <div className="flex items-center gap-4 p-4">
-                        <div className="size-12 shrink-0 rounded-full border-2 border-[#3994ef]/20 overflow-hidden shadow-sm">
-                            <img src={lunaIcon} alt="Luna AI" className="w-full h-full object-cover" />
+                {/* Luna Card */}
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.2 }}
+                    className="relative mb-8"
+                >
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-[#3994ef]/30 to-[#9d8cf2]/30 rounded-[2rem] blur-xl opacity-50" />
+                    <div className="relative p-5 rounded-[2rem] bg-white/40 dark:bg-white/[0.03] border border-white dark:border-white/10 backdrop-blur-2xl overflow-hidden group shadow-xl shadow-slate-200/50 dark:shadow-none">
+                        <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                            <span className="material-symbols-rounded text-6xl">auto_awesome</span>
                         </div>
-                        <div className="flex flex-col gap-1">
-                            <p className="text-[#3994ef] text-xs font-bold uppercase tracking-wider">Luna AI</p>
-                            <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">{insightText}</p>
+                        <div className="flex items-start gap-4">
+                            <div className="size-14 shrink-0 rounded-2xl border-2 border-slate-200 dark:border-white/10 overflow-hidden shadow-lg relative">
+                                <img src={lunaIcon} alt="Luna AI" className="w-full h-full object-cover" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                            </div>
+                            <div className="flex flex-col gap-1.5">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-[#3994ef]">Asistente Luna</span>
+                                <p className="text-sm font-bold leading-relaxed text-slate-700 dark:text-white/80">{insightText}</p>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
+                </motion.div>
 
-            {/* Timer / Circular Control Section */}
-            <div className="flex flex-col items-center py-8 px-4">
-                <div className="relative flex items-center justify-center size-60 mb-8">
-                    {/* Circular Track */}
-                    <div className="absolute inset-0 rounded-full border-8 border-[#3994ef]/10"></div>
-                    {/* Circular Progress (animated when sleeping) */}
-                    {isSleeping ? (
-                        <div className="absolute inset-0 rounded-full border-8 border-transparent border-t-[#3994ef] border-r-[#3994ef] rotate-45 animate-spin" style={{ animationDuration: '3s' }}></div>
-                    ) : (
-                        <div className="absolute inset-0 rounded-full border-8 border-transparent border-t-[#9d8cf2] border-r-[#9d8cf2] rotate-45"></div>
-                    )}
-                    <div className="flex flex-col items-center gap-1 z-10">
-                        <span className="text-4xl font-extrabold tracking-tight tabular-nums">{elapsed}</span>
-                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">
-                            {isSleeping ? 'Durmiendo...' : 'Tiempo dormido'}
-                        </span>
-                        {startTime && (
-                            <span className="text-[11px] text-slate-400 mt-1">Desde las {format(startTime, 'HH:mm')}</span>
+                {/* Main Control */}
+                <div className="flex flex-col items-center py-8">
+                    <div className="relative flex items-center justify-center size-72 mb-10">
+                        {/* Orbital Ring 1 */}
+                        <div className="absolute inset-0 rounded-full border border-white/[0.05]" />
+                        {/* Orbital Ring 2 */}
+                        <div className="absolute inset-4 rounded-full border border-white/[0.03]" />
+                        
+                        {/* Main Circle */}
+                        <motion.div 
+                            animate={{ 
+                                scale: isSleeping ? [1, 1.02, 1] : 1,
+                                rotate: isSleeping ? 360 : 0
+                            }}
+                            transition={{ 
+                                scale: { duration: 4, repeat: Infinity, ease: "easeInOut" },
+                                rotate: { duration: 15, repeat: Infinity, ease: "linear" }
+                            }}
+                            className="absolute inset-8 rounded-full border-2 border-dashed border-[#3994ef]/20"
+                        />
+                        
+                        {/* Timer Glass */}
+                        <div className="relative z-10 flex flex-col items-center justify-center size-48 rounded-full bg-white/40 dark:bg-white/[0.02] border border-white dark:border-white/10 backdrop-blur-3xl shadow-[0_15px_45px_rgba(57,148,239,0.1)] dark:shadow-none">
+                            <AnimatePresence mode="wait">
+                                <motion.span 
+                                    key={elapsed}
+                                    initial={{ opacity: 0.8, scale: 0.98 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className="text-5xl font-black tracking-tighter tabular-nums text-slate-900 dark:text-white drop-shadow-glow"
+                                >
+                                    {elapsed.split(':').slice(0, 2).join(':')}
+                                    <span className="text-2xl opacity-40">:{elapsed.split(':')[2]}</span>
+                                </motion.span>
+                            </AnimatePresence>
+                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#3994ef] mt-2">
+                                {isSleeping ? 'Tiempo Activo' : 'Sesión Lista'}
+                            </span>
+                        </div>
+                        
+                        {/* Rotating Star */}
+                        {isSleeping && (
+                            <motion.div 
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
+                                className="absolute inset-0 p-1"
+                            >
+                                <div className="size-4 bg-[#3994ef] rounded-full shadow-[0_0_20px_#3994ef] blur-[2px]" />
+                            </motion.div>
                         )}
                     </div>
-                </div>
 
-                {/* Main Toggle Button */}
-                <button
-                    onClick={handleToggleSleep}
-                    disabled={loading || !selectedBaby}
-                    className={`flex min-w-[200px] cursor-pointer items-center justify-center rounded-full h-14 px-8 text-white text-base font-bold shadow-lg active:scale-95 transition-all duration-300 ${isSleeping
-                        ? 'bg-orange-400 shadow-orange-300/40'
-                        : 'bg-[#3994ef] shadow-[#3994ef]/30'
-                        } disabled:opacity-50`}
-                >
-                    <span className="material-symbols-outlined mr-2 text-xl">
-                        {isSleeping ? 'wb_sunny' : 'bedtime'}
-                    </span>
-                    <span>{loading ? 'Guardando...' : isSleeping ? 'Despertar' : '¡A dormir!'}</span>
-                </button>
-            </div>
-
-            {/* Quick Actions: Sleep Type */}
-            <div className="flex justify-center gap-4 px-4 py-2">
-                <button
-                    onClick={() => setSleepType('siesta')}
-                    className={`flex flex-1 items-center justify-center rounded-xl h-12 text-sm font-bold border transition-colors ${sleepType === 'siesta'
-                        ? 'bg-[#3994ef] text-white border-[#3994ef]'
-                        : 'bg-[#3994ef]/10 text-[#3994ef] border-[#3994ef]/20'
-                        }`}
-                >
-                    <span className="material-symbols-outlined text-sm mr-2">wb_sunny</span>
-                    Siesta
-                </button>
-                <button
-                    onClick={() => setSleepType('nocturno')}
-                    className={`flex flex-1 items-center justify-center rounded-xl h-12 text-sm font-bold border transition-colors ${sleepType === 'nocturno'
-                        ? 'bg-[#3994ef] text-white border-[#3994ef]'
-                        : 'bg-[#3994ef]/10 text-[#3994ef] border-[#3994ef]/20'
-                        }`}
-                >
-                    <span className="material-symbols-outlined text-sm mr-2">dark_mode</span>
-                    Sueño Nocturno
-                </button>
-            </div>
-
-            {/* Manual Entry Section */}
-            <div className="p-4 mt-6">
-                <h3 className="text-md font-bold mb-4 px-1">Registro Manual</h3>
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-2">
-                        <label className="text-xs font-semibold text-slate-500 px-1">Inicio</label>
-                        <div className="flex h-14 items-center rounded-xl px-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 gap-2">
-                            <span className="material-symbols-outlined text-slate-400 text-xl">schedule</span>
-                            <input
-                                type="time"
-                                value={manualStart}
-                                onChange={e => setManualStart(e.target.value)}
-                                className="flex-1 text-lg font-bold bg-transparent border-none outline-none text-slate-900 dark:text-white"
-                            />
+                    {/* Action Buttons */}
+                    <div className="w-full flex flex-col gap-6">
+                        <div className="flex gap-4">
+                            <button
+                                onClick={() => setSleepType('siesta')}
+                                className={cn(
+                                    "flex-1 h-14 rounded-2xl font-black uppercase tracking-widest text-[11px] flex items-center justify-center gap-2 transition-all",
+                                    sleepType === 'siesta' 
+                                        ? "bg-slate-900 dark:bg-white text-white dark:text-black shadow-xl shadow-slate-200 dark:shadow-[0_0_25px_rgba(255,255,255,0.2)]" 
+                                        : "bg-white/40 dark:bg-white/5 text-slate-400 dark:text-white/40 border border-slate-200 dark:border-white/10 shadow-sm"
+                                )}
+                            >
+                                <span className="material-symbols-rounded text-lg">light_mode</span>
+                                Siesta
+                            </button>
+                            <button
+                                onClick={() => setSleepType('nocturno')}
+                                className={cn(
+                                    "flex-1 h-14 rounded-2xl font-black uppercase tracking-widest text-[11px] flex items-center justify-center gap-2 transition-all",
+                                    sleepType === 'nocturno' 
+                                        ? "bg-slate-900 dark:bg-white text-white dark:text-black shadow-xl shadow-slate-200 dark:shadow-[0_0_25px_rgba(255,255,255,0.2)]" 
+                                        : "bg-white/40 dark:bg-white/5 text-slate-400 dark:text-white/40 border border-slate-200 dark:border-white/10 shadow-sm"
+                                )}
+                            >
+                                <span className="material-symbols-rounded text-lg">nightlight</span>
+                                Noche
+                            </button>
                         </div>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <label className="text-xs font-semibold text-slate-500 px-1">Fin</label>
-                        <div className="flex h-14 items-center rounded-xl px-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 gap-2">
-                            <span className="material-symbols-outlined text-slate-400 text-xl">check_circle</span>
-                            <input
-                                type="time"
-                                value={manualEnd}
-                                onChange={e => setManualEnd(e.target.value)}
-                                className="flex-1 text-lg font-bold bg-transparent border-none outline-none text-slate-900 dark:text-white"
-                            />
-                        </div>
+
+                        <button
+                            onClick={handleToggleSleep}
+                            disabled={loading || !selectedBaby}
+                            className={cn(
+                                "group relative h-20 rounded-[2rem] overflow-hidden transition-all duration-500",
+                                isSleeping 
+                                    ? "bg-white dark:bg-white text-black border border-slate-200 dark:border-transparent active:scale-[0.98] shadow-lg shadow-slate-100 dark:shadow-none" 
+                                    : "bg-slate-900 dark:bg-gradient-to-r dark:from-[#3994ef] dark:to-[#9d8cf2] text-white shadow-[0_20px_40px_rgba(57,148,239,0.3)] dark:shadow-[0_20px_40px_rgba(57,148,239,0.3)] active:scale-95"
+                            )}
+                        >
+                            <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="relative z-10 flex items-center justify-center gap-4">
+                                <span className="material-symbols-rounded text-3xl animate-bounce-slow">
+                                    {isSleeping ? 'notifications_active' : 'bedtime'}
+                                </span>
+                                <span className="text-lg font-black uppercase tracking-tight">
+                                    {loading ? 'Procesando...' : isSleeping ? 'Despertar' : '¡A dormir!'}
+                                </span>
+                            </div>
+                        </button>
                     </div>
                 </div>
-            </div>
 
-            {/* Notes Section */}
-            <div className="px-4 pb-2">
-                <div className="flex flex-col gap-2">
-                    <label className="text-xs font-semibold text-slate-500 px-1">Notas</label>
-                    <textarea
-                        value={notes}
-                        onChange={e => setNotes(e.target.value)}
-                        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-[#3994ef] outline-none resize-none text-sm"
-                        placeholder="¿Cómo despertó hoy?"
-                        rows={3}
-                    />
-                </div>
-            </div>
-
-            {/* Save Button */}
-            <div className="px-4 mt-4 mb-6">
-                <button
-                    onClick={handleManualSave}
-                    disabled={manualLoading || !manualStart || !manualEnd || !selectedBaby}
-                    className="w-full flex cursor-pointer items-center justify-center rounded-xl h-14 bg-[#9d8cf2] text-white text-base font-bold shadow-lg shadow-[#9d8cf2]/20 active:scale-[0.98] transition-all disabled:opacity-50"
+                {/* Manual Section */}
+                <motion.div 
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className="mt-10 p-6 rounded-[2.5rem] bg-white/40 dark:bg-white/[0.02] border border-white dark:border-white/10 backdrop-blur-xl mb-10 shadow-xl shadow-slate-200/50 dark:shadow-none"
                 >
-                    <span className="material-symbols-outlined mr-2">save</span>
-                    {manualSaved ? '¡Guardado!' : manualLoading ? 'Guardando...' : 'Guardar Registro'}
-                </button>
+                    <div className="flex items-center gap-2 mb-6">
+                        <div className="size-8 rounded-lg bg-[#3994ef]/10 dark:bg-[#3994ef]/20 flex items-center justify-center">
+                            <span className="material-symbols-rounded text-[#3994ef] text-sm">edit_note</span>
+                        </div>
+                        <h3 className="text-sm font-black uppercase tracking-widest text-slate-800 dark:text-white">Aviso Manual</h3>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                        <div className="flex flex-col gap-2">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-white/30 ml-1">Inicio</span>
+                            <div className="relative">
+                                <input
+                                    type="time"
+                                    value={manualStart}
+                                    onChange={e => setManualStart(e.target.value)}
+                                    className="w-full h-14 bg-white/60 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-2xl px-5 text-lg font-bold text-slate-800 dark:text-white focus:border-[#3994ef]/50 outline-none transition-all shadow-inner"
+                                />
+                            </div>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-white/30 ml-1">Fin</span>
+                            <div className="relative">
+                                <input
+                                    type="time"
+                                    value={manualEnd}
+                                    onChange={e => setManualEnd(e.target.value)}
+                                    className="w-full h-14 bg-white/60 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-2xl px-5 text-lg font-bold text-slate-800 dark:text-white focus:border-[#3994ef]/50 outline-none transition-all shadow-inner"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2 mb-8">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-white/30 ml-1">Notas</span>
+                        <textarea
+                            value={notes}
+                            onChange={e => setNotes(e.target.value)}
+                            className="w-full bg-white/60 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-[1.5rem] p-5 text-slate-700 dark:text-white/80 text-sm focus:border-[#3994ef]/50 outline-none transition-all resize-none shadow-inner"
+                            placeholder="¿Cómo fue el despertar?"
+                            rows={3}
+                        />
+                    </div>
+
+                    <button
+                        onClick={handleManualSave}
+                        disabled={manualLoading || !manualStart || !manualEnd || !selectedBaby}
+                        className="w-full h-16 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-black font-black uppercase tracking-widest text-xs shadow-2xl hover:bg-slate-800 dark:hover:bg-white/90 active:scale-[0.98] transition-all disabled:opacity-20"
+                    >
+                        {manualSaved ? '✓ ¡Guardado!' : manualLoading ? 'Cargando...' : 'Guardar Sesión'}
+                    </button>
+                </motion.div>
             </div>
+
+            <style>{`
+                .drop-shadow-glow {
+                    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
+                }
+                @keyframes bounce-slow {
+                    0%, 100% { transform: translateY(0); }
+                    50% { transform: translateY(-3px); }
+                }
+                .animate-bounce-slow {
+                    animation: bounce-slow 2s infinite ease-in-out;
+                }
+            `}</style>
         </div>
     );
 }
