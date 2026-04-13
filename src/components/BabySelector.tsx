@@ -32,8 +32,10 @@ export function BabySelector({ babies, selectedBaby, onSelect }: BabySelectorPro
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {babies.map(baby => {
                     const isSelected = selectedBaby?.id === baby.id;
-                    const babyColor = baby.gender === 'niño' ? '#3b82f6' : 'var(--color-primary-dark)';
-                    const babyGrad = baby.gender === 'niño'
+                    const genderStr = (baby.gender || '').toLowerCase().trim();
+                    const isMale = ['niño', 'nino', 'masculino', 'male', 'boy', 'm'].includes(genderStr);
+                    const babyColor = isMale ? '#3b82f6' : 'var(--color-primary-dark)';
+                    const babyGrad = isMale
                         ? 'linear-gradient(135deg, #93c5fd, #3b82f6)'
                         : 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))';
 
@@ -63,7 +65,7 @@ export function BabySelector({ babies, selectedBaby, onSelect }: BabySelectorPro
                             }}
                         >
                             <span style={{ fontSize: '1rem' }}>
-                                {baby.gender === 'niño' ? '👦' : '👧'}
+                            {isMale ? '👦' : '👧'}
                             </span>
                             {baby.name}
                         </button>
