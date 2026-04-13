@@ -19,6 +19,15 @@ function timeAgo(dateStr: string) {
     return formatDistanceToNow(new Date(dateStr), { locale: es, addSuffix: true });
 }
 
+function babyAvatarUrl(name: string, gender?: string): string {
+    const g = (gender || '').toLowerCase().trim();
+    const isMale = ['niño', 'nino', 'masculino', 'male', 'boy', 'm'].includes(g);
+    const top = isMale
+        ? 'shortHairShortFlat,shortHairShortRound,shortHairShortWaved,shortHairSides,shortHairShortCurly'
+        : 'longHairBig,longHairBob,longHairBun,longHairCurly,longHairStraight,longHairStraight2';
+    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}&top=${top}`;
+}
+
 export function Dashboard() {
     const { user } = useAuth();
     const { babies, selectedBaby, setSelectedBaby } = useBabies();
@@ -204,7 +213,7 @@ Bebé: ${currentBaby.name}
                                         <img
                                             alt={b.name}
                                             className="w-full h-full rounded-full object-cover p-1"
-                                            src={b.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${b.name}`}
+                                            src={b.avatar_url || babyAvatarUrl(b.name, b.gender)}
                                         />
                                     </div>
                                     {selectedBaby?.id === b.id && (
