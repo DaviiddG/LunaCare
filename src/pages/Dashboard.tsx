@@ -29,7 +29,7 @@ export function Dashboard() {
     const [unreadCount, setUnreadCount] = useState(0);
     const [isNotificationOpen, setIsNotificationOpen] = useState(false);
     const [isLunaChatOpen, setIsLunaChatOpen] = useState(false);
-    const [lunaIcon, setLunaIcon] = useState(localStorage.getItem('luna_icon') || '/luna-avatar.png');
+    const [lunaIcon, setLunaIcon] = useState<string | null>(localStorage.getItem('luna_icon') || null);
     const [lunaProfile, setLunaProfile] = useState(localStorage.getItem('luna_profile') || 'serena');
     const lunaFileInputRef = useRef<HTMLInputElement>(null);
     const navigate = useNavigate();
@@ -284,11 +284,17 @@ Bebé: ${currentBaby.name}
                         <div className="flex-shrink-0 relative w-24 h-24">
                             <div className="absolute inset-0 bg-primary/30 blur-2xl rounded-full animate-pulse"></div>
                             <div className="relative w-24 h-24 rounded-[2rem] p-1 bg-gradient-to-br from-white/40 to-white/10 dark:from-white/10 dark:to-white/5 backdrop-blur-xl border border-white/20 shadow-2xl overflow-hidden z-10 group-hover:rotate-6 transition-transform duration-500">
-                                <img
-                                    className="w-full h-full rounded-[1.8rem] object-cover"
-                                    src={lunaIcon}
-                                    alt="Luna AI"
-                                />
+                                {lunaIcon ? (
+                                    <img
+                                        className="w-full h-full rounded-[1.8rem] object-cover"
+                                        src={lunaIcon}
+                                        alt="Luna AI"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full rounded-[1.8rem] flex items-center justify-center bg-primary/10">
+                                        <span className="material-symbols-rounded text-primary text-4xl">auto_awesome</span>
+                                    </div>
+                                )}
                             </div>
                             <div className="absolute -bottom-2 -right-2 bg-primary p-2 rounded-2xl shadow-2xl z-20 border-2 border-white dark:border-slate-900 animate-bounce">
                                 <span className="material-symbols-rounded text-white text-base font-black">auto_awesome</span>

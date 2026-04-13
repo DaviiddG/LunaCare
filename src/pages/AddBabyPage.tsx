@@ -4,6 +4,8 @@ import { useAuth } from '../hooks/useAuth';
 import { dbHelpers } from '../lib/db';
 import { supabase } from '../lib/supabase';
 
+const today = new Date().toISOString().split('T')[0];
+
 const GOALS = [
     { id: 'sleep', label: 'Mejorar el sueño', icon: 'bedtime' },
     { id: 'feeding', label: 'Seguimiento de alimentación', icon: 'restaurant' },
@@ -167,6 +169,7 @@ export function AddBabyPage() {
                         <input
                             type="date"
                             value={birthDate}
+                            max={today}
                             onChange={e => setBirthDate(e.target.value)}
                             className="w-full bg-white dark:bg-slate-800 rounded-2xl px-4 py-4 text-slate-700 dark:text-slate-200 shadow-sm border-none focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
                         />
@@ -235,22 +238,31 @@ export function AddBabyPage() {
                 </div>
 
                 {/* Luna AI greeting */}
-                <div className="flex items-start space-x-3 bg-indigo-50/70 dark:bg-slate-800/50 p-4 rounded-2xl border border-indigo-100/50 dark:border-slate-700 mb-8">
-                    <div className="relative flex-shrink-0">
-                        <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center border-2 border-white dark:border-slate-600">
-                            <span className="material-symbols-rounded text-primary text-2xl">auto_awesome</span>
+                {(() => {
+                    const savedIcon = localStorage.getItem('luna_icon');
+                    return (
+                        <div className="flex items-start space-x-3 bg-indigo-50/70 dark:bg-slate-800/50 p-4 rounded-2xl border border-indigo-100/50 dark:border-slate-700 mb-8">
+                            <div className="relative flex-shrink-0">
+                                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center border-2 border-white dark:border-slate-600 overflow-hidden">
+                                    {savedIcon ? (
+                                        <img src={savedIcon} alt="Luna AI" className="w-full h-full object-cover rounded-full" />
+                                    ) : (
+                                        <span className="material-symbols-rounded text-primary text-2xl">auto_awesome</span>
+                                    )}
+                                </div>
+                                <div className="absolute -bottom-1 -right-1 bg-primary p-0.5 rounded-full">
+                                    <span className="material-symbols-rounded text-white text-[10px]">star</span>
+                                </div>
+                            </div>
+                            <div className="flex-1">
+                                <p className="text-xs font-bold text-primary mb-1">Luna AI</p>
+                                <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                                    ¡Hola! Cuéntame un poco sobre tu pequeño para que pueda darte los mejores consejos.
+                                </p>
+                            </div>
                         </div>
-                        <div className="absolute -bottom-1 -right-1 bg-primary p-0.5 rounded-full">
-                            <span className="material-symbols-rounded text-white text-[10px]">star</span>
-                        </div>
-                    </div>
-                    <div className="flex-1">
-                        <p className="text-xs font-bold text-primary mb-1">Luna AI</p>
-                        <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                            ¡Hola! Cuéntame un poco sobre tu pequeño para que pueda darte los mejores consejos.
-                        </p>
-                    </div>
-                </div>
+                    );
+                })()}
 
                 {/* Goals */}
                 <div className="mb-8">
