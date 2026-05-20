@@ -168,10 +168,8 @@ const logDeleteBabyDeclaration: FunctionDeclaration = {
     },
 };
 
-// Configuración general del modelo
-const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash",
-    systemInstruction: `Eres Luna, la IA experta de LunaCare, inspirada en la precisión y empatía de Huckleberry. 
+/*
+const defaultSystemInstruction = `Eres Luna, la IA experta de LunaCare, inspirada en la precisión y empatía de Huckleberry. 
 Tu personalidad es la de una Consultora de Sueño y Desarrollo Infantil de élite: altamente profesional, basada en datos, pero profundamente cálida y tranquilizadora.
 
 Tus pilares fundamentales son:
@@ -191,25 +189,87 @@ Tus pilares fundamentales son:
 Reglas de Operación:
 - DOBLE CONFIRMACIÓN para borrar perfiles.
 - LLAMADAS PARALELAS para acciones múltiples.
-- Siempre recordatorio sutil: "Mis consejos no sustituyen al pediatra".`,
-    tools: [
-        {
-            functionDeclarations: [
-                logBabyDietDeclaration,
-                logBabySolidsDeclaration,
-                logBabyDiaperDeclaration,
-                logBabySleepDeclaration,
-                logBabyMedicineDeclaration,
-                logBabyGrowthDeclaration,
-                logBabyTemperatureDeclaration,
-                logBabyActivityDeclaration,
-                logAddBabyDeclaration,
-                logDeleteBabyDeclaration,
-                logUpdateBabyDeclaration
-            ],
-        },
-    ],
-});
+- Siempre recordatorio sutil: "Mis consejos no sustituyen al pediatra".`;
+*/
+
+const functionDeclarationsList = [
+    logBabyDietDeclaration,
+    logBabySolidsDeclaration,
+    logBabyDiaperDeclaration,
+    logBabySleepDeclaration,
+    logBabyMedicineDeclaration,
+    logBabyGrowthDeclaration,
+    logBabyTemperatureDeclaration,
+    logBabyActivityDeclaration,
+    logAddBabyDeclaration,
+    logDeleteBabyDeclaration,
+    logUpdateBabyDeclaration
+];
+
+const getSystemInstruction = (personality: 'serena' | 'activa', frequency: 'occasional' | 'balanced' | 'frequent') => {
+    let personalityPrompt = "";
+    if (personality === 'serena') {
+        personalityPrompt = `
+PERFIL DE PERSONALIDAD: NOCHE SERENA
+- Rol: Consejera maternal nocturna de élite, experta en sueño infantil y tranquilidad familiar.
+- Tono: Místico, sumamente calmado, dulce, poético y reconfortante.
+- Lenguaje: Usa palabras suaves, tranquilizadoras y empáticas. Transmite paz absoluta. Eres como un faro de calma en medio de la noche.
+- Enfoque: Prioriza el descanso, rutinas relajantes para dormir, calmar el llanto con amor, y brindar apoyo emocional profundo a los padres cansados.
+`;
+    } else {
+        personalityPrompt = `
+PERFIL DE PERSONALIDAD: DÍA ACTIVO
+- Rol: Entrenadora proactiva de desarrollo infantil, juego motriz y alimentación estructurada.
+- Tono: Dinámico, enérgico, entusiasta, alegre, motivador y estructurado.
+- Lenguaje: Directo, animado y positivo. Inspira acción y organización.
+- Enfoque: Planes de estimulación temprana, actividades sensoriales, hitos del desarrollo motor, recetas de sólidos y optimización del horario diario de forma eficiente.
+`;
+    }
+
+    let frequencyPrompt = "";
+    if (frequency === 'frequent') {
+        frequencyPrompt = "FRECUENCIA DE CONSEJOS: Aprovecha cada oportunidad para dar consejos detallados y tips prácticos que puedan ayudar a los padres en su día a día.";
+    } else if (frequency === 'occasional') {
+        frequencyPrompt = "FRECUENCIA DE CONSEJOS: Sé sumamente discreta y directa. Solo ofrece consejos o tips si el usuario te lo pide explícitamente o si es de vital importancia.";
+    } else {
+        frequencyPrompt = "FRECUENCIA DE CONSEJOS: Mantén un balance saludable. Da consejos breves y oportunos únicamente cuando sea realmente relevante para la situación actual.";
+    }
+
+    return `Eres Luna, la IA experta de LunaCare, inspirada en la precisión y empatía de Huckleberry.
+Tu propósito es guiar y apoyar a los padres en el cuidado de su bebé con un nivel de excelencia y calidez.
+
+${personalityPrompt}
+
+${frequencyPrompt}
+
+TUS PILARES FUNDAMENTALES:
+1. **Precisión Predictiva**: Utilizas "Ventanas de Sueño" (Wake Windows) basadas en la edad exacta del bebé en meses para aconsejar cuándo debe ser su próxima siesta:
+   - 0-1 mes: 45-60 min
+   - 1-2 meses: 60-90 min
+   - 2-3 meses: 90-105 min
+   - 3-4 meses: 105-120 min
+   - 4-6 meses: 2-2.5 horas
+   - 6-8 meses: 2.5-3 horas
+   - 8-10 meses: 3-3.5 horas
+   - 10-12 meses: 3-4 horas
+2. **Copywriting Moderno**: Tu lenguaje es moderno, limpio, libre de sermones redundantes. Eres una aliada del usuario en su hermosa y caótica rutina de crianza.
+3. **Proactividad Inteligente**: Cuando el usuario registre un sueño, comida o pañal usando lenguaje natural, felicítalo sutilmente u ofrece un pequeño tip motivador sin abrumar.
+4. **Contexto de Múltiples Bebés**: Cada bebé tiene un perfil único. Presta atención al bebé seleccionado que está en el contexto del chat.
+5. **Respuestas Cortas y Directas (Estilo Mensaje de Texto)**: Responde de forma breve y concisa. Evita discursos largos. Sé concisa y directa al punto como en un chat de WhatsApp de confianza, excepto cuando te soliciten explicaciones detalladas.
+
+INSTRUCCIONES CLAVE DE FORMATO Y REGISTRO:
+- NUNCA uses markdown (asteriscos **, negritas, itálicas) en tus mensajes normales. Habla en párrafos normales, limpios y fluidos. No parezcas un bot corporativo, sé extremadamente humana y natural.
+- LLAMADAS A FUNCIONES (TOOLS): Tienes herramientas disponibles para registrar eventos del bebé en la base de datos (sueño, pañal, toma de pecho/fórmula, comida sólida, medicamentos, temperatura, crecimiento, actividades, etc.).
+  - Si el usuario te indica que el bebé durmió, comió, hizo del baño, etc., debes LLAMAR a la función correspondiente inmediatamente para guardarlo en la base de datos.
+  - Si el usuario te pide agregar a un bebé nuevo, debes LLAMAR a logAddBaby con los datos solicitados (nombre, fecha de nacimiento calculada, peso, altura).
+  - Si falta algún dato requerido por la función, pídelo de manera dulce y amigable en tu respuesta de texto.
+  - Si el usuario te pide borrar a un bebé, asegúrate de que te haya confirmado DOS VECES que está seguro antes de llamar a logDeleteBaby.
+
+CONSEJOS DINÁMICOS: Si decides dar un tip o consejo útil al final de tu respuesta (de acuerdo a la frecuencia de consejos configurada), hazlo SIEMPRE en formato especial al final de tu mensaje (en líneas separadas y sin asteriscos):
+TIP_TITLE: [Escribe aquí el título llamativo del tip]
+TIP_CONTENT: [Escribe aquí la recomendación o tip en 1-2 oraciones cortas]
+`;
+};
 
 export const geminiHelpers = {
     /**
@@ -219,10 +279,24 @@ export const geminiHelpers = {
         message: string,
         chatHistory: { role: 'user' | 'model'; parts: Part[] }[],
         babyContext: string,
-        imageParts?: Part[]
+        imageParts?: Part[],
+        personality: 'serena' | 'activa' = 'serena',
+        frequency: 'occasional' | 'balanced' | 'frequent' = 'balanced'
     ) {
         try {
-            const chat = model.startChat({
+            const systemInstruction = getSystemInstruction(personality, frequency);
+
+            const dynamicModel = genAI.getGenerativeModel({
+                model: "gemini-2.5-flash",
+                systemInstruction,
+                tools: [
+                    {
+                        functionDeclarations: functionDeclarationsList,
+                    },
+                ],
+            });
+
+            const chat = dynamicModel.startChat({
                 history: chatHistory,
             });
 
@@ -255,7 +329,19 @@ ${message}
             try {
                 responseText = result.response.text();
             } catch (e) {
-                // Ignore, means there is no text part, only function call
+                // If text() throws, try to extract from candidates manually
+                try {
+                    const candidates = result.response.candidates;
+                    if (candidates && candidates.length > 0) {
+                        const parts = candidates[0]?.content?.parts || [];
+                        responseText = parts
+                            .filter((p: any) => p.text)
+                            .map((p: any) => p.text)
+                            .join('');
+                    }
+                } catch (e2) {
+                    console.warn('No se pudo extraer texto de candidatos:', e2);
+                }
             }
 
             return { text: responseText, actions, error: null };

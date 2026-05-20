@@ -12,20 +12,11 @@ import { LunaChatModal } from '../components/LunaChatModal';
 import { AuroraText } from '../components/ui/aurora-text';
 import { ShimmerButton } from '../components/ui/shimmer-button';
 import { BentoGrid, BentoCard } from '../components/ui/bento-grid';
-import { cn } from '../lib/utils';
+import { cn, babyAvatarUrl, getBabyAvatarUrl } from '../lib/utils';
 
 function timeAgo(dateStr: string) {
     if (!dateStr) return '';
     return formatDistanceToNow(new Date(dateStr), { locale: es, addSuffix: true });
-}
-
-function babyAvatarUrl(name: string, gender?: string): string {
-    const g = (gender || '').toLowerCase().trim();
-    const isMale = ['niño', 'nino', 'masculino', 'male', 'boy', 'm'].includes(g);
-    const top = isMale
-        ? 'shortHairShortFlat,shortHairShortRound,shortHairShortWaved,shortHairSides,shortHairShortCurly'
-        : 'longHairBig,longHairBob,longHairBun,longHairCurly,longHairStraight,longHairStraight2';
-    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}&top=${top}`;
 }
 
 export function Dashboard() {
@@ -43,13 +34,30 @@ export function Dashboard() {
     const lunaFileInputRef = useRef<HTMLInputElement>(null);
     const navigate = useNavigate();
 
+    const insightCacheRef = useRef<Record<string, { key: string; text: string }>>({});
+    const inProgressRef = useRef<string | null>(null);
+    const selectedBabyIdRef = useRef<string | null>(null);
+
     const generateInsight = useCallback(async (stats: Record<string, any>, currentBaby: { id: string, name: string }) => {
+        if (!currentBaby) return;
+
+        const babyData = stats[currentBaby.id];
+        const cacheKey = `${currentBaby.id}-${babyData?.latestDiet?.id || babyData?.latestDiet?.created_at || 'no-diet'}-${babyData?.latestSleep?.id || babyData?.latestSleep?.created_at || 'no-sleep'}-${babyData?.latestDiaper?.id || babyData?.latestDiaper?.created_at || 'no-diaper'}`;
+
+        // Check cache first for instant load
+        if (insightCacheRef.current[currentBaby.id]?.key === cacheKey) {
+            setInsightText(insightCacheRef.current[currentBaby.id].text);
+            return;
+        }
+
+        // Avoid parallel requests for the same exact key
+        if (inProgressRef.current === cacheKey) return;
+        inProgressRef.current = cacheKey;
+
         setInsightLoading(true);
         setInsightText(null);
-        try {
-            if (!currentBaby) return;
 
-            const babyData = stats[currentBaby.id];
+        try {
             const dataContext = `
 Bebé: ${currentBaby.name}
 Última comida: ${babyData?.latestDiet ? timeAgo(babyData.latestDiet.created_at) : "ninguna"}
@@ -61,11 +69,28 @@ Bebé: ${currentBaby.name}
             const prompt = `Eres Luna, experta en cuidado de bebés. Analiza a ${currentBaby.name} y da un consejo de 1 línea corto y útil. IMPORTANTE: El único bebé del que debes hablar es ${currentBaby.name}, NO inventes nombres.`;
             const chatModel = [{ role: 'user' as const, parts: [{ text: prompt }] }];
             const res = await geminiHelpers.sendMessageWithContext(prompt, chatModel, dataContext);
-            if (res.text) setInsightText(res.text);
+            
+            if (res.text) {
+                insightCacheRef.current[currentBaby.id] = {
+                    key: cacheKey,
+                    text: res.text
+                };
+                
+                // Only update the state if this baby is still selected
+                if (selectedBabyIdRef.current === currentBaby.id) {
+                    setInsightText(res.text);
+                }
+            }
         } catch (e) {
             console.error(e);
+        } finally {
+            if (inProgressRef.current === cacheKey) {
+                inProgressRef.current = null;
+            }
+            if (selectedBabyIdRef.current === currentBaby.id) {
+                setInsightLoading(false);
+            }
         }
-        setInsightLoading(false);
     }, []);
 
     const fetchDashboardData = useCallback(async () => {
@@ -91,14 +116,11 @@ Bebé: ${currentBaby.name}
                 };
             }
             setBabyStats(stats);
-            // Generate insight for the currently selected baby
-            const currentBabyForInsight = selectedBaby || babyProfiles[0];
-            generateInsight(stats, currentBabyForInsight);
         } else {
             navigate('/add-baby');
         }
         setIsLoading(false);
-    }, [user, navigate, selectedBaby, generateInsight]);
+    }, [user, navigate]);
 
     useEffect(() => {
         if (user) fetchDashboardData();
@@ -110,6 +132,19 @@ Bebé: ${currentBaby.name}
         window.addEventListener('luna-action-completed', handleRefresh);
         return () => window.removeEventListener('luna-action-completed', handleRefresh);
     }, [user, fetchDashboardData]);
+
+    // Sync selectedBabyIdRef
+    const activeBaby = selectedBaby || babies[0];
+    useEffect(() => {
+        selectedBabyIdRef.current = activeBaby?.id || null;
+    }, [activeBaby]);
+
+    // Reactive insight generation
+    useEffect(() => {
+        const targetBaby = selectedBaby || babies[0];
+        if (!targetBaby || !babyStats || !babyStats[targetBaby.id]) return;
+        generateInsight(babyStats, targetBaby);
+    }, [selectedBaby, babies, babyStats, generateInsight]);
 
     useEffect(() => {
         const handleSettingsUpdate = () => {
@@ -130,6 +165,42 @@ Bebé: ${currentBaby.name}
     if (!currentBaby) return null;
 
     const stats = selectedBaby ? babyStats[selectedBaby.id] || {} : {};
+
+    // Parse insightText into main text and optional tip card
+    let cleanInsightText = insightText;
+    let tipTitle: string | null = null;
+    let tipContent: string | null = null;
+
+    if (cleanInsightText) {
+        const tipTitleIndex = cleanInsightText.indexOf('TIP_TITLE:');
+        const tipContentIndex = cleanInsightText.indexOf('TIP_CONTENT:');
+
+        if (tipTitleIndex !== -1 && tipContentIndex !== -1) {
+            if (tipTitleIndex < tipContentIndex) {
+                tipTitle = cleanInsightText.substring(tipTitleIndex + 10, tipContentIndex).trim();
+                tipContent = cleanInsightText.substring(tipContentIndex + 12).trim();
+            } else {
+                tipContent = cleanInsightText.substring(tipContentIndex + 12, tipTitleIndex).trim();
+                tipTitle = cleanInsightText.substring(tipTitleIndex + 10).trim();
+            }
+            cleanInsightText = cleanInsightText.substring(0, Math.min(tipTitleIndex, tipContentIndex)).trim();
+        } else if (tipTitleIndex !== -1) {
+            tipTitle = cleanInsightText.substring(tipTitleIndex + 10).trim();
+            cleanInsightText = cleanInsightText.substring(0, tipTitleIndex).trim();
+        } else if (tipContentIndex !== -1) {
+            tipContent = cleanInsightText.substring(tipContentIndex + 12).trim();
+            cleanInsightText = cleanInsightText.substring(0, tipContentIndex).trim();
+        }
+
+        // Clean trailing/leading quotes and spaces
+        cleanInsightText = cleanInsightText.replace(/^["'\s]+|["'\s]+$/g, '').trim();
+        if (tipTitle) {
+            tipTitle = tipTitle.replace(/^["'\s]+|["'\s]+$/g, '').trim();
+        }
+        if (tipContent) {
+            tipContent = tipContent.replace(/^["'\s]+|["'\s]+$/g, '').trim();
+        }
+    }
 
     const handleLunaIconChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -205,7 +276,6 @@ Bebé: ${currentBaby.name}
                                 className={`flex flex-col items-center space-y-3 flex-shrink-0 transition-all duration-500 ${selectedBaby?.id === b.id ? 'scale-110' : 'opacity-40 hover:opacity-70'}`}
                                 onClick={() => {
                                     setSelectedBaby(b);
-                                    generateInsight(babyStats, b);
                                 }}
                             >
                                 <div className={`relative w-16 h-16 rounded-[1.5rem] p-0.5 transition-all duration-500 ${selectedBaby?.id === b.id ? 'bg-gradient-to-br from-primary to-indigo-600 shadow-[0_10px_25px_rgba(157,133,225,0.4)] rotate-3' : 'bg-slate-200 dark:bg-slate-800'}`}>
@@ -213,7 +283,11 @@ Bebé: ${currentBaby.name}
                                         <img
                                             alt={b.name}
                                             className="w-full h-full rounded-full object-cover p-1"
-                                            src={b.avatar_url || babyAvatarUrl(b.name, b.gender)}
+                                            src={getBabyAvatarUrl(b.avatar_url, b.name, b.gender)}
+                                            onError={(e) => {
+                                                e.currentTarget.onerror = null;
+                                                e.currentTarget.src = babyAvatarUrl(b.name, b.gender);
+                                            }}
                                         />
                                     </div>
                                     {selectedBaby?.id === b.id && (
@@ -260,9 +334,25 @@ Bebé: ${currentBaby.name}
                                 ¡Hola, <span className="capitalize">{user?.user_metadata?.first_name || user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Padre'}</span>! 👋{' '}
                                 <AuroraText className="text-primary font-black drop-shadow-sm">¿Cómo está {selectedBaby?.name || 'tu bebé'} hoy?</AuroraText>
                             </h1>
-                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 leading-relaxed mb-6 italic">
-                                "{insightLoading ? 'Luna está analizando patrones...' : (insightText || `¡Es un buen día para cuidar a ${selectedBaby?.name || 'tu bebé'}!`)}"
+                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 leading-relaxed mb-4 italic">
+                                "{insightLoading ? 'Luna está analizando patrones...' : (cleanInsightText || `¡Es un buen día para cuidar a ${selectedBaby?.name || 'tu bebé'}!`)}"
                             </p>
+
+                            {!insightLoading && tipTitle && tipContent && (
+                                <motion.div 
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-primary/10 to-indigo-500/10 border border-primary/20 dark:border-primary/10 backdrop-blur-md flex gap-3 items-start"
+                                >
+                                    <div className="p-2 rounded-xl bg-primary/20 text-primary shrink-0 flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-lg font-bold">lightbulb</span>
+                                    </div>
+                                    <div>
+                                        <h4 className="text-xs font-black text-slate-800 dark:text-white mb-1 uppercase tracking-wider">{tipTitle}</h4>
+                                        <p className="text-[11px] font-bold text-slate-600 dark:text-slate-300 leading-relaxed">{tipContent}</p>
+                                    </div>
+                                </motion.div>
+                            )}
                             <div className="flex flex-wrap gap-3">
                                 <ShimmerButton
                                     onClick={() => setIsLunaChatOpen(true)}
@@ -305,8 +395,12 @@ Bebé: ${currentBaby.name}
                                     </div>
                                 )}
                             </div>
-                            <div className="absolute -bottom-2 -right-2 bg-primary p-2 rounded-2xl shadow-2xl z-20 border-2 border-white dark:border-slate-900 animate-bounce">
-                                <span className="material-symbols-rounded text-white text-base font-black">auto_awesome</span>
+                            <div 
+                                onClick={() => lunaFileInputRef.current?.click()}
+                                className="absolute -bottom-2 -right-2 bg-gradient-to-tr from-primary via-[#b58df2] to-indigo-600 p-2.5 rounded-full shadow-[0_8px_20px_rgba(157,133,225,0.4)] z-20 border-2 border-white dark:border-slate-900 flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer group/badge"
+                            >
+                                <div className="absolute inset-0 rounded-full bg-primary/40 blur-md opacity-70 group-hover/badge:opacity-100 transition-opacity pointer-events-none"></div>
+                                <span className="material-symbols-rounded text-white text-sm font-black relative z-10 animate-pulse">auto_awesome</span>
                             </div>
                         </div>
                     </div>

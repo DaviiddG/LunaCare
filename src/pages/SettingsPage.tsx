@@ -6,6 +6,7 @@ import { useCallback } from 'react';
 import type { Baby } from '../contexts/BabiesContext';
 import { useNavigate } from 'react-router-dom';
 import { AnimatedThemeToggler } from '../components/AnimatedThemeToggler';
+import { babyAvatarUrl, getBabyAvatarUrl } from '../lib/utils';
 
 const today = new Date().toISOString().split('T')[0];
 
@@ -211,11 +212,15 @@ export function SettingsPage() {
                                     onClick={() => toggleExpand(baby.id)}
                                 >
                                     <div className="w-12 h-12 rounded-lg bg-[#a8e6cf]/20 flex items-center justify-center overflow-hidden">
-                                        {baby.avatar_url ? (
-                                            <img src={baby.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                                        ) : (
-                                            <span className="material-symbols-outlined text-green-600">child_care</span>
-                                        )}
+                                        <img 
+                                            src={getBabyAvatarUrl(baby.avatar_url, baby.name, baby.gender)} 
+                                            alt="Avatar" 
+                                            className="w-full h-full object-cover" 
+                                            onError={(e) => {
+                                                e.currentTarget.onerror = null;
+                                                e.currentTarget.src = babyAvatarUrl(baby.name, baby.gender);
+                                            }}
+                                        />
                                     </div>
                                     <div className="flex-1">
                                         <p className="font-semibold text-slate-900 dark:text-slate-100">Perfil de {baby.name || 'Bebé'}</p>
@@ -240,11 +245,15 @@ export function SettingsPage() {
                                                     onClick={() => document.getElementById(`file-upload-${baby.id}`)?.click()}
                                                     className="w-24 h-24 rounded-full bg-slate-100 dark:bg-slate-800 border-4 border-white dark:border-slate-700 shadow-md flex items-center justify-center overflow-hidden cursor-pointer group hover:opacity-90 transition-opacity"
                                                 >
-                                                    {baby.imagePreview || baby.avatar_url ? (
-                                                        <img src={baby.imagePreview || baby.avatar_url} alt="Preview" className="w-full h-full object-cover" />
-                                                    ) : (
-                                                        <span className="material-symbols-rounded text-slate-300 text-5xl group-hover:scale-110 transition-transform">person</span>
-                                                    )}
+                                                    <img 
+                                                        src={baby.imagePreview || getBabyAvatarUrl(baby.avatar_url, baby.name, baby.gender)} 
+                                                        alt="Preview" 
+                                                        className="w-full h-full object-cover" 
+                                                        onError={(e) => {
+                                                            e.currentTarget.onerror = null;
+                                                            e.currentTarget.src = babyAvatarUrl(baby.name, baby.gender);
+                                                        }}
+                                                    />
                                                 </div>
                                                 <button
                                                     onClick={() => document.getElementById(`file-upload-${baby.id}`)?.click()}

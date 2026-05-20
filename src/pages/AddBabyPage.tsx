@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { dbHelpers } from '../lib/db';
 import { supabase } from '../lib/supabase';
+import { babyAvatarUrl } from '../lib/utils';
 
 const today = new Date().toISOString().split('T')[0];
 
@@ -124,11 +125,15 @@ export function AddBabyPage() {
                             onClick={() => fileInputRef.current?.click()}
                             className="w-28 h-28 rounded-full bg-slate-100 dark:bg-slate-800 border-4 border-white dark:border-slate-700 shadow-md flex items-center justify-center overflow-hidden cursor-pointer"
                         >
-                            {imagePreview ? (
-                                <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
-                            ) : (
-                                <span className="material-symbols-rounded text-slate-300 text-5xl">person</span>
-                            )}
+                            <img 
+                                src={imagePreview || babyAvatarUrl(name, gender)} 
+                                alt="Preview" 
+                                className="w-full h-full object-cover" 
+                                onError={(e) => {
+                                    e.currentTarget.onerror = null;
+                                    e.currentTarget.src = babyAvatarUrl(name, gender);
+                                }}
+                            />
                         </div>
                         <button
                             onClick={() => fileInputRef.current?.click()}
