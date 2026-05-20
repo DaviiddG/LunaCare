@@ -2,6 +2,9 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { dbHelpers } from '../lib/db';
 import { useAuth } from '../hooks/useAuth';
 import { useBabies } from '../hooks/useBabies';
+import { formatDistanceToNow } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { LunaSettingsModal } from './LunaSettingsModal';
 
 // Speech Recognition Types
 interface SpeechRecognitionEvent extends Event {
@@ -32,8 +35,6 @@ interface WindowWithSpeech extends Window {
     webkitSpeechRecognition?: new () => SpeechRecognition;
 }
 
-import { LunaSettingsModal } from './LunaSettingsModal';
-
 interface Message {
     id: string;
     role: 'user' | 'assistant';
@@ -49,7 +50,7 @@ interface LunaChatModalProps {
 
 export function LunaChatModal({ isOpen, onClose }: LunaChatModalProps) {
     const { user } = useAuth();
-    const { selectedBaby } = useBabies();
+    const { selectedBaby, fetchBabies } = useBabies();
 
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
@@ -58,11 +59,53 @@ export function LunaChatModal({ isOpen, onClose }: LunaChatModalProps) {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [lunaIconUrl, setLunaIconUrl] = useState(localStorage.getItem('luna_icon') || '/luna-avatar.png');
     const [lunaProfile, setLunaProfile] = useState(localStorage.getItem('luna_profile') || 'serena');
+    const [lunaFrequency, setLunaFrequency] = useState(localStorage.getItem('luna_frequency') || 'balanced');
+    const [lunaVoice, setLunaVoice] = useState(localStorage.getItem('luna_voice') || 'soprano');
     const [selectedImage, setSelectedImage] = useState<{ file: File, base64: string, preview: string } | null>(null);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const recognitionRef = useRef<any>(null);
+
+    const getBabyAgeInMonths = (birthDateStr: string) => {
+        if (!birthDateStr) return 0;
+        const birth = new Date(birthDateStr);
+        const now = new Date();
+        const diffTime = Math.abs(now.getTime() - birth.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return parseFloat((diffDays / 30.4).toFixed(1)); // Edad en meses aproximada
+    };
+
+    const timeAgo = (dateStr: string) => {
+        if (!dateStr) return '';
+        try {
+            return formatDistanceToNow(new Date(dateStr), { locale: es, addSuffix: true });
+        } catch (e) {
+            return '';
+        }
+    };
+
+    const speakMessage = (text: string) => {
+        window.speechSynthesis.cancel();
+        // Remove formatting code or tips block to speak only the textual response
+        const cleanText = text.replace(/TIP_TITLE:[\s\S]*/, '').trim();
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        utterance.lang = 'es-ES';
+
+        const voice = lunaVoice || 'soprano';
+        if (voice === 'soprano') {
+            utterance.pitch = 1.4;
+            utterance.rate = 1.0;
+        } else if (voice === 'contralto') {
+            utterance.pitch = 0.8;
+            utterance.rate = 0.9;
+        } else if (voice === 'narrador') {
+            utterance.pitch = 0.6;
+            utterance.rate = 0.8;
+        }
+
+        window.speechSynthesis.speak(utterance);
+    };
 
     const fetchConversation = useCallback(async () => {
         if (!selectedBaby) return;
@@ -72,12 +115,40 @@ export function LunaChatModal({ isOpen, onClose }: LunaChatModalProps) {
         }
     }, [selectedBaby]);
 
+    const fetchSettings = useCallback(async () => {
+        if (!user) return;
+        try {
+            const { data } = await dbHelpers.getUserSettings(user.id);
+            if (data) {
+                if (data.luna_icon) {
+                    localStorage.setItem('luna_icon', data.luna_icon);
+                    setLunaIconUrl(data.luna_icon);
+                }
+                if (data.luna_profile) {
+                    localStorage.setItem('luna_profile', data.luna_profile);
+                    setLunaProfile(data.luna_profile);
+                }
+                if (data.luna_frequency) {
+                    localStorage.setItem('luna_frequency', data.luna_frequency);
+                    setLunaFrequency(data.luna_frequency);
+                }
+                if (data.luna_voice) {
+                    localStorage.setItem('luna_voice', data.luna_voice);
+                    setLunaVoice(data.luna_voice);
+                }
+            }
+        } catch (e) {
+            console.error("Error al obtener los ajustes de Luna:", e);
+        }
+    }, [user]);
+
     // Fetch conversation when modal opens or baby changes
     useEffect(() => {
         if (isOpen && selectedBaby) {
             fetchConversation();
+            fetchSettings();
         }
-    }, [isOpen, selectedBaby, fetchConversation]);
+    }, [isOpen, selectedBaby, fetchConversation, fetchSettings]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -87,6 +158,8 @@ export function LunaChatModal({ isOpen, onClose }: LunaChatModalProps) {
         const handleSettingsUpdate = () => {
             setLunaIconUrl(localStorage.getItem('luna_icon') || '/luna-avatar.png');
             setLunaProfile(localStorage.getItem('luna_profile') || 'serena');
+            setLunaFrequency(localStorage.getItem('luna_frequency') || 'balanced');
+            setLunaVoice(localStorage.getItem('luna_voice') || 'soprano');
         };
         window.addEventListener('luna-settings-updated', handleSettingsUpdate);
         return () => window.removeEventListener('luna-settings-updated', handleSettingsUpdate);
@@ -110,12 +183,11 @@ export function LunaChatModal({ isOpen, onClose }: LunaChatModalProps) {
         }
 
         const recognition = new SpeechRecognition();
-        recognitionRef.current = recognition as unknown as any; // Still using any for the ref to avoid deep type clashes with current UI expectations but typed the instance
+        recognitionRef.current = recognition as unknown as any;
 
         recognition.lang = 'es-ES';
         recognition.interimResults = true;
 
-        // Save current input to append to it
         const currentInput = input;
 
         recognition.onstart = () => setIsListening(true);
@@ -156,7 +228,6 @@ export function LunaChatModal({ isOpen, onClose }: LunaChatModalProps) {
         const reader = new FileReader();
         reader.onloadend = () => {
             const base64String = reader.result as string;
-            // Extract just the base64 part, removing the data URL prefix
             const base64Data = base64String.split(',')[1];
             setSelectedImage({
                 file,
@@ -183,13 +254,13 @@ export function LunaChatModal({ isOpen, onClose }: LunaChatModalProps) {
     const handleSend = async (e: React.FormEvent, manualText?: string) => {
         e.preventDefault();
         const userText = manualText || input.trim();
-        const currentImage = selectedImage; // Store current image reference
+        const currentImage = selectedImage;
 
-        if (!userText && !currentImage) return; // Allow sending if image but no text
+        if (!userText && !currentImage) return;
         if (!user || !selectedBaby || isLoading) return;
 
         if (!manualText) setInput('');
-        setSelectedImage(null); // Clear early for better UX
+        setSelectedImage(null);
 
         const tempId = Date.now().toString();
         const newMessage: Message = {
@@ -213,24 +284,107 @@ export function LunaChatModal({ isOpen, onClose }: LunaChatModalProps) {
                 content: contentToStore
             });
 
+            // 1. Fetch latest stats and logs for the baby in parallel to inject context!
+            const [diets, diapers, sleeps, solids, growths, temperatures, medicines, activities] = await Promise.all([
+                dbHelpers.getDiets(selectedBaby.id),
+                dbHelpers.getDiapers(selectedBaby.id),
+                dbHelpers.getSleepLogs(selectedBaby.id),
+                dbHelpers.getSolids(selectedBaby.id),
+                dbHelpers.getGrowth(selectedBaby.id),
+                dbHelpers.getTemperature(selectedBaby.id),
+                dbHelpers.getMedicine(selectedBaby.id),
+                dbHelpers.getActivity(selectedBaby.id)
+            ]);
+
+            const ageMonths = selectedBaby.birth_date ? getBabyAgeInMonths(selectedBaby.birth_date) : 0;
+            
+            let babyContextText = `
+INFORMACIÓN DEL BEBÉ SELECCIONADO:
+- Nombre: ${selectedBaby.name}
+- Género: ${selectedBaby.gender || 'No especificado'}
+- Fecha de nacimiento: ${selectedBaby.birth_date || 'No especificada'} (Edad: ${ageMonths} meses)
+- Peso base: ${selectedBaby.weight || 'No especificado'} kg
+- Altura base: ${selectedBaby.height || 'No especificado'} cm
+
+FECHA Y HORA ACTUAL DEL SISTEMA:
+- ${new Date().toLocaleString('es-ES', { timeZoneName: 'short' })}
+
+REGISTROS RECIENTES EN LA BITÁCORA:
+`;
+
+            // Dieta y Sólidos
+            babyContextText += `\n* ALIMENTOS:\n`;
+            const recentDiets = (diets.data || []).slice(0, 3);
+            const recentSolids = (solids.data || []).slice(0, 3);
+            if (recentDiets.length === 0 && recentSolids.length === 0) {
+                babyContextText += "  - No hay registros de alimentación recientes.\n";
+            } else {
+                recentDiets.forEach(d => {
+                    babyContextText += `  - [Líquido] Tipo: ${d.type}, Cantidad: ${d.amount} ml/min, Notas: ${d.observations || 'ninguna'}, Hace ${timeAgo(d.created_at)} (${new Date(d.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })})\n`;
+                });
+                recentSolids.forEach(s => {
+                    babyContextText += `  - [Sólido] Alimentos: ${s.foods?.join(', ') || 'alimento'}, Cantidad: ${s.amount || 'no especificada'}, Notas: ${s.observations || 'ninguna'}, Hace ${timeAgo(s.created_at)} (${new Date(s.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })})\n`;
+                });
+            }
+
+            // Sueño
+            babyContextText += `\n* SUEÑO:\n`;
+            const recentSleeps = (sleeps.data || []).slice(0, 3);
+            if (recentSleeps.length === 0) {
+                babyContextText += "  - No hay registros de sueño recientes.\n";
+            } else {
+                recentSleeps.forEach(s => {
+                    const startStr = new Date(s.start_time).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                    const endStr = new Date(s.end_time).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                    babyContextText += `  - Duración: ${s.duration} min (De ${startStr} a ${endStr}), Notas: ${s.observations || 'ninguna'}, Hace ${timeAgo(s.end_time)}\n`;
+                });
+            }
+
+            // Pañales
+            babyContextText += `\n* PAÑALES:\n`;
+            const recentDiapers = (diapers.data || []).slice(0, 3);
+            if (recentDiapers.length === 0) {
+                babyContextText += "  - No hay registros de pañales recientes.\n";
+            } else {
+                recentDiapers.forEach(dp => {
+                    babyContextText += `  - Estado: Pañal ${dp.status}, Notas: ${dp.observations || 'ninguna'}, Hace ${timeAgo(dp.created_at)} (${new Date(dp.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })})\n`;
+                });
+            }
+
+            // Salud
+            babyContextText += `\n* SALUD (Medicamentos, Temperatura, Crecimiento):\n`;
+            const recentGrowth = (growths.data || []).slice(0, 2);
+            const recentTemp = (temperatures.data || []).slice(0, 2);
+            const recentMed = (medicines.data || []).slice(0, 2);
+            if (recentGrowth.length === 0 && recentTemp.length === 0 && recentMed.length === 0) {
+                babyContextText += "  - No hay registros de salud recientes.\n";
+            } else {
+                recentGrowth.forEach(g => {
+                    babyContextText += `  - Crecimiento: Peso ${g.weight} kg, Altura ${g.height} cm, Perímetro cefálico: ${g.head_circumference || 'no reg'} cm, Hace ${timeAgo(g.created_at)}\n`;
+                });
+                recentTemp.forEach(t => {
+                    babyContextText += `  - Temperatura: ${t.temperature}°${t.unit}, Hace ${timeAgo(t.created_at)}\n`;
+                });
+                recentMed.forEach(m => {
+                    babyContextText += `  - Medicamento: ${m.name}, Dosis: ${m.dosage || 'no reg'}, Notas: ${m.observations || 'ninguna'}, Hace ${timeAgo(m.created_at)}\n`;
+                });
+            }
+
+            // Actividades
+            babyContextText += `\n* ACTIVIDADES:\n`;
+            const recentActivities = (activities.data || []).slice(0, 2);
+            if (recentActivities.length === 0) {
+                babyContextText += "  - No hay registros de actividades recientes.\n";
+            } else {
+                recentActivities.forEach(a => {
+                    babyContextText += `  - Actividad: ${a.activity_type}, Duración: ${a.duration_minutes} min, Notas: ${a.observations || 'ninguna'}, Hace ${timeAgo(a.created_at)}\n`;
+                });
+            }
+
             const chatHistory = messages.map(msg => ({
-                role: msg.role === 'assistant' ? 'model' : 'user' as 'model' | 'user',
+                role: msg.role === 'assistant' ? 'model' as const : 'user' as const,
                 parts: [{ text: msg.content }]
             }));
-
-
-
-            let context = `Eres Luna, una asistente de LunaCare.
-Responde de forma muy natural, empática y conversacional en ESPAÑOL, como si fueras una pediatra o una amiga con experiencia.
-Bebé actual (en contexto del chat): \${selectedBaby.name}.
-PERSONALIDAD ACTUAL: \${profile === 'serena' ? 'Eres Luna Noche Serena. Tu tono es extremadamente dulce, calmado y empático. Buscas transmitir tranquilidad.' : 'Eres Luna Día Activo. Tu tono es energético, directo y motivador. Buscas ser eficiente y clara.'}
-FRECUENCIA DE CONSEJOS: \${frequency === 'frequent' ? 'Aprovecha cada oportunidad para dar consejos útiles.' : frequency === 'occasional' ? 'Solo da consejos si el usuario los pide explícitamente.' : 'Da consejos de forma equilibrada cuando sea realmente relevante.'}
-INSTRUCCIÓN CRÍTICA: Tienes funciones disponibles. Si el usuario te pide explícitamente agregar o registrar a un hijo nuevo, LLAMA A LA FUNCIÓN logAddBaby pasando todos los datos (nombre, fecha de nacimiento o calcularla según lo que te digan p.ej 'nació antier', peso en kg, altura en cm). ¡No le digas al usuario que no puedes hacerlo, USA LA FUNCIÓN! Si te piden agregar un bebé nuevo pero no te dicen nombre, peso o altura, pregúntales amablemente esos datos primero.
-OTRA INSTRUCCIÓN CRÍTICA: NUNCA uses sintaxis de markdown para formatear tu texto (no uses asteriscos ** para negritas ni itálicas). Habla en párrafos normales, claros y fluidos. No parezcas un bot, sé muy humana.
-CONSEJOS DINÁMICOS: Si decides dar un consejo relevante o tip, hazlo SIEMPRE al final de tu respuesta usando EXACTAMENTE la siguiente estructura (en líneas separadas y sin asteriscos ni markdown extra):
-TIP_TITLE: [Escribe aquí el título del tip]
-TIP_CONTENT: [Escribe aquí el contenido del tip]
-`;
 
             let imageParts: { inlineData: { data: string, mimeType: string } }[] = [];
             if (currentImage) {
@@ -243,22 +397,33 @@ TIP_CONTENT: [Escribe aquí el contenido del tip]
             }
 
             const { geminiHelpers } = await import('../lib/gemini');
-            const result = await geminiHelpers.sendMessageWithContext(userText || "Analiza esta imagen.", chatHistory, context, imageParts.length > 0 ? imageParts : undefined);
+            const result = await geminiHelpers.sendMessageWithContext(
+                userText || "Analiza esta imagen.",
+                chatHistory,
+                babyContextText,
+                imageParts.length > 0 ? imageParts : undefined,
+                lunaProfile as 'serena' | 'activa',
+                lunaFrequency as 'occasional' | 'balanced' | 'frequent'
+            );
 
             let didAction = false;
+            let shouldCloseChat = false;
+
             if (result.actions && result.actions.length > 0) {
                 for (const action of result.actions) {
                     try {
                         const args = action.args as Record<string, any>;
+                        
                         if (action.name === 'logAddBaby') {
                             await dbHelpers.upsertBabyProfile({
                                 user_id: user.id,
                                 name: args.name as string,
-                                gender: (args.gender as string) || 'Bebé',
+                                gender: (args.gender as string) || 'niño',
                                 birth_date: (args.birthDate as string) || new Date().toISOString().split('T')[0],
                                 weight: (args.weight as number) || 0,
                                 height: (args.height as number) || 0
                             });
+                            await fetchBabies();
                             didAction = true;
                         } else if (action.name === 'logBabySleep') {
                             await dbHelpers.insertSleepLog({
@@ -286,6 +451,66 @@ TIP_CONTENT: [Escribe aquí el contenido del tip]
                                 observations: (args.observations as string) || ''
                             });
                             didAction = true;
+                        } else if (action.name === 'logBabySolids') {
+                            await dbHelpers.insertSolids({
+                                user_id: user.id,
+                                baby_id: selectedBaby.id,
+                                foods: (args.foods as string[]) || [],
+                                amount: (args.amount as string) || '',
+                                observations: (args.observations as string) || ''
+                            });
+                            didAction = true;
+                        } else if (action.name === 'logBabyMedicine') {
+                            await dbHelpers.insertMedicine({
+                                user_id: user.id,
+                                baby_id: selectedBaby.id,
+                                name: args.name as string,
+                                dosage: (args.dosage as string) || '',
+                                observations: (args.observations as string) || ''
+                            });
+                            didAction = true;
+                        } else if (action.name === 'logBabyGrowth') {
+                            await dbHelpers.insertGrowth({
+                                user_id: user.id,
+                                baby_id: selectedBaby.id,
+                                weight: (args.weight as number) || 0,
+                                height: (args.height as number) || 0,
+                                head_circumference: (args.headCircumference as number) || undefined
+                            });
+                            didAction = true;
+                        } else if (action.name === 'logBabyTemperature') {
+                            await dbHelpers.insertTemperature({
+                                user_id: user.id,
+                                baby_id: selectedBaby.id,
+                                temperature: (args.temperature as number) || 0,
+                                unit: (args.unit as string) || 'C'
+                            });
+                            didAction = true;
+                        } else if (action.name === 'logBabyActivity') {
+                            await dbHelpers.insertActivity({
+                                user_id: user.id,
+                                baby_id: selectedBaby.id,
+                                activity_type: args.activityType as string,
+                                duration_minutes: (args.durationMinutes as number) || 0,
+                                observations: (args.observations as string) || ''
+                            });
+                            didAction = true;
+                        } else if (action.name === 'logUpdateBaby') {
+                            await dbHelpers.upsertBabyProfile({
+                                id: selectedBaby.id,
+                                user_id: user.id,
+                                name: selectedBaby.name,
+                                birth_date: selectedBaby.birth_date,
+                                weight: (args.weight as number) || selectedBaby.weight,
+                                height: (args.height as number) || selectedBaby.height
+                            });
+                            await fetchBabies();
+                            didAction = true;
+                        } else if (action.name === 'logDeleteBaby') {
+                            await dbHelpers.deleteBabyProfile(args.babyId || selectedBaby.id, user.id);
+                            await fetchBabies();
+                            shouldCloseChat = true;
+                            didAction = true;
                         }
                     } catch (err) {
                         console.error("Error ejecutando acción de Luna:", err);
@@ -293,34 +518,61 @@ TIP_CONTENT: [Escribe aquí el contenido del tip]
                 }
             }
 
-            let responseText = result.text;
+            // Determine final response text
+            let responseText = result.text || '';
+
             if (!responseText && didAction) {
-                responseText = "¡Listo! Ya he guardado la información que me pediste.";
+                responseText = '\u00a1Listo! Ya guard\u00e9 eso en la bit\u00e1cora de ' + selectedBaby.name + ' \u2728';
             }
 
-            if (responseText) {
-                const assistantMsgId = (Date.now() + 1).toString();
-                const assistantMessage: Message = {
-                    id: assistantMsgId,
-                    role: 'assistant',
-                    content: responseText,
-                    created_at: new Date().toISOString()
-                };
+            if (!responseText && result.error) {
+                responseText = 'Hubo un problema al conectar con el servicio. Verifica tu conexi\u00f3n e intenta de nuevo.';
+            }
 
-                setMessages(prev => [...prev, assistantMessage]);
+            if (!responseText) {
+                // Gemini returned nothing at all — fallback graceful response
+                responseText = '\u00a1Hola! Estoy aqu\u00ed para ayudarte con ' + (selectedBaby?.name || 'tu beb\u00e9') + '. \u00bfEn qu\u00e9 puedo ayudarte?';
+            }
+
+            const assistantMsgId = (Date.now() + 1).toString();
+            const assistantMessage: Message = {
+                id: assistantMsgId,
+                role: 'assistant',
+                content: responseText,
+                created_at: new Date().toISOString()
+            };
+
+            setMessages(prev => [...prev, assistantMessage]);
+
+            // Persist to DB
+            try {
                 await dbHelpers.insertAiMessage({
                     user_id: user.id,
                     baby_id: selectedBaby.id,
                     role: 'assistant',
                     content: responseText
                 });
-
-                if (didAction) {
-                    window.dispatchEvent(new CustomEvent('luna-action-completed'));
-                }
+            } catch (dbErr) {
+                console.warn('No se pudo guardar el mensaje de Luna en BD:', dbErr);
             }
-        } catch (error) {
-            console.error(error);
+
+            if (didAction) {
+                window.dispatchEvent(new CustomEvent('luna-action-completed'));
+            }
+
+            if (shouldCloseChat) {
+                onClose();
+            }
+        } catch (error: any) {
+            console.error('Error en la conversaci\u00f3n de Luna:', error);
+            // Show error message to user
+            const errorMessage: Message = {
+                id: (Date.now() + 2).toString(),
+                role: 'assistant',
+                content: 'Lo siento, tuve un problema al procesar tu mensaje. \u00bfPuedes intentarlo de nuevo?',
+                created_at: new Date().toISOString()
+            };
+            setMessages(prev => [...prev, errorMessage]);
         } finally {
             setIsLoading(false);
         }
@@ -329,9 +581,9 @@ TIP_CONTENT: [Escribe aquí el contenido del tip]
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[100] bg-background-light dark:bg-[#0a110c] text-slate-900 dark:text-slate-100 flex flex-col animate-fade-in font-chat">
-            {/* Header Redesign */}
-            <header className="sticky top-0 z-50 bg-background-light/80 dark:bg-[#0a110c]/80 backdrop-blur-md px-4 py-4 flex items-center justify-between border-b border-[#8c2bee]/10 mt-8">
+        <div className="fixed inset-0 z-[100] bg-background-light dark:bg-[#0a110c] text-slate-900 dark:text-slate-100 flex flex-col animate-fade-in font-chat" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+            {/* Header */}
+            <header className="sticky top-0 z-50 bg-background-light/90 dark:bg-[#0a110c]/90 backdrop-blur-xl px-4 pt-4 pb-3 flex items-center justify-between border-b border-[#8c2bee]/15">
                 <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-primary/10 transition-colors">
                     <span className="material-symbols-outlined text-primary">arrow_back_ios_new</span>
                 </button>
@@ -405,14 +657,14 @@ TIP_CONTENT: [Escribe aquí el contenido del tip]
                     }
 
                     return (
-                        <div key={msg.id} className={`flex items-start gap-3 \${isLuna ? 'max-w-[85%]' : 'justify-end ml-auto max-w-[85%]'}`}>
+                        <div key={msg.id} className={`flex items-start gap-3 ${isLuna ? 'max-w-[85%]' : 'justify-end ml-auto max-w-[85%]'}`}>
                             {isLuna && (
                                 <div className="size-8 rounded-full bg-slate-200 dark:bg-slate-800 shrink-0 mt-1 overflow-hidden">
                                     <img className="w-full h-full object-cover" src={lunaIconUrl} alt="Luna" />
                                 </div>
                             )}
-                            <div className={`space-y-1 \${isLuna ? '' : 'flex flex-col items-end'}`}>
-                                <div className={`p-4 rounded-xl message-shadow text-sm leading-relaxed \${isLuna
+                            <div className={`space-y-1 ${isLuna ? '' : 'flex flex-col items-end'}`}>
+                                <div className={`p-4 rounded-xl message-shadow text-sm leading-relaxed ${isLuna
                                     ? 'bg-white dark:bg-[#1a251b] text-slate-800 dark:text-slate-100 rounded-tl-none border border-[#8c2bee]/10'
                                     : 'bg-[#8c2bee]/20 dark:bg-primary/20 text-slate-900 dark:text-slate-100 rounded-tr-none'
                                     }`}>
@@ -421,9 +673,20 @@ TIP_CONTENT: [Escribe aquí el contenido del tip]
                                         <RichTipCard title={tipTitle} content={tipContent} />
                                     )}
                                 </div>
-                                <span className={`text-[10px] text-slate-500 \${isLuna ? 'ml-1' : 'mr-1'}`}>
-                                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </span>
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                    <span className={`text-[10px] text-slate-500 ${isLuna ? 'ml-1' : 'mr-1'}`}>
+                                        {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                    {isLuna && (
+                                        <button
+                                            onClick={() => speakMessage(displayText)}
+                                            className="text-slate-400 hover:text-[#8c2bee] transition-colors p-0.5 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-850"
+                                            title="Escuchar mensaje"
+                                        >
+                                            <span className="material-symbols-outlined text-[14px]">volume_up</span>
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     );
@@ -431,8 +694,10 @@ TIP_CONTENT: [Escribe aquí el contenido del tip]
 
                 {isLoading && (
                     <div className="flex items-start gap-3 max-w-[85%] animate-pulse">
-                        <div className="size-8 rounded-full bg-slate-200 dark:bg-slate-800 shrink-0 mt-1 overflow-hidden" />
-                        <div className="bg-white dark:bg-[#1a251b] p-4 rounded-xl rounded-tl-none message-shadow text-sm text-slate-400">Luna está escribiendo...</div>
+                        <div className="size-8 rounded-full bg-slate-200 dark:bg-slate-800 shrink-0 mt-1 overflow-hidden animate-spin">
+                            <span className="material-symbols-outlined text-primary text-[32px]">auto_awesome</span>
+                        </div>
+                        <div className="bg-white dark:bg-[#1a251b] p-4 rounded-xl rounded-tl-none message-shadow text-sm text-slate-400">Luna está analizando la bitácora y pensando...</div>
                     </div>
                 )}
                 <div ref={messagesEndRef} />
@@ -481,7 +746,7 @@ TIP_CONTENT: [Escribe aquí el contenido del tip]
                     <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className={`p-2 transition-colors \${selectedImage ? 'text-primary' : 'text-slate-500 hover:text-primary'}`}
+                        className={`p-2 transition-colors ${selectedImage ? 'text-primary' : 'text-slate-500 hover:text-primary'}`}
                     >
                         <span className="material-symbols-outlined">photo_camera</span>
                     </button>
@@ -496,7 +761,7 @@ TIP_CONTENT: [Escribe aquí el contenido del tip]
                     <button
                         type="button"
                         onClick={toggleListen}
-                        className={`p-2 transition-colors \${isListening ? 'text-red-500 animate-pulse' : 'text-slate-500 hover:text-primary'}`}
+                        className={`p-2 transition-colors ${isListening ? 'text-red-500 animate-pulse' : 'text-slate-500 hover:text-primary'}`}
                     >
                         <span className="material-symbols-outlined">{isListening ? 'graphic_eq' : 'mic'}</span>
                     </button>
