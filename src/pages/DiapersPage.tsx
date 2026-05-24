@@ -43,7 +43,10 @@ export function DiapersPage() {
                 const { geminiHelpers } = await import('../lib/gemini');
                 const prompt = `Da un consejo MUY CORTO (1 línea) empático sobre cambio de pañales (van ${todayCount} hoy). Menciona la higiene o comodidad. NO uses negritas.`;
                 const res = await geminiHelpers.sendMessageWithContext(prompt, [{ role: 'user' as const, parts: [{ text: prompt }] }], context);
-                if (res.text) setInsightText(res.text.replace(/\*/g, ''));
+                if (res.text) {
+                    const cleanText = res.text.replace(/tip_title:[\s\S]*/i, '').replace(/\*/g, '').trim();
+                    setInsightText(cleanText);
+                }
             }
         } catch (e) {
             setInsightText('¡Higiene es felicidad! ✨');

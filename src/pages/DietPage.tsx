@@ -75,7 +75,10 @@ export function DietPage() {
             const { geminiHelpers } = await import('../lib/gemini');
             const prompt = `Da un consejo MUY CORTO (1 línea) empático sobre lactancia para el bebé ${selectedBaby?.name}. Menciona un tip de apego. NO uses negritas ni markdown.`;
             const res = await geminiHelpers.sendMessageWithContext(prompt, [], context);
-            if (res.text) setInsightText(res.text.replace(/\*/g, ''));
+            if (res.text) {
+                const cleanText = res.text.replace(/tip_title:[\s\S]*/i, '').replace(/\*/g, '').trim();
+                setInsightText(cleanText);
+            }
         }
     }, [selectedBaby?.name]);
 

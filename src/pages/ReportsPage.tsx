@@ -40,7 +40,10 @@ export function ReportsPage() {
         const context = `El bebé durmió un promedio de ${avg.toFixed(1)} horas diarias esta semana.`;
         const prompt = `Escribe un comentario súper corto y amigable (máximo 1 línea) resumiendo cómo durmió según este promedio: ${avg.toFixed(1)}h. NO USES NEGRITAS, ASTERISCOS NI MARKDOWN.`;
         const res = await geminiHelpers.sendMessageWithContext(prompt, [], context);
-        if (res.text) setInsightText(res.text.replace(/\*/g, ''));
+        if (res.text) {
+            const cleanText = res.text.replace(/tip_title:[\s\S]*/i, '').replace(/\*/g, '').trim();
+            setInsightText(cleanText);
+        }
     }, []);
 
     const fetchStats = useCallback(async () => {

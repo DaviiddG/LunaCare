@@ -86,7 +86,10 @@ export function SleepPage() {
             const context = `${selectedBaby.name} ha dormido ${totalHours} horas hoy en total.`;
             const prompt = `Con la siguiente info: "${context}", da un consejo MUY CORTO (1-2 frases) y amigable sobre el sueño del bebé. NO uses negritas ni markdown.`;
             const res = await geminiHelpers.sendMessageWithContext(prompt, [], context);
-            if (res.text) setInsightText(res.text.replace(/\*/g, ''));
+            if (res.text) {
+                const cleanText = res.text.replace(/tip_title:[\s\S]*/i, '').replace(/\*/g, '').trim();
+                setInsightText(cleanText);
+            }
         } else {
             setInsightText('Registra el primer sueño de hoy y Luna te dará consejos personalizados.');
         }

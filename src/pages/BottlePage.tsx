@@ -60,7 +60,10 @@ export function BottlePage() {
                 const { geminiHelpers } = await import('../lib/gemini');
                 const prompt = `Da un consejo MUY CORTO (1 línea) empático sobre alimentación con biberón. Menciona que ha tomado ${totalMl}ml hoy. NO uses negritas ni markdown.`;
                 const res = await geminiHelpers.sendMessageWithContext(prompt, [{ role: 'user' as const, parts: [{ text: prompt }] }], context);
-                if (res.text) setInsightText(res.text.replace(/\*/g, ''));
+                if (res.text) {
+                    const cleanText = res.text.replace(/tip_title:[\s\S]*/i, '').replace(/\*/g, '').trim();
+                    setInsightText(cleanText);
+                }
             }
         } catch (e) {
             setInsightText('¡Listos para la toma! ✨');
